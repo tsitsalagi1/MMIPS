@@ -15,7 +15,7 @@ export default async function SubmitPage({
       <p className="lead">Submissions are reviewed before anything is published. This form is for public awareness only and does not replace emergency reporting or official missing-person systems.</p>
       <SafetyNotice />
       {error ? <div className="notice warning"><strong>Submission error:</strong> {error}</div> : null}
-      <form className="card form" action="/api/submissions" method="post">
+      <form className="card form" action="/api/submissions" method="post" encType="multipart/form-data">
         <h2>Person and case information</h2>
         <div className="check-grid">
           <label>Person's full name<input name="full_name" required /></label>
@@ -30,6 +30,19 @@ export default async function SubmitPage({
           <label>Official tip phone / link<input name="tip_contact" /></label>
         </div>
         <label>Summary of verified public facts<textarea name="summary" required placeholder="Use facts only. No suspect accusations, rumors, or private addresses."></textarea></label>
+
+        <h2>Photo or flyer, optional</h2>
+        <section className="upload-panel">
+          <p className="muted">Upload one family-approved photo, public flyer, or awareness image. Images stay private until an admin reviews and approves the case.</p>
+          <label>Case photo or flyer
+            <input name="case_photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+          </label>
+          <label>Image description / alt text
+            <input name="photo_alt_text" placeholder="Example: family-approved photo of the missing person, or official public flyer" />
+          </label>
+          <label className="checkbox"><input type="checkbox" name="confirm_photo_permission" /> If I uploaded an image, I have permission to share it with MMIPS for review and possible public posting after approval.</label>
+          <p className="small-text muted">Allowed image types: JPG, PNG, WebP, or GIF. Maximum size: 5 MB. Do not upload graphic images, private addresses, or images that could endanger the person/family/investigation.</p>
+        </section>
 
         <h2>Submitter information</h2>
         <div className="check-grid">

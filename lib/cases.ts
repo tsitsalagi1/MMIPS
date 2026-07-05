@@ -22,6 +22,7 @@ export const sampleCases: MmipsCase[] = [
     lastPublicUpdate: "2026-07-05",
     summary: "This is a placeholder record to show how a public case page will look after moderation. Replace with verified, family-approved information only.",
     photoUrl: "/placeholder-person.svg",
+    photoAltText: "MMIPS placeholder image",
     tipPhone: "911 for emergencies; list official case tip line here",
     latitude: 35.9154,
     longitude: -94.96996,
@@ -35,6 +36,13 @@ function createPublicSupabaseClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return null;
   return createClient(url, anonKey, { auth: { persistSession: false } });
+}
+
+function publicStorageUrl(bucket: string, path?: string | null) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url || !path) return null;
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  return `${url}/storage/v1/object/public/${bucket}/${encodedPath}`;
 }
 
 function mapCase(row: any): MmipsCase {
@@ -67,7 +75,8 @@ function mapCase(row: any): MmipsCase {
     familyLiaison: row.family_liaison || "unknown",
     lastPublicUpdate: row.last_public_update || null,
     summary: row.public_summary,
-    photoUrl: "/placeholder-person.svg",
+    photoUrl: publicStorageUrl("mmips-public-case-photos", row.photo_storage_path) || "/placeholder-person.svg",
+    photoAltText: row.photo_alt_text || null,
     tipPhone: row.official_tip_contact || "911 for emergencies; list official case tip line here",
     latitude: row.latitude ? Number(row.latitude) : undefined,
     longitude: row.longitude ? Number(row.longitude) : undefined,

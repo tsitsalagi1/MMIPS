@@ -23,6 +23,13 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
       </div>
       <SafetyNotice />
 
+      <section className="card public-photo-card">
+        <div className="public-photo-wrap">
+          <img src={item.photoUrl || "/placeholder-person.svg"} alt={item.photoAltText || `${item.fullName} case image`} />
+        </div>
+        <p className="muted small-text">Images are shown only after review and approval. Request removal if this image should not be public.</p>
+      </section>
+
       <section className="feature-grid">
         <div className="card"><h3>Last seen / location</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>
         <div className="card"><h3>Lead agency</h3><p>{item.leadAgency ?? "Unknown"}</p><p className="muted">Case #: {item.agencyCaseNumber ?? "Unknown"}</p></div>

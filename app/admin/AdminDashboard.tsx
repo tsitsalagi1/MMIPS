@@ -23,6 +23,12 @@ type Submission = {
   submitter_phone: string | null;
   relationship: string;
   moderator_notes: string | null;
+  photo_storage_path: string | null;
+  photo_original_name: string | null;
+  photo_content_type: string | null;
+  photo_size: number | null;
+  photo_alt_text: string | null;
+  photo_signed_url?: string | null;
 };
 
 type LinkedCase = {
@@ -399,6 +405,23 @@ export default function AdminDashboard() {
               <h3>Public summary draft</h3>
               <p>{submission.summary}</p>
             </div>
+
+
+            {submission.photo_signed_url ? (
+              <div className="admin-summary">
+                <h3>Submitted image / flyer</h3>
+                <div className="admin-photo-review">
+                  <img src={submission.photo_signed_url} alt={submission.photo_alt_text || `${submission.full_name} submitted image`} />
+                  <div>
+                    <p><strong>Original file:</strong> {submission.photo_original_name || "Unknown"}</p>
+                    <p><strong>Type:</strong> {submission.photo_content_type || "Unknown"}</p>
+                    <p><strong>Size:</strong> {submission.photo_size ? `${Math.round(submission.photo_size / 1024)} KB` : "Unknown"}</p>
+                    <p><strong>Description:</strong> {submission.photo_alt_text || "Not provided"}</p>
+                    <p className="muted">Only approve images that are family/authorized, non-graphic, and safe to publish.</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="admin-summary">
               <h3>Submitter</h3>

@@ -29,6 +29,7 @@ export interface MmipsCase {
   lastPublicUpdate?: string;
   summary: string;
   photoUrl?: string;
+  photoAltText?: string;
   flyerUrl?: string;
   tipPhone?: string;
   tipUrl?: string;

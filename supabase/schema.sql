@@ -28,7 +28,13 @@ create table if not exists submissions (
   submitter_phone text,
   relationship text not null,
   moderator_notes text,
-  source_ip inet
+  source_ip inet,
+  photo_storage_path text,
+  photo_original_name text,
+  photo_content_type text,
+  photo_size int,
+  photo_alt_text text,
+  photo_permission_confirmed boolean not null default false
 );
 
 create table if not exists persons (
@@ -64,6 +70,8 @@ create table if not exists cases (
   tribe_notified text default 'unknown',
   family_liaison text default 'unknown',
   official_tip_contact text,
+  photo_storage_path text,
+  photo_alt_text text,
   last_public_update date,
   published_at timestamptz
 );
@@ -136,6 +144,44 @@ create table if not exists audit_log (
   reason text,
   metadata jsonb default '{}'::jsonb
 );
+
+
+-- Photo/flyer upload support. Re-running this schema safely adds the columns/buckets if missing.
+alter table submissions add column if not exists photo_storage_path text;
+alter table submissions add column if not exists photo_original_name text;
+alter table submissions add column if not exists photo_content_type text;
+alter table submissions add column if not exists photo_size int;
+alter table submissions add column if not exists photo_alt_text text;
+alter table submissions add column if not exists photo_permission_confirmed boolean not null default false;
+
+alter table cases add column if not exists photo_storage_path text;
+alter table cases add column if not exists photo_alt_text text;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'mmips-submission-photos',
+  'mmips-submission-photos',
+  false,
+  5242880,
+  array['image/jpeg','image/png','image/webp','image/gif']
+)
+on conflict (id) do update set
+  public = false,
+  file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg','image/png','image/webp','image/gif'];
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'mmips-public-case-photos',
+  'mmips-public-case-photos',
+  true,
+  5242880,
+  array['image/jpeg','image/png','image/webp','image/gif']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg','image/png','image/webp','image/gif'];
 
 alter table submissions enable row level security;
 alter table persons enable row level security;

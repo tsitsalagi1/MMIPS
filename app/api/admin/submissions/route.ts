@@ -24,7 +24,15 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ ok: true, submissions: data || [] });
+    const submissions = await Promise.all((data || []).map(async (item: any) => {
+      if (!item.photo_storage_path) return item;
+      const { data: signed } = await admin.supabase.storage
+        .from("mmips-submission-photos")
+        .createSignedUrl(item.photo_storage_path, 60 * 60);
+      return { ...item, photo_signed_url: signed?.signedUrl || null };
+    }));
+
+    return NextResponse.json({ ok: true, submissions });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Could not load submissions.";
     return NextResponse.json({ ok: false, message }, { status: 500 });

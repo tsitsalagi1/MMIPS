@@ -4,7 +4,7 @@ import { CaseStatusBadge, VerificationBadge } from "./StatusBadge";
 
 export function CaseCard({ item }: { item: MmipsCase }) {
   const imageSrc = item.photoUrl || "/mmips-hand-white-bg.png";
-  const imageAlt = item.photoUrl ? `${item.fullName} case image` : "";
+  const imageAlt = item.photoAltText || (item.photoUrl ? `${item.fullName} case image` : "");
 
   return (
     <article className="card case-card">

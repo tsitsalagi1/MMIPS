@@ -14,6 +14,11 @@ function makeSlug(name: string, id: string) {
   return `${base}-${id.slice(0, 8)}`;
 }
 
+function safeFileName(name: string) {
+  const cleaned = name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return cleaned || "case-photo";
+}
+
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -63,6 +68,23 @@ export async function PATCH(request: Request, context: Params) {
 
     const slug = makeSlug(submission.full_name, submission.id);
 
+    let publicPhotoPath: string | null = null;
+    if (submission.photo_storage_path) {
+      const { data: privateFile, error: downloadError } = await admin.supabase.storage
+        .from("mmips-submission-photos")
+        .download(submission.photo_storage_path);
+      if (downloadError) throw downloadError;
+
+      publicPhotoPath = `cases/${slug}-${safeFileName(submission.photo_original_name || "case-photo")}`;
+      const { error: uploadPhotoError } = await admin.supabase.storage
+        .from("mmips-public-case-photos")
+        .upload(publicPhotoPath, privateFile, {
+          contentType: submission.photo_content_type || privateFile.type || "application/octet-stream",
+          upsert: false
+        });
+      if (uploadPhotoError) throw uploadPhotoError;
+    }
+
     const { data: person, error: personError } = await admin.supabase
       .from("persons")
       .insert({
@@ -91,6 +113,8 @@ export async function PATCH(request: Request, context: Params) {
         agency_case_number: submission.agency_case_number,
         namus_number: submission.namus_number,
         official_tip_contact: submission.tip_contact,
+        photo_storage_path: publicPhotoPath,
+        photo_alt_text: submission.photo_alt_text,
         last_public_update: todayIsoDate(),
         published_at: new Date().toISOString()
       })
@@ -110,7 +134,7 @@ export async function PATCH(request: Request, context: Params) {
       entity_type: "cases",
       entity_id: caseRecord.id,
       reason: moderatorNotes,
-      metadata: { submission_id: id, slug: caseRecord.slug }
+      metadata: { submission_id: id, slug: caseRecord.slug, photo_storage_path: publicPhotoPath }
     });
 
     return NextResponse.json({ ok: true, message: "Submission approved and public case page created.", slug: caseRecord.slug });
