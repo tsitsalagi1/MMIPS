@@ -62,3 +62,8 @@ This update adds a printable public flyer page at `/cases/[slug]/flyer` for each
 Email sharing now includes both a standard `mailto:` link and an `Open in Gmail` fallback. The standard email link depends on the visitor having a default email app configured in their browser/operating system; the Gmail link opens Gmail in a new tab for users who use Gmail in the browser.
 
 The flyer page uses browser printing. Users can print to paper or use the browser's “Save as PDF” option.
+
+
+## Flyer link visibility fix
+
+The printable flyer now includes a larger, bordered online case-link callout. The URL is rendered as a real HTML anchor (`<a href="...">`) so browser-generated PDFs such as Chrome “Save as PDF” are more likely to preserve the clickable link. The full URL remains visible for printed flyers and can be typed manually if the PDF viewer/printer does not preserve links.

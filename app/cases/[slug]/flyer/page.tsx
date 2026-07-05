@@ -66,8 +66,15 @@ export default async function CaseFlyerPage({ params }: { params: Promise<{ slug
             {item.verification.map((status) => <VerificationBadge key={status} status={status} />)}
           </section>
 
+          <section className="flyer-case-link-box" aria-label="Online case link">
+            <p className="flyer-link-label">View the live case page</p>
+            <a className="flyer-case-link" href={caseUrl}>
+              {caseUrl}
+            </a>
+            <p className="muted small-text">This web address is clickable in most saved PDFs and can also be typed manually from a printed flyer.</p>
+          </section>
+
           <footer className="flyer-footer">
-            <p><strong>View case page:</strong> {caseUrl}</p>
             <p><strong>MMIPS is not law enforcement.</strong> This flyer does not replace 911, a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.</p>
             <p>Correction/removal requests: corrections@mmips.com · General contact: contact@mmips.com</p>
           </footer>
