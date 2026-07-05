@@ -144,3 +144,6 @@ button:disabled { opacity: .65; cursor: not-allowed; }
 .correction-cta { margin-top: 24px; }
 .correction-admin-section { margin-top: 42px; }
 .pre-wrap { white-space: pre-wrap; word-break: break-word; font: inherit; color: var(--text); background: #0c0b09; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.nested-admin-card { margin: 18px 0; background: rgba(255,255,255,.025); }
+.edit-grid label { margin: 0; }
+.edit-grid input, .edit-grid select { width: 100%; }

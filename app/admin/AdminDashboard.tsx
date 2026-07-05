@@ -25,6 +25,33 @@ type Submission = {
   moderator_notes: string | null;
 };
 
+type LinkedCase = {
+  id?: string | null;
+  slug?: string | null;
+  status?: string | null;
+  public_summary?: string | null;
+  last_seen_area_public?: string | null;
+  location_precision?: string | null;
+  lead_agency?: string | null;
+  agency_case_number?: string | null;
+  namus_number?: string | null;
+  ncic_status?: string | null;
+  tribe_notified?: string | null;
+  family_liaison?: string | null;
+  official_tip_contact?: string | null;
+  persons?: {
+    id?: string | null;
+    full_name?: string | null;
+    age?: number | null;
+    tribal_affiliation?: string | null;
+  } | {
+    id?: string | null;
+    full_name?: string | null;
+    age?: number | null;
+    tribal_affiliation?: string | null;
+  }[] | null;
+};
+
 type CorrectionRequest = {
   id: string;
   created_at: string;
@@ -35,11 +62,24 @@ type CorrectionRequest = {
   request_type: string;
   request_details: string;
   review_status: string;
-  cases?: {
-    slug?: string | null;
-    public_summary?: string | null;
-    persons?: { full_name?: string | null } | { full_name?: string | null }[] | null;
-  } | null;
+  cases?: LinkedCase | null;
+};
+
+type CorrectionEditState = {
+  full_name: string;
+  age: string;
+  tribal_affiliation: string;
+  status: string;
+  public_summary: string;
+  last_seen_area_public: string;
+  location_precision: string;
+  lead_agency: string;
+  agency_case_number: string;
+  namus_number: string;
+  official_tip_contact: string;
+  ncic_status: string;
+  tribe_notified: string;
+  family_liaison: string;
 };
 
 const statusLabels: Record<string, string> = {
@@ -51,10 +91,38 @@ const statusLabels: Record<string, string> = {
   all: "All"
 };
 
-function caseNameForCorrection(request: CorrectionRequest) {
+function linkedPerson(request: CorrectionRequest) {
   const persons = request.cases?.persons;
-  const person = Array.isArray(persons) ? persons[0] : persons;
+  return Array.isArray(persons) ? persons[0] : persons;
+}
+
+function caseNameForCorrection(request: CorrectionRequest) {
+  const person = linkedPerson(request);
   return person?.full_name || request.cases?.slug || "Case reference not matched";
+}
+
+function blankIfNull(value: string | number | null | undefined) {
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function defaultCorrectionEdits(request: CorrectionRequest): CorrectionEditState {
+  const person = linkedPerson(request);
+  return {
+    full_name: blankIfNull(person?.full_name),
+    age: blankIfNull(person?.age),
+    tribal_affiliation: blankIfNull(person?.tribal_affiliation),
+    status: request.cases?.status || "missing",
+    public_summary: blankIfNull(request.cases?.public_summary),
+    last_seen_area_public: blankIfNull(request.cases?.last_seen_area_public),
+    location_precision: request.cases?.location_precision || "city",
+    lead_agency: blankIfNull(request.cases?.lead_agency),
+    agency_case_number: blankIfNull(request.cases?.agency_case_number),
+    namus_number: blankIfNull(request.cases?.namus_number),
+    official_tip_contact: blankIfNull(request.cases?.official_tip_contact),
+    ncic_status: blankIfNull(request.cases?.ncic_status),
+    tribe_notified: blankIfNull(request.cases?.tribe_notified),
+    family_liaison: blankIfNull(request.cases?.family_liaison)
+  };
 }
 
 export default function AdminDashboard() {
@@ -71,6 +139,7 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [correctionNotes, setCorrectionNotes] = useState<Record<string, string>>({});
+  const [correctionEdits, setCorrectionEdits] = useState<Record<string, CorrectionEditState>>({});
 
   async function refreshSession() {
     const { data } = await supabase.auth.getSession();
@@ -184,10 +253,23 @@ export default function AdminDashboard() {
     }
   }
 
+  function updateCorrectionEdit(id: string, key: keyof CorrectionEditState, value: string) {
+    const request = correctionRequests.find((item) => item.id === id);
+    const current = correctionEdits[id] || (request ? defaultCorrectionEdits(request) : defaultCorrectionEdits({ id, created_at: "", case_id: null, requester_name: "", requester_email: "", relationship: "", request_type: "", request_details: "", review_status: "" }));
+    setCorrectionEdits({ ...correctionEdits, [id]: { ...current, [key]: value } });
+  }
+
   async function actOnCorrection(request: CorrectionRequest, action: "approved" | "needs_more_info" | "rejected" | "hidden") {
     if (!sessionToken) return;
+    const edit = correctionEdits[request.id] || defaultCorrectionEdits(request);
+
+    if (action === "approved") {
+      const confirmed = window.confirm("Mark this request applied and update the linked public case with the values shown in the Case updates panel? Confirm consent/safety review before applying.");
+      if (!confirmed) return;
+    }
+
     if (action === "hidden") {
-      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public case must be hidden, update the case record separately after documenting why.");
+      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public case must be hidden, use location precision/status fields or update the case record after documenting why.");
       if (!confirmed) return;
     }
 
@@ -197,7 +279,28 @@ export default function AdminDashboard() {
       const res = await fetch(`/api/admin/corrections/${request.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionToken}` },
-        body: JSON.stringify({ action, moderator_notes: correctionNotes[request.id] || "" })
+        body: JSON.stringify({
+          action,
+          moderator_notes: correctionNotes[request.id] || "",
+          case_updates: {
+            status: edit.status,
+            public_summary: edit.public_summary,
+            last_seen_area_public: edit.last_seen_area_public,
+            location_precision: edit.location_precision,
+            lead_agency: edit.lead_agency,
+            agency_case_number: edit.agency_case_number,
+            namus_number: edit.namus_number,
+            official_tip_contact: edit.official_tip_contact,
+            ncic_status: edit.ncic_status,
+            tribe_notified: edit.tribe_notified,
+            family_liaison: edit.family_liaison
+          },
+          person_updates: {
+            full_name: edit.full_name,
+            age: edit.age,
+            tribal_affiliation: edit.tribal_affiliation
+          }
+        })
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.message || "Correction/removal action failed.");
@@ -319,42 +422,111 @@ export default function AdminDashboard() {
         <h2>Correction/removal requests</h2>
         {correctionRequests.length === 0 ? (
           <div className="card"><p>No correction/removal requests found for {statusLabels[correctionFilter] || correctionFilter}.</p></div>
-        ) : correctionRequests.map((request) => (
-          <article className="card admin-submission" key={request.id}>
-            <div className="case-header-line">
-              <div>
-                <h2>{request.request_type.replaceAll("_", " ")}</h2>
-                <p className="muted">{statusLabels[request.review_status] || request.review_status} · submitted {new Date(request.created_at).toLocaleString()}</p>
+        ) : correctionRequests.map((request) => {
+          const edit = correctionEdits[request.id] || defaultCorrectionEdits(request);
+          const hasLinkedCase = Boolean(request.case_id && request.cases?.slug);
+
+          return (
+            <article className="card admin-submission" key={request.id}>
+              <div className="case-header-line">
+                <div>
+                  <h2>{request.request_type.replaceAll("_", " ")}</h2>
+                  <p className="muted">{statusLabels[request.review_status] || request.review_status} · submitted {new Date(request.created_at).toLocaleString()}</p>
+                </div>
+                <span className="badge badge-neutral">correction/removal</span>
               </div>
-              <span className="badge badge-neutral">correction/removal</span>
-            </div>
 
-            <div className="admin-detail-grid">
-              <p><strong>Case:</strong> {caseNameForCorrection(request)}</p>
-              <p><strong>Case slug:</strong> {request.cases?.slug || "Not matched"}</p>
-              <p><strong>Requester:</strong> {request.requester_name}</p>
-              <p><strong>Email:</strong> {request.requester_email}</p>
-              <p><strong>Relationship:</strong> {request.relationship}</p>
-              <p><strong>Request type:</strong> {request.request_type}</p>
-            </div>
+              <div className="admin-detail-grid">
+                <p><strong>Case:</strong> {caseNameForCorrection(request)}</p>
+                <p><strong>Case slug:</strong> {request.cases?.slug || "Not matched"}</p>
+                <p><strong>Requester:</strong> {request.requester_name}</p>
+                <p><strong>Email:</strong> {request.requester_email}</p>
+                <p><strong>Relationship:</strong> {request.relationship}</p>
+                <p><strong>Request type:</strong> {request.request_type}</p>
+              </div>
 
-            <div className="admin-summary">
-              <h3>Request details</h3>
-              <pre className="pre-wrap">{request.request_details}</pre>
-            </div>
+              <div className="admin-summary">
+                <h3>Request details</h3>
+                <pre className="pre-wrap">{request.request_details}</pre>
+              </div>
 
-            <label>Moderator notes / action taken
-              <textarea value={correctionNotes[request.id] ?? ""} onChange={(e) => setCorrectionNotes({ ...correctionNotes, [request.id]: e.target.value })} placeholder="What was checked, what was changed, who was contacted, reason for action, etc." />
-            </label>
+              <section className="card nested-admin-card">
+                <h3>Case updates to apply</h3>
+                <p className="muted">Edit only the fields that should change. “Mark applied” will update the linked public case and then mark this correction/removal request approved/applied.</p>
+                {!hasLinkedCase && <p className="notice small-notice">This request is not linked to a public case slug yet. Marking applied will only change the request status until it is matched to a case.</p>}
 
-            <div className="button-row">
-              <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied</button>
-              <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "needs_more_info")}>Needs more info</button>
-              <button type="button" className="button danger" onClick={() => actOnCorrection(request, "rejected")}>Reject</button>
-              <button type="button" className="button danger" onClick={() => actOnCorrection(request, "hidden")}>Mark hidden/reviewed</button>
-            </div>
-          </article>
-        ))}
+                <div className="admin-detail-grid edit-grid">
+                  <label>Public case title / person name
+                    <input value={edit.full_name} onChange={(e) => updateCorrectionEdit(request.id, "full_name", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Age
+                    <input value={edit.age} onChange={(e) => updateCorrectionEdit(request.id, "age", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Tribal affiliation
+                    <input value={edit.tribal_affiliation} onChange={(e) => updateCorrectionEdit(request.id, "tribal_affiliation", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Case status
+                    <select value={edit.status} onChange={(e) => updateCorrectionEdit(request.id, "status", e.target.value)} disabled={!hasLinkedCase}>
+                      <option value="missing">Missing</option>
+                      <option value="murdered_unsolved">Murdered / unsolved</option>
+                      <option value="unidentified">Unidentified</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="unknown">Unknown</option>
+                    </select>
+                  </label>
+                  <label>Public last-seen/location text
+                    <input value={edit.last_seen_area_public} onChange={(e) => updateCorrectionEdit(request.id, "last_seen_area_public", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Location precision
+                    <select value={edit.location_precision} onChange={(e) => updateCorrectionEdit(request.id, "location_precision", e.target.value)} disabled={!hasLinkedCase}>
+                      <option value="city">City</option>
+                      <option value="county">County</option>
+                      <option value="approximate">Approximate</option>
+                      <option value="hidden">Hidden</option>
+                      <option value="exact_private">Exact/private - do not display exact public address</option>
+                    </select>
+                  </label>
+                  <label>Lead agency
+                    <input value={edit.lead_agency} onChange={(e) => updateCorrectionEdit(request.id, "lead_agency", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Agency case #
+                    <input value={edit.agency_case_number} onChange={(e) => updateCorrectionEdit(request.id, "agency_case_number", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>NamUs #
+                    <input value={edit.namus_number} onChange={(e) => updateCorrectionEdit(request.id, "namus_number", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Official tip contact
+                    <input value={edit.official_tip_contact} onChange={(e) => updateCorrectionEdit(request.id, "official_tip_contact", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>NCIC status
+                    <input value={edit.ncic_status} onChange={(e) => updateCorrectionEdit(request.id, "ncic_status", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Tribe notified
+                    <input value={edit.tribe_notified} onChange={(e) => updateCorrectionEdit(request.id, "tribe_notified", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                  <label>Family liaison
+                    <input value={edit.family_liaison} onChange={(e) => updateCorrectionEdit(request.id, "family_liaison", e.target.value)} disabled={!hasLinkedCase} />
+                  </label>
+                </div>
+
+                <label>Public summary
+                  <textarea value={edit.public_summary} onChange={(e) => updateCorrectionEdit(request.id, "public_summary", e.target.value)} disabled={!hasLinkedCase} />
+                </label>
+              </section>
+
+              <label>Moderator notes / action taken
+                <textarea value={correctionNotes[request.id] ?? ""} onChange={(e) => setCorrectionNotes({ ...correctionNotes, [request.id]: e.target.value })} placeholder="What was checked, what was changed, who was contacted, reason for action, etc." />
+              </label>
+
+              <div className="button-row">
+                <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied + update case</button>
+                <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "needs_more_info")}>Needs more info</button>
+                <button type="button" className="button danger" onClick={() => actOnCorrection(request, "rejected")}>Reject</button>
+                <button type="button" className="button danger" onClick={() => actOnCorrection(request, "hidden")}>Mark hidden/reviewed</button>
+              </div>
+            </article>
+          );
+        })}
       </section>
     </main>
   );

@@ -90,3 +90,12 @@ Server-side validation is required. The widget alone does not protect the form.
 3. Email alerts.
 4. SMS alerts with opt-in/STOP compliance.
 5. Partner portal for verified family/tribal advocates.
+
+## Correction/removal apply workflow update
+
+The admin correction/removal queue now separates two actions:
+
+1. **Review the request**: read the family/authorized-contact correction/removal request and document verification steps in moderator notes.
+2. **Apply the public case updates**: edit the linked case fields in the "Case updates to apply" panel, then click **Mark applied + update case**.
+
+Marking a correction request as applied updates the linked `cases` and `persons` rows server-side, then marks the correction request approved/applied and writes an audit-log entry. This keeps correction intake separate from public case mutation and avoids automatically trusting public-submitted text.
