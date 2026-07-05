@@ -10,12 +10,15 @@ export function statusLabel(status: CaseStatus) {
   }
 }
 
-export function verificationLabel(status: VerificationStatus) {
+export function verificationLabel(status: VerificationStatus | string) {
   switch (status) {
+    case "mmips_reviewed": return "MMIPS reviewed for publication";
     case "family_verified": return "Family verified";
+    case "family_authorized": return "Family/authorized submitter";
     case "agency_case_number": return "Agency case number provided";
     case "namus_listed": return "NamUs listed";
     case "media_reported": return "Media reported";
-    default: return "Pending review";
+    case "official_source": return "Official source";
+    default: return "MMIPS reviewed";
   }
 }

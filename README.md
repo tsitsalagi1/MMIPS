@@ -1,14 +1,26 @@
-# MMIPS submit redirect fix
+# MMIPS Public Badge Fix
 
-This small patch fixes the public submission UX.
+This patch fixes a public display-label issue on approved case cards/pages.
 
-Before this patch, the form successfully saved submissions but the browser landed on `/api/submissions` and displayed raw JSON.
+## Problem fixed
 
-After this patch:
+Approved public cases with no explicit public verification rows could display a badge labeled `Pending review`. That was a misleading fallback label, not a privacy/security failure. The public list was still only loading cases where `review_status = approved` and `published_at` is not null.
 
-- `POST /api/submissions` saves the submission and redirects to `/submit/received`.
-- `GET /api/submissions` redirects back to `/submit`.
-- `/submit/received` shows a plain-language confirmation page.
-- `/submit?error=...` shows a visible submission error message.
+## What changed
 
-Upload these files to the root of the GitHub repo, commit, then redeploy Vercel.
+- Adds a safe public verification status: `mmips_reviewed`.
+- Changes the fallback badge from `Pending review` to `MMIPS reviewed for publication`.
+- Filters `pending_review` out of public verification badges so a pending-review label is never shown on public pages.
+- Keeps the public query restricted to approved/published cases only.
+
+## Files
+
+Upload these files to the GitHub repo root and commit:
+
+- `lib/cases.ts`
+- `lib/types.ts`
+- `lib/status.ts`
+- `components/StatusBadge.tsx`
+- `README.md` (optional)
+
+After commit, Vercel should redeploy automatically. Then refresh `https://mmips.com/cases`.

@@ -9,7 +9,7 @@ export const sampleCases: MmipsCase[] = [
     age: 27,
     tribalAffiliation: "Tribal affiliation shown only with family approval",
     status: "missing",
-    verification: ["family_verified", "agency_case_number", "pending_review"],
+    verification: ["mmips_reviewed", "family_verified", "agency_case_number"],
     lastSeenDate: "2026-07-01",
     lastSeenLocation: "Tahlequah, Oklahoma",
     publicLocationNote: "Approximate city-level location shown for safety.",
@@ -40,7 +40,12 @@ function createPublicSupabaseClient() {
 function mapCase(row: any): MmipsCase {
   const person = Array.isArray(row.persons) ? row.persons[0] : row.persons;
   const verification = Array.isArray(row.case_verifications)
-    ? row.case_verifications.map((item: any) => item.verification_type).filter(Boolean)
+    ? row.case_verifications
+        .map((item: any) => item.verification_type)
+        .filter(Boolean)
+        // A public case has already been reviewed/approved. Never show a pending-review
+        // label on a public case page, even if an older verification row contains it.
+        .filter((status: string) => status !== "pending_review")
     : [];
 
   return {
@@ -50,7 +55,7 @@ function mapCase(row: any): MmipsCase {
     age: person?.age ?? null,
     tribalAffiliation: person?.tribal_affiliation || null,
     status: row.status,
-    verification: verification.length ? verification : ["approved"],
+    verification: verification.length ? verification : ["mmips_reviewed"],
     lastSeenDate: row.last_seen_date || null,
     lastSeenLocation: row.last_seen_area_public || [row.last_seen_city, row.last_seen_state].filter(Boolean).join(", ") || "Location withheld",
     publicLocationNote: `Public location precision: ${row.location_precision || "city"}.`,
