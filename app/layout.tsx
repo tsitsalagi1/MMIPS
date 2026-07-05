@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "A moderated public-awareness, search, map, and accountability platform for missing and murdered Indigenous people cases.",
   icons: {
     icon: [
-      { url: "/mmips-hand-icon.svg", type: "image/svg+xml" },
+      { url: "/mmips-hand-transparent.png", sizes: "1024x1024", type: "image/png" },
       { url: "/mmips-hand-icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/mmips-hand-icon-512.png", sizes: "512x512", type: "image/png" }
     ],
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "MMIPS — Missing & Murdered Indigenous People Search",
     description: "Search. Share. Alert. Map. A moderated public-awareness and accountability platform.",
-    images: [{ url: "/mmips-logo.svg", width: 980, height: 240, alt: "MMIPS logo" }]
+    images: [{ url: "/mmips-og-white-bg.png", width: 1200, height: 630, alt: "MMIPS red handprint logo" }]
   }
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <header className="site-header">
           <nav className="container nav" aria-label="Main navigation">
             <Link href="/" className="brand" aria-label="MMIPS home">
-              <img className="brand-icon" src="/mmips-hand-icon.svg" alt="" aria-hidden="true" />
+              <img className="brand-icon" src="/mmips-hand-transparent.png" alt="" aria-hidden="true" />
               <span>MMIPS</span>
             </Link>
             <div className="nav-links">

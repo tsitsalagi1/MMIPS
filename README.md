@@ -21,3 +21,13 @@ This package replaces the simple “M” brand mark with a custom red handprint 
 Upload these files to the root of the GitHub repo `tsitsalagi1/MMIPS`, commit changes, and let Vercel redeploy.
 
 After deployment, hard refresh `mmips.com` and check the browser tab icon. Favicons can be cached by browsers, so the tab icon may take a little longer to update than the navbar logo.
+
+
+## Logo assets
+
+This update uses two logo versions:
+
+- `public/mmips-hand-transparent.png` for the site header, favicon/icon usage, and dark backgrounds.
+- `public/mmips-hand-white-bg.png` and `public/mmips-og-white-bg.png` for white-background previews and social sharing.
+
+Next.js app icons are also updated in `/app` so browser tabs and mobile home-screen icons use the new clean red handprint mark.
