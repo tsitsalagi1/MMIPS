@@ -1,0 +1,6 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="512" height="512" rx="64" fill="#211E19"/>
+<circle cx="256" cy="178" r="78" fill="#3A3329" stroke="#D7A84F" stroke-width="10"/>
+<path d="M112 430C128 342 178 296 256 296C334 296 384 342 400 430" fill="#3A3329" stroke="#D7A84F" stroke-width="10" stroke-linecap="round"/>
+<text x="256" y="472" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#D7A84F">MMIPS</text>
+</svg>
