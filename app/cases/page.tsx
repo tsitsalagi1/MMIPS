@@ -27,7 +27,15 @@ export default async function CasesPage() {
           </div>
         </form>
       </div>
-      {cases.map((item) => <CaseCard key={item.id} item={item} />)}
+      {cases.length ? (
+        cases.map((item) => <CaseCard key={item.id} item={item} />)
+      ) : (
+        <div className="card calm-panel" style={{ marginTop: "22px" }}>
+          <h2>No public cases are listed yet.</h2>
+          <p className="text-measure">Cases will appear here only after review and publication. MMIPS does not show private submissions, unreviewed reports, or information that has not been approved for public awareness.</p>
+          <p className="muted">Families and authorized contacts can submit a case for review or request corrections/removal at any time.</p>
+        </div>
+      )}
     </main>
   );
 }

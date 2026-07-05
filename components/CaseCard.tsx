@@ -3,11 +3,14 @@ import type { MmipsCase } from "../lib/types";
 import { CaseStatusBadge, VerificationBadge } from "./StatusBadge";
 
 export function CaseCard({ item }: { item: MmipsCase }) {
+  const imageSrc = item.photoUrl || "/mmips-hand-white-bg.png";
+  const imageAlt = item.photoUrl ? `${item.fullName} case image` : "";
+
   return (
     <article className="card case-card">
       <div className="case-card-grid">
-        <div className="case-image" aria-hidden="true">
-          <span>MMIPS</span>
+        <div className="case-image" aria-hidden={!item.photoUrl}>
+          <img src={imageSrc} alt={imageAlt} />
         </div>
         <div>
           <div className="case-header-line">

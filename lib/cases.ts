@@ -89,10 +89,10 @@ export async function getPublishedCases(): Promise<MmipsCase[]> {
 
   if (error) {
     console.error("Could not load published cases", error);
-    return sampleCases;
+    return [];
   }
 
-  if (!data?.length) return sampleCases;
+  if (!data?.length) return [];
   return data.map(mapCase);
 }
 
@@ -110,9 +110,9 @@ export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
 
   if (error) {
     console.error("Could not load case", error);
-    return sampleCases.find((item) => item.slug === slug) || null;
+    return null;
   }
 
-  if (!data) return sampleCases.find((item) => item.slug === slug) || null;
+  if (!data) return null;
   return mapCase(data);
 }

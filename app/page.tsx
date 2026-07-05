@@ -1,46 +1,66 @@
 import Link from "next/link";
 import { SafetyNotice } from "../components/SafetyNotice";
-import { CaseCard } from "../components/CaseCard";
-import { sampleCases } from "../lib/cases";
 
 export default function HomePage() {
   return (
     <main>
-      <section className="hero">
-        <div className="container hero-grid">
-          <div>
-            <p className="muted"><strong>Missing & Murdered Indigenous People Search</strong></p>
-            <h1>Search. Share. Alert. Map.</h1>
-            <p className="lead">MMIPS is designed to help families, Tribes, advocates, and communities share verified missing and murdered Indigenous person cases while tracking the government accountability gaps that too often leave families without answers.</p>
+      <section className="hero calm-hero">
+        <div className="container hero-grid calm-hero-grid">
+          <div className="hero-copy">
+            <p className="eyebrow">Missing & Murdered Indigenous People Search</p>
+            <h1>A respectful place to search and share reviewed MMIP case information.</h1>
+            <p className="lead">MMIPS helps families, authorized advocates, Tribes, and communities organize public awareness information without turning grief into rumors, unsafe details, or public accusations.</p>
             <div className="button-row">
               <Link className="button" href="/submit">Submit a case for review</Link>
-              <Link className="button secondary" href="/cases">Search cases</Link>
+              <Link className="button secondary" href="/cases">Search public cases</Link>
             </div>
           </div>
-          <div className="card">
-            <h2>Built for safety first</h2>
-            <p>No open rumor board. No suspect accusations without official source. No exact private addresses. Every public case should be reviewed before publication.</p>
-            <SafetyNotice />
+          <aside className="card hero-logo-panel" aria-label="MMIPS safety commitments">
+            <img src="/mmips-hand-transparent.png" alt="MMIPS red handprint logo" className="hero-logo" />
+            <h2>Built for families first</h2>
+            <p>Public information should be accurate, consent-based, and safe. Nothing submitted to MMIPS is published automatically.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section className="container section home-guidance" aria-label="Important safety information">
+        <SafetyNotice />
+        <div className="guidance-grid">
+          <div className="card calm-card"><h3>Start with emergency help</h3><p>MMIPS does not replace calling 911, filing a police report, contacting Tribal/local/federal law enforcement, BIA MMU, FBI, or submitting to NamUs.</p></div>
+          <div className="card calm-card"><h3>Families keep control</h3><p>Cases are reviewed before publication, and family members or authorized contacts can request corrections, safety edits, or removal review.</p></div>
+          <div className="card calm-card"><h3>No rumor board</h3><p>MMIPS does not publish public suspect accusations, exact unsafe locations, graphic details, or information that could endanger a person, family, or investigation.</p></div>
+        </div>
+      </section>
+
+      <section className="container section review-flow" aria-label="How MMIPS works">
+        <div className="section-heading">
+          <p className="eyebrow">How it works</p>
+          <h2>Simple, reviewed, and careful.</h2>
+          <p className="muted text-measure">The site is designed for people who may be under stress. Pages use plain language, clear next steps, and careful review before public sharing.</p>
+        </div>
+        <div className="feature-grid aligned-grid">
+          <div className="card flow-card"><span className="stat-number">1</span><h3>Submit for review</h3><p>Families, advocates, Tribal representatives, or official contacts submit case information for public awareness review.</p></div>
+          <div className="card flow-card"><span className="stat-number">2</span><h3>Verify and protect</h3><p>MMIPS checks consent, safety risks, official contacts, and whether details should be hidden, softened, or clarified.</p></div>
+          <div className="card flow-card"><span className="stat-number">3</span><h3>Publish carefully</h3><p>Only reviewed public case pages appear in search, with correction/removal review available afterward.</p></div>
+        </div>
+      </section>
+
+      <section className="container section public-empty-state">
+        <div className="card calm-panel">
+          <p className="eyebrow">Public case pages</p>
+          <h2>Approved cases will appear after review.</h2>
+          <p className="text-measure">Public pages are not created from raw submissions. Approved cases can include a safe location summary, official tip contact, verification badges, and an agency accountability checklist.</p>
+          <div className="button-row">
+            <Link className="button secondary" href="/cases">View public case search</Link>
+            <Link className="button secondary" href="/safety-policy">Read the safety policy</Link>
           </div>
         </div>
       </section>
 
-      <section className="container stats-grid">
-        <div className="card"><span className="stat-number">1</span><strong>Public case page</strong><p className="muted">One clean, shareable page per verified case.</p></div>
-        <div className="card"><span className="stat-number">2</span><strong>Map + patterns</strong><p className="muted">Track city/county-level locations without exposing private addresses.</p></div>
-        <div className="card"><span className="stat-number">3</span><strong>Agency checklist</strong><p className="muted">NamUs, NCIC, agency number, Tribe notified, family liaison, and last update.</p></div>
-      </section>
-
-      <section className="container section">
-        <h2>Featured demo case</h2>
-        <p className="muted">This is placeholder content to test the design. Do not publish real cases until the review workflow and consent rules are active.</p>
-        {sampleCases.map((item) => <CaseCard key={item.id} item={item} />)}
-      </section>
-
-      <section className="container feature-grid">
-        <div className="card"><h3>Family-approved sharing</h3><p>Generate case links, flyers, QR codes, and social posts from verified facts.</p></div>
-        <div className="card"><h3>Case verification badges</h3><p>Show whether a case is family-verified, agency-number supported, NamUs-listed, or pending review.</p></div>
-        <div className="card"><h3>Accountability dashboard</h3><p>Expose the missing pieces without pretending MMIPS is law enforcement.</p></div>
+      <section className="container feature-grid support-grid">
+        <div className="card calm-card"><h3>Shareable case pages</h3><p>Clear links and case pages make it easier to share verified facts without copying private or unsafe details across social media.</p></div>
+        <div className="card calm-card"><h3>Correction/removal review</h3><p>Families and authorized contacts can request changes if information is wrong, unsafe, outdated, or should not be public.</p></div>
+        <div className="card calm-card"><h3>Accountability checklist</h3><p>Case pages can show missing pieces like agency case number, NamUs number, Tribal notice, and last public update.</p></div>
       </section>
     </main>
   );

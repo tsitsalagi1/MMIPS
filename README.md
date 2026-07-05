@@ -31,3 +31,7 @@ This update uses two logo versions:
 - `public/mmips-hand-white-bg.png` and `public/mmips-og-white-bg.png` for white-background previews and social sharing.
 
 Next.js app icons are also updated in `/app` so browser tabs and mobile home-screen icons use the new clean red handprint mark.
+
+## Homepage calming refresh
+
+This update removes the public demo case from the homepage, improves the alignment of the informational cards, and softens the homepage language for families and people using the site while distressed. The public cases page now shows an empty-state message when no approved cases are published instead of showing the demo fallback.
