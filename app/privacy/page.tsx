@@ -1,7 +1,7 @@
 export default function PrivacyPage() {
   return (
     <main className="container section legal-body">
-      <h1>Privacy Policy — Starter Draft</h1>
+      <h1>Privacy Policy</h1>
       <p className="muted">This starter text is not legal advice. Have an attorney review before public launch.</p>
       <h2>Information collected</h2>
       <p>MMIPS may collect case information, submitter contact information, photographs, documents, correction/removal requests, alert preferences, and technical logs needed to operate and secure the site.</p>
@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <h2>Children</h2>
       <p>Only adults should submit cases or subscribe to alerts. MMIPS should not knowingly collect personal information directly from children under 13.</p>
       <h2>Contact</h2>
-      <p>Add your correction, removal, privacy, and legal contact email here before launch.</p>
+      <p>Privacy/legal notices: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />Correction/removal requests: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />General contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></p>
     </main>
   );
 }

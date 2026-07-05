@@ -7,6 +7,7 @@ export default function ResourcesPage() {
       <p className="lead">This page should help families and advocates move a case into official channels while MMIPS handles public visibility and accountability tracking.</p>
       <SafetyNotice />
       <section className="feature-grid">
+        <div className="card"><h3>MMIPS contacts</h3><p>General: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />Tips questions: <a href="mailto:tips@mmips.com">tips@mmips.com</a></p></div>
         <div className="card"><h3>Emergency</h3><p>Call 911 if someone is in immediate danger.</p></div>
         <div className="card"><h3>Police report</h3><p>Ask for the agency case number and the name/contact of the lead investigator or family liaison.</p></div>
         <div className="card"><h3>NamUs</h3><p>Ask whether the case has been submitted to NamUs and write down the NamUs number or link.</p></div>

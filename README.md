@@ -99,3 +99,23 @@ The admin correction/removal queue now separates two actions:
 2. **Apply the public case updates**: edit the linked case fields in the "Case updates to apply" panel, then click **Mark applied + update case**.
 
 Marking a correction request as applied updates the linked `cases` and `persons` rows server-side, then marks the correction request approved/applied and writes an audit-log entry. This keeps correction intake separate from public case mutation and avoids automatically trusting public-submitted text.
+
+## Pre-launch policy pages added
+
+This update adds:
+
+- `/how-it-works`
+- `/safety-policy`
+- `/data-policy`
+- footer links for policy pages and official MMIPS contact emails
+- updated Terms/Privacy contact sections
+- resources page MMIPS contact card
+
+Configured public contact emails:
+
+- contact@mmips.com
+- corrections@mmips.com
+- legal@mmips.com
+- tips@mmips.com
+
+Keep these Cloudflare Email Routing rules active and test them from an email account that is not the destination inbox.
