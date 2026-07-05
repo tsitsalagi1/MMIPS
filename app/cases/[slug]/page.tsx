@@ -69,6 +69,12 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
         <Link className="button secondary" href={`/corrections?case=${encodeURIComponent(item.slug)}`}>Request correction/removal review</Link>
       </section>
 
+      <section className="card flyer-cta">
+        <h2>Print a flyer</h2>
+        <p>Use a printer-friendly version for community sharing. It includes only the public, reviewed case details and the official tip information shown on this page.</p>
+        <Link className="button secondary" href={`/cases/${item.slug}/flyer`}>Open printable flyer</Link>
+      </section>
+
       <ShareButtons title={item.fullName} path={`/cases/${item.slug}`} />
     </main>
   );

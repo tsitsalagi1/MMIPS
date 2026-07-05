@@ -54,3 +54,11 @@ Safety rules:
 - Submitters must confirm they have permission to share an uploaded image.
 - Pending images are not public.
 - Admins should approve only family/authorized, non-graphic, safe images.
+
+## Flyer and email/share update
+
+This update adds a printable public flyer page at `/cases/[slug]/flyer` for each approved case, adds a `Print flyer` link to public case pages, and improves case sharing buttons.
+
+Email sharing now includes both a standard `mailto:` link and an `Open in Gmail` fallback. The standard email link depends on the visitor having a default email app configured in their browser/operating system; the Gmail link opens Gmail in a new tab for users who use Gmail in the browser.
+
+The flyer page uses browser printing. Users can print to paper or use the browser's “Save as PDF” option.
