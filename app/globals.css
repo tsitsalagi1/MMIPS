@@ -475,3 +475,18 @@ input[type="file"] {
   .flyer-sheet a { color: #000 !important; text-decoration: underline !important; }
   .flyer-case-link { font-size: 18px !important; font-weight: 900 !important; }
 }
+
+.share-link-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+@media (min-width: 860px) {
+  .share-link-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .share-link-grid .copy-label:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}

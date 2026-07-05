@@ -75,7 +75,7 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
         <Link className="button secondary" href={`/cases/${item.slug}/flyer`}>Open printable flyer</Link>
       </section>
 
-      <ShareButtons title={item.fullName} path={`/cases/${item.slug}`} />
+      <ShareButtons title={item.fullName} path={`/cases/${item.slug}`} imageUrl={item.photoUrl} />
     </main>
   );
 }
