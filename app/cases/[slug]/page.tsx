@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CaseStatusBadge, VerificationBadge } from "../../../components/StatusBadge";
 import { ShareButtons } from "../../../components/ShareButtons";
@@ -53,6 +54,12 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
           <p>Public location precision: <strong>{item.locationPrecision}</strong></p>
           <p className="muted">Exact private addresses, shelter locations, domestic violence locations, and sensitive minor locations should not be public.</p>
         </div>
+      </section>
+
+      <section className="card correction-cta">
+        <h2>Need to correct or remove this page?</h2>
+        <p>Family members, authorized advocates, tribal representatives, and official contacts can request corrections, safety edits, updated tip contacts, or removal review.</p>
+        <Link className="button secondary" href={`/corrections?case=${encodeURIComponent(item.slug)}`}>Request correction/removal review</Link>
       </section>
 
       <ShareButtons title={item.fullName} path={`/cases/${item.slug}`} />

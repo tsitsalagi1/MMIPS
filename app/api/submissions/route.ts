@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
 
+    const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
+    if (!verification.ok) {
+      throw new Error(verification.message);
+    }
+
     const payload = {
       full_name: required(form.get("full_name"), "Full name"),
       age: form.get("age") ? Number(form.get("age")) : null,
@@ -37,6 +43,7 @@ export async function POST(request: Request) {
       submitter_email: required(form.get("submitter_email"), "Submitter email"),
       submitter_phone: String(form.get("submitter_phone") ?? "").trim() || null,
       relationship: required(form.get("relationship"), "Relationship"),
+      source_ip: clientIpFromRequest(request),
       review_status: "pending_review"
     };
 

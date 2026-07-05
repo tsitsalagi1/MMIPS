@@ -20,6 +20,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/map">Map</Link>
               <Link href="/alerts">Alerts</Link>
               <Link href="/resources">Resources</Link>
+              <Link href="/corrections">Corrections</Link>
               <Link href="/admin">Admin</Link>
             </div>
           </nav>
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <footer className="site-footer">
           <div className="container">
             <p><strong>MMIPS</strong> is a public-awareness and accountability project. It is not law enforcement and does not replace emergency reporting or official missing-person databases.</p>
-            <p><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link></p>
+            <p><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link> · <Link href="/corrections">Correction/removal requests</Link></p>
           </div>
         </footer>
       </body>

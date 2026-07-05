@@ -25,13 +25,37 @@ type Submission = {
   moderator_notes: string | null;
 };
 
+type CorrectionRequest = {
+  id: string;
+  created_at: string;
+  case_id: string | null;
+  requester_name: string;
+  requester_email: string;
+  relationship: string;
+  request_type: string;
+  request_details: string;
+  review_status: string;
+  cases?: {
+    slug?: string | null;
+    public_summary?: string | null;
+    persons?: { full_name?: string | null } | { full_name?: string | null }[] | null;
+  } | null;
+};
+
 const statusLabels: Record<string, string> = {
   pending_review: "Pending review",
   needs_more_info: "Needs more info",
   approved: "Approved / published",
   rejected: "Rejected",
-  hidden: "Hidden"
+  hidden: "Hidden",
+  all: "All"
 };
+
+function caseNameForCorrection(request: CorrectionRequest) {
+  const persons = request.cases?.persons;
+  const person = Array.isArray(persons) ? persons[0] : persons;
+  return person?.full_name || request.cases?.slug || "Case reference not matched";
+}
 
 export default function AdminDashboard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -40,10 +64,13 @@ export default function AdminDashboard() {
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [correctionRequests, setCorrectionRequests] = useState<CorrectionRequest[]>([]);
   const [filter, setFilter] = useState("pending_review");
+  const [correctionFilter, setCorrectionFilter] = useState("pending_review");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [correctionNotes, setCorrectionNotes] = useState<Record<string, string>>({});
 
   async function refreshSession() {
     const { data } = await supabase.auth.getSession();
@@ -76,10 +103,37 @@ export default function AdminDashboard() {
     }
   }
 
+  async function loadCorrectionRequests(token = sessionToken) {
+    if (!token) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(`/api/admin/corrections?status=${encodeURIComponent(correctionFilter)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Could not load correction/removal requests.");
+      setCorrectionRequests(json.correctionRequests || []);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not load correction/removal requests.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAll(token = sessionToken) {
+    await Promise.all([loadSubmissions(token), loadCorrectionRequests(token)]);
+  }
+
   useEffect(() => {
     if (sessionToken) loadSubmissions(sessionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken, filter]);
+
+  useEffect(() => {
+    if (sessionToken) loadCorrectionRequests(sessionToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionToken, correctionFilter]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,6 +155,7 @@ export default function AdminDashboard() {
     setSessionToken(null);
     setUserEmail(null);
     setSubmissions([]);
+    setCorrectionRequests([]);
   }
 
   async function act(submission: Submission, action: "approve" | "needs_more_info" | "rejected") {
@@ -121,9 +176,35 @@ export default function AdminDashboard() {
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.message || "Action failed.");
       setMessage(json.slug ? `${json.message} /cases/${json.slug}` : json.message);
-      await loadSubmissions();
+      await loadAll();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Action failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function actOnCorrection(request: CorrectionRequest, action: "approved" | "needs_more_info" | "rejected" | "hidden") {
+    if (!sessionToken) return;
+    if (action === "hidden") {
+      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public case must be hidden, update the case record separately after documenting why.");
+      if (!confirmed) return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(`/api/admin/corrections/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionToken}` },
+        body: JSON.stringify({ action, moderator_notes: correctionNotes[request.id] || "" })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Correction/removal action failed.");
+      setMessage(json.message);
+      await loadAll();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Correction/removal action failed.");
     } finally {
       setLoading(false);
     }
@@ -151,7 +232,7 @@ export default function AdminDashboard() {
       <div className="admin-topline">
         <div>
           <h1>Admin review dashboard</h1>
-          <p className="lead">Review submitted cases before anything becomes public.</p>
+          <p className="lead">Review submitted cases and correction/removal requests before anything changes publicly.</p>
           <p className="muted">Signed in as {userEmail}</p>
         </div>
         <button className="button secondary" onClick={signOut}>Sign out</button>
@@ -162,7 +243,7 @@ export default function AdminDashboard() {
       </section>
 
       <section className="card admin-controls">
-        <label>Queue filter
+        <label>Submission queue filter
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="pending_review">Pending review</option>
             <option value="needs_more_info">Needs more info</option>
@@ -171,12 +252,23 @@ export default function AdminDashboard() {
             <option value="all">All</option>
           </select>
         </label>
-        <button onClick={() => loadSubmissions()} disabled={loading}>{loading ? "Loading..." : "Refresh"}</button>
+        <label>Correction/removal filter
+          <select value={correctionFilter} onChange={(e) => setCorrectionFilter(e.target.value)}>
+            <option value="pending_review">Pending review</option>
+            <option value="needs_more_info">Needs more info</option>
+            <option value="approved">Approved / applied</option>
+            <option value="rejected">Rejected</option>
+            <option value="hidden">Hidden</option>
+            <option value="all">All</option>
+          </select>
+        </label>
+        <button onClick={() => loadAll()} disabled={loading}>{loading ? "Loading..." : "Refresh all"}</button>
       </section>
 
       {message && <p className="notice small-notice">{message}</p>}
 
       <section className="admin-list">
+        <h2>Case submissions</h2>
         {submissions.length === 0 ? (
           <div className="card"><p>No submissions found for {statusLabels[filter] || filter}.</p></div>
         ) : submissions.map((submission) => (
@@ -218,6 +310,48 @@ export default function AdminDashboard() {
               <button type="button" onClick={() => act(submission, "approve")}>Approve + publish</button>
               <button type="button" className="button secondary" onClick={() => act(submission, "needs_more_info")}>Needs more info</button>
               <button type="button" className="button danger" onClick={() => act(submission, "rejected")}>Reject</button>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="admin-list correction-admin-section">
+        <h2>Correction/removal requests</h2>
+        {correctionRequests.length === 0 ? (
+          <div className="card"><p>No correction/removal requests found for {statusLabels[correctionFilter] || correctionFilter}.</p></div>
+        ) : correctionRequests.map((request) => (
+          <article className="card admin-submission" key={request.id}>
+            <div className="case-header-line">
+              <div>
+                <h2>{request.request_type.replaceAll("_", " ")}</h2>
+                <p className="muted">{statusLabels[request.review_status] || request.review_status} · submitted {new Date(request.created_at).toLocaleString()}</p>
+              </div>
+              <span className="badge badge-neutral">correction/removal</span>
+            </div>
+
+            <div className="admin-detail-grid">
+              <p><strong>Case:</strong> {caseNameForCorrection(request)}</p>
+              <p><strong>Case slug:</strong> {request.cases?.slug || "Not matched"}</p>
+              <p><strong>Requester:</strong> {request.requester_name}</p>
+              <p><strong>Email:</strong> {request.requester_email}</p>
+              <p><strong>Relationship:</strong> {request.relationship}</p>
+              <p><strong>Request type:</strong> {request.request_type}</p>
+            </div>
+
+            <div className="admin-summary">
+              <h3>Request details</h3>
+              <pre className="pre-wrap">{request.request_details}</pre>
+            </div>
+
+            <label>Moderator notes / action taken
+              <textarea value={correctionNotes[request.id] ?? ""} onChange={(e) => setCorrectionNotes({ ...correctionNotes, [request.id]: e.target.value })} placeholder="What was checked, what was changed, who was contacted, reason for action, etc." />
+            </label>
+
+            <div className="button-row">
+              <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied</button>
+              <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "needs_more_info")}>Needs more info</button>
+              <button type="button" className="button danger" onClick={() => actOnCorrection(request, "rejected")}>Reject</button>
+              <button type="button" className="button danger" onClick={() => actOnCorrection(request, "hidden")}>Mark hidden/reviewed</button>
             </div>
           </article>
         ))}

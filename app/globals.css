@@ -136,3 +136,11 @@ button:disabled { opacity: .65; cursor: not-allowed; }
   .admin-topline, .admin-controls { flex-direction:column; align-items:stretch; }
   .admin-detail-grid { grid-template-columns: 1fr; }
 }
+
+.warning { border-left-color: var(--gold); }
+.turnstile-wrap { border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: rgba(0,0,0,.15); }
+.turnstile-wrap .cf-turnstile { min-height: 65px; }
+.small-text { font-size: 13px; margin: 8px 0 0; }
+.correction-cta { margin-top: 24px; }
+.correction-admin-section { margin-top: 42px; }
+.pre-wrap { white-space: pre-wrap; word-break: break-word; font: inherit; color: var(--text); background: #0c0b09; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }

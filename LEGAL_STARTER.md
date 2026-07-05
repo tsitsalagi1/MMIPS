@@ -1,54 +1,52 @@
 # MMIPS Legal/Safety Starter Notes
 
-This is a non-lawyer operational checklist, not legal advice. Before public launch, have an attorney review Terms, Privacy, submission language, SMS consent, moderation, and takedown workflow.
+These are starter notes, not legal advice. Have counsel review before public launch.
 
-## Core legal posture
+## Required public posture
 
-MMIPS should be described as a public-awareness, search, sharing, mapping, and accountability project. It should not be described as an emergency service, law-enforcement agency, official police report system, official NamUs/NCIC submission system, or tip clearinghouse.
+MMIPS is a public-awareness and accountability platform. It is not law enforcement and does not replace 911, police reports, NamUs, NCIC, tribal police, BIA MMU, FBI, or local authorities.
 
-## Must-have disclaimers
+## Publishing rules
 
-- If someone is in immediate danger, call 911.
-- Submitting to MMIPS does not file a police report.
-- Submitting to MMIPS does not create a NamUs record.
-- Submitting to MMIPS does not create an NCIC entry.
-- Tips should go to the listed official agency or tip line.
-- MMIPS may edit, delay, reject, hide, or remove content for safety, privacy, accuracy, or legal reasons.
+Do not publish a case unless all of these are satisfied:
 
-## Moderation rules
+- Family member, authorized advocate, tribal representative, law-enforcement representative, or other authorized submitter consent is documented.
+- No public suspect accusations unless supported by official charges or an official public source.
+- No exact unsafe private location, shelter location, domestic violence location, trafficking-risk location, or sensitive minor location.
+- Public tip contact is official, family-approved, or otherwise verified.
+- Public summary uses factual, neutral language.
+- Moderator notes document verification steps.
 
-Do not publish:
+## Correction/removal rules
 
-- Suspect accusations unless based on official charges or official agency/public court records.
-- Exact private addresses.
-- Shelter locations.
-- Graphic material.
-- Confidential investigative details.
-- Private phone numbers unless authorized.
-- Information that could endanger a missing person, family, witness, minor, domestic-violence survivor, trafficking victim, or active investigation.
+- Provide an easy correction/removal request form.
+- Treat family safety, consent concerns, unsafe locations, and official-contact updates as priority review items.
+- Do not automatically change public case pages from public requests; review first.
+- Document every change in moderator notes and audit logs.
+- When in doubt, temporarily hide unsafe information while reviewing.
 
-## Verification badges
+## Anti-spam / abuse protection
 
-Use status badges instead of pretending every case is fully confirmed:
+- Use Cloudflare Turnstile on public intake forms.
+- Validate Turnstile server-side before writing to Supabase.
+- Keep public comments disabled.
+- Keep public tips private or routed to official/family-approved contacts.
 
-- Family submitted
-- Family verified
-- Agency case number provided
-- NamUs listed
-- Media reported
-- Pending review
-- Needs correction
+## Data safety
 
-## Family correction/removal
+- Keep Supabase service-role/secret keys server-side only.
+- Use Row Level Security on public tables.
+- Public visitors should only see approved/published case records.
+- Private submissions, requester information, admin notes, and audit logs should not be public.
 
-Every case page should have a correction/removal contact. Family and authorized representatives should be able to request edits or removal. When in doubt, hide the page while reviewing.
+## Future documents to finalize
 
-## SMS alerts
-
-Do not launch SMS until you have:
-
-- Clear opt-in consent language.
-- Stored consent records.
-- STOP/QUIT/END/CANCEL/UNSUBSCRIBE opt-out processing.
-- A policy for honoring any reasonable opt-out request.
-- Message templates that avoid rumors, accusations, and sensitive locations.
+- Terms of Use
+- Privacy Policy
+- Case Submission Agreement
+- Family/Authorized Submitter Consent Policy
+- Correction and Removal Policy
+- Photo/Flyer Permission Policy
+- SMS Consent and Opt-Out Policy
+- Moderation Policy
+- Law-Enforcement Disclaimer
