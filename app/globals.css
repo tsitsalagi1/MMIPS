@@ -118,3 +118,21 @@ textarea { min-height: 120px; resize: vertical; }
   .hero-grid, .stats-grid, .feature-grid, .check-grid, .case-card-grid { grid-template-columns: 1fr; }
   .nav { align-items:flex-start; flex-direction:column; }
 }
+
+.narrow-card { max-width: 560px; }
+.small-notice { margin-top: 16px; padding: 14px 18px; }
+.admin-topline { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom: 18px; }
+.admin-controls { display:flex; align-items:flex-end; gap:16px; margin: 20px 0; }
+.admin-controls label { min-width: 260px; }
+.admin-list { display:grid; gap:18px; }
+.admin-submission h2 { font-size: clamp(26px, 3vw, 40px); }
+.admin-detail-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 18px 0; }
+.admin-detail-grid p { margin: 0; }
+.admin-summary { border-top:1px solid var(--line); margin-top:16px; padding-top:16px; }
+.button.danger { background: #5e1712; border:1px solid rgba(255,255,255,.18); }
+.button.danger:hover { background: #3f0f0c; }
+button:disabled { opacity: .65; cursor: not-allowed; }
+@media (max-width: 800px) {
+  .admin-topline, .admin-controls { flex-direction:column; align-items:stretch; }
+  .admin-detail-grid { grid-template-columns: 1fr; }
+}

@@ -1,12 +1,16 @@
 import { CaseCard } from "../../components/CaseCard";
 import { SafetyNotice } from "../../components/SafetyNotice";
-import { sampleCases } from "../../lib/cases";
+import { getPublishedCases } from "../../lib/cases";
 
-export default function CasesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CasesPage() {
+  const cases = await getPublishedCases();
+
   return (
     <main className="container section">
       <h1>Search cases</h1>
-      <p className="lead">Search verified missing, murdered/unsolved, unidentified, and resolved Indigenous person cases. This starter uses sample data; connect Supabase for live case records.</p>
+      <p className="lead">Search verified missing, murdered/unsolved, unidentified, and resolved Indigenous person cases. Only reviewed and approved public cases should appear here.</p>
       <SafetyNotice />
       <div className="card" style={{ margin: "20px 0" }}>
         <form className="form">
@@ -23,7 +27,7 @@ export default function CasesPage() {
           </div>
         </form>
       </div>
-      {sampleCases.map((item) => <CaseCard key={item.id} item={item} />)}
+      {cases.map((item) => <CaseCard key={item.id} item={item} />)}
     </main>
   );
 }

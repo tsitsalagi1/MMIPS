@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import type { MmipsCase } from "./types";
 
 export const sampleCases: MmipsCase[] = [
@@ -29,6 +30,84 @@ export const sampleCases: MmipsCase[] = [
   }
 ];
 
-export function getCaseBySlug(slug: string) {
-  return sampleCases.find((item) => item.slug === slug);
+function createPublicSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) return null;
+  return createClient(url, anonKey, { auth: { persistSession: false } });
+}
+
+function mapCase(row: any): MmipsCase {
+  const person = Array.isArray(row.persons) ? row.persons[0] : row.persons;
+  const verification = Array.isArray(row.case_verifications)
+    ? row.case_verifications.map((item: any) => item.verification_type).filter(Boolean)
+    : [];
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    fullName: person?.full_name || "Name withheld",
+    age: person?.age ?? null,
+    tribalAffiliation: person?.tribal_affiliation || null,
+    status: row.status,
+    verification: verification.length ? verification : ["approved"],
+    lastSeenDate: row.last_seen_date || null,
+    lastSeenLocation: row.last_seen_area_public || [row.last_seen_city, row.last_seen_state].filter(Boolean).join(", ") || "Location withheld",
+    publicLocationNote: `Public location precision: ${row.location_precision || "city"}.`,
+    leadAgency: row.lead_agency || null,
+    agencyCaseNumber: row.agency_case_number || null,
+    namusNumber: row.namus_number || null,
+    ncicStatus: row.ncic_status || "unknown",
+    tribeNotified: row.tribe_notified || "unknown",
+    familyLiaison: row.family_liaison || "unknown",
+    lastPublicUpdate: row.last_public_update || null,
+    summary: row.public_summary,
+    photoUrl: "/placeholder-person.svg",
+    tipPhone: row.official_tip_contact || "911 for emergencies; list official case tip line here",
+    latitude: row.latitude ? Number(row.latitude) : undefined,
+    longitude: row.longitude ? Number(row.longitude) : undefined,
+    locationPrecision: row.location_precision || "city",
+    riskFlags: []
+  };
+}
+
+export async function getPublishedCases(): Promise<MmipsCase[]> {
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return sampleCases;
+
+  const { data, error } = await supabase
+    .from("cases")
+    .select("*, persons(*), case_verifications(*)")
+    .eq("review_status", "approved")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("Could not load published cases", error);
+    return sampleCases;
+  }
+
+  if (!data?.length) return sampleCases;
+  return data.map(mapCase);
+}
+
+export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return sampleCases.find((item) => item.slug === slug) || null;
+
+  const { data, error } = await supabase
+    .from("cases")
+    .select("*, persons(*), case_verifications(*)")
+    .eq("slug", slug)
+    .eq("review_status", "approved")
+    .not("published_at", "is", null)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Could not load case", error);
+    return sampleCases.find((item) => item.slug === slug) || null;
+  }
+
+  if (!data) return sampleCases.find((item) => item.slug === slug) || null;
+  return mapCase(data);
 }

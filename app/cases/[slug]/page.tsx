@@ -2,15 +2,13 @@ import { notFound } from "next/navigation";
 import { CaseStatusBadge, VerificationBadge } from "../../../components/StatusBadge";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { SafetyNotice } from "../../../components/SafetyNotice";
-import { getCaseBySlug, sampleCases } from "../../../lib/cases";
+import { getCaseBySlug } from "../../../lib/cases";
 
-export function generateStaticParams() {
-  return sampleCases.map((item) => ({ slug: item.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function CasePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const item = getCaseBySlug(slug);
+  const item = await getCaseBySlug(slug);
   if (!item) notFound();
 
   return (
