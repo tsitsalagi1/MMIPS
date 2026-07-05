@@ -7,6 +7,16 @@ function required(value: FormDataEntryValue | null, field: string) {
   return text;
 }
 
+function redirectTo(request: Request, path: string) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const base = siteUrl || new URL(request.url).origin;
+  return NextResponse.redirect(new URL(path, base), { status: 303 });
+}
+
+export async function GET(request: Request) {
+  return redirectTo(request, "/submit");
+}
+
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
@@ -35,7 +45,7 @@ export async function POST(request: Request) {
 
     if (!url || !serviceKey) {
       console.info("Submission captured in demo mode:", payload);
-      return NextResponse.json({ ok: true, mode: "demo", message: "Submission received in demo mode. Configure Supabase to store submissions." });
+      return redirectTo(request, "/submit/received?mode=demo");
     }
 
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -43,9 +53,9 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ ok: true, message: "Submission received for review." });
+    return redirectTo(request, "/submit/received");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Submission failed.";
-    return NextResponse.json({ ok: false, message }, { status: 400 });
+    return redirectTo(request, `/submit?error=${encodeURIComponent(message)}`);
   }
 }

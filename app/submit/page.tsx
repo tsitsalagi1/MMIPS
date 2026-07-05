@@ -1,11 +1,19 @@
 import { SafetyNotice } from "../../components/SafetyNotice";
 
-export default function SubmitPage() {
+export default async function SubmitPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const error = params?.error;
+
   return (
     <main className="container section">
       <h1>Submit a case for review</h1>
       <p className="lead">Submissions are reviewed before anything is published. This form is for public awareness only and does not replace emergency reporting or official missing-person systems.</p>
       <SafetyNotice />
+      {error ? <div className="notice warning"><strong>Submission error:</strong> {error}</div> : null}
       <form className="card form" action="/api/submissions" method="post">
         <h2>Person and case information</h2>
         <div className="check-grid">
