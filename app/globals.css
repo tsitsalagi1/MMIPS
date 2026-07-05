@@ -38,6 +38,13 @@ a { color: inherit; }
 }
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 16px 0; }
 .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; text-decoration: none; letter-spacing: .04em; }
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  display: block;
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px rgba(215,168,79,.72), 0 8px 22px rgba(0,0,0,.25);
+}
 .brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border: 2px solid var(--gold); color: var(--gold); border-radius: 12px; }
 .nav-links { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }

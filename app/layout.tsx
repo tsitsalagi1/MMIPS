@@ -4,7 +4,20 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MMIPS — Missing & Murdered Indigenous People Search",
-  description: "A moderated public-awareness, search, map, and accountability platform for missing and murdered Indigenous people cases."
+  description: "A moderated public-awareness, search, map, and accountability platform for missing and murdered Indigenous people cases.",
+  icons: {
+    icon: [
+      { url: "/mmips-hand-icon.svg", type: "image/svg+xml" },
+      { url: "/mmips-hand-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/mmips-hand-icon-512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }]
+  },
+  openGraph: {
+    title: "MMIPS — Missing & Murdered Indigenous People Search",
+    description: "Search. Share. Alert. Map. A moderated public-awareness and accountability platform.",
+    images: [{ url: "/mmips-logo.svg", width: 980, height: 240, alt: "MMIPS logo" }]
+  }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -13,7 +26,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <header className="site-header">
           <nav className="container nav" aria-label="Main navigation">
-            <Link href="/" className="brand"><span className="brand-mark">M</span><span>MMIPS</span></Link>
+            <Link href="/" className="brand" aria-label="MMIPS home">
+              <img className="brand-icon" src="/mmips-hand-icon.svg" alt="" aria-hidden="true" />
+              <span>MMIPS</span>
+            </Link>
             <div className="nav-links">
               <Link href="/cases">Search Cases</Link>
               <Link href="/submit">Submit Case</Link>
