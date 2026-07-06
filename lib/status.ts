@@ -12,7 +12,7 @@ export function statusLabel(status: string) {
 
 export function verificationLabel(status: VerificationStatus | string) {
   switch (status) {
-    case "mmips_reviewed": return "Published public profile";
+    case "mmips_reviewed": return "Public profile";
     case "family_verified": return "Family verified";
     case "family_authorized": return "Family/authorized submitter";
     case "agency_case_number": return "Agency report/case number provided";

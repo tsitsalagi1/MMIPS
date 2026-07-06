@@ -10,7 +10,7 @@ export default async function ProfilesPage() {
   return (
     <main className="container section">
       <h1>Search public profiles</h1>
-      <p className="lead">Search reviewed missing, murdered/unsolved, unidentified, and resolved Indigenous person public profiles. Only reviewed and approved public information should appear here.</p>
+      <p className="lead">Search missing, murdered/unsolved, unidentified, and resolved Indigenous person public profiles. Only approved public information appears here.</p>
       <SafetyNotice />
       <div className="card" style={{ margin: "20px 0" }}>
         <form className="form">

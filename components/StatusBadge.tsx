@@ -6,5 +6,6 @@ export function CaseStatusBadge({ status }: { status: CaseStatus }) {
 }
 
 export function VerificationBadge({ status }: { status: VerificationStatus }) {
+  if (status === "mmips_reviewed") return null;
   return <span className="badge badge-neutral">{verificationLabel(status)}</span>;
 }

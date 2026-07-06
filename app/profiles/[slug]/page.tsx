@@ -40,7 +40,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <h2>Public summary</h2>
         <p>{item.summary}</p>
         <div className="badge-row">
-          {item.verification.map((status) => <VerificationBadge key={status} status={status} />)}
+          {item.verification.filter((status) => status !== "mmips_reviewed").map((status) => <VerificationBadge key={status} status={status} />)}
         </div>
       </section>
 
