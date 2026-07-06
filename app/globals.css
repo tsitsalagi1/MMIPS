@@ -503,3 +503,44 @@ input[type="file"] {
 @media (max-width: 760px) {
   .share-link-grid { grid-template-columns: 1fr; }
 }
+
+/* Footer calm alignment and neutral mission language */
+.site-footer .container {
+  display: grid;
+  gap: 14px;
+  max-width: 980px;
+}
+.footer-mission {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--muted);
+}
+.footer-links,
+.footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  line-height: 1.55;
+}
+.footer-links a,
+.footer-contact a {
+  color: var(--text);
+  text-underline-offset: 3px;
+}
+.footer-contact span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .site-footer { padding-top: 30px; }
+  .footer-links,
+  .footer-contact {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .footer-contact span { white-space: normal; }
+}

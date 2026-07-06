@@ -94,7 +94,7 @@ export function ShareButtons({
     ];
 
     if (imageUrl) {
-      plainParts.push("", "Reviewed public image:", imageUrl);
+      plainParts.push("", "Public profile image:", imageUrl);
     }
 
     plainParts.push(
@@ -113,7 +113,7 @@ export function ShareButtons({
         ${imageMarkup}
         <p><strong>View the live public profile:</strong><br><a href="${escapeHtml(full)}">${escapeHtml(full)}</a></p>
         <p><strong>Print, save, or download the public awareness flyer:</strong><br><a href="${escapeHtml(flyer)}">${escapeHtml(flyer)}</a></p>
-        ${imageUrl ? `<p><strong>Reviewed public image:</strong><br><a href="${escapeHtml(imageUrl)}">${escapeHtml(imageUrl)}</a></p>` : ""}
+        ${imageUrl ? `<p><strong>Public profile image:</strong><br><a href="${escapeHtml(imageUrl)}">${escapeHtml(imageUrl)}</a></p>` : ""}
         <p style="font-size:13px;color:#555;">Please share only verified, family-approved information. Send tips to the listed agency or official tip line. MMIPS is not law enforcement.</p>
       </div>
     `;
@@ -179,7 +179,7 @@ export function ShareButtons({
 
     ctx.fillStyle = "#171411";
     ctx.font = "900 22px Arial";
-    ctx.fillText("MMIPS REVIEWED PUBLIC AWARENESS FLYER", 190, 82);
+    ctx.fillText("MMIPS PUBLIC AWARENESS FLYER", 190, 82);
     ctx.font = "900 56px Arial";
     wrapText(ctx, statusLabel, 190, 145, 880, 60);
 
@@ -242,15 +242,6 @@ export function ShareButtons({
 
     drawBox("Tips / emergency information", tipPhone || "Call 911 for emergencies. Use only the official tip line listed by the investigating agency.", 610, 190);
     drawBox("Public summary", summary || "No public summary listed.", 830, 240);
-
-    ctx.fillStyle = "#fff2cd";
-    ctx.strokeStyle = "#d8ad5d";
-    ctx.beginPath();
-    ctx.roundRect(70, 1115, 360, 44, 22);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#6b4615";
-    ctx.font = "bold 18px Arial";
-    ctx.fillText("MMIPS reviewed for publication", 92, 1144);
 
     ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#b9372b";

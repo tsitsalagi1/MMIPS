@@ -82,3 +82,15 @@ Use this as a user-safe path: users can click **Copy email body with image**, op
 
 ## Profile share/export merged fix
 This update restores the public profile share tools after the public wording change from cases to profiles. Public profile pages now show Print/save PDF flyer, Download JPEG flyer, Copy email body with image, Email with links, and Open Gmail with links. The flyer route remains `/profiles/[slug]/flyer` and the old `/cases` routes can continue to redirect.
+
+## Mission-language and footer alignment update
+
+This update removes the public-facing phrase "accountability tool/platform/project" and replaces it with calmer family-support/public-awareness language. It also improves footer alignment and removes "reviewed" language from the printable public awareness flyer, since published profiles are already expected to have been approved before publication.
+
+Changed areas:
+- Footer mission text and link/contact alignment
+- Safety notice wording
+- Public profile flyer heading
+- PDF/JPEG flyer export heading
+- Public profile checklist heading
+- General public-facing mission language

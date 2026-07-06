@@ -41,7 +41,7 @@ export default function HomePage() {
         <div className="feature-grid aligned-grid">
           <div className="card flow-card"><span className="stat-number">1</span><h3>Submit for review</h3><p>Families, advocates, Tribal representatives, or official contacts submit information for public awareness review.</p></div>
           <div className="card flow-card"><span className="stat-number">2</span><h3>Verify and protect</h3><p>MMIPS checks consent, safety risks, official contacts, and whether details should be hidden, softened, or clarified.</p></div>
-          <div className="card flow-card"><span className="stat-number">3</span><h3>Publish carefully</h3><p>Only reviewed public profiles appear in search, with correction/removal review available afterward.</p></div>
+          <div className="card flow-card"><span className="stat-number">3</span><h3>Publish carefully</h3><p>Only approved public profiles appear in search, with correction/removal review available afterward.</p></div>
         </div>
       </section>
 
@@ -49,7 +49,7 @@ export default function HomePage() {
         <div className="card calm-panel">
           <p className="eyebrow">Public profiles</p>
           <h2>Approved profiles will appear after review.</h2>
-          <p className="text-measure">Public profiles are not created from raw submissions. Approved profiles can include a safe location summary, official tip contact, verification badges, and an agency accountability checklist.</p>
+          <p className="text-measure">Public profiles are not created from raw submissions. Approved profiles can include a safe location summary, official tip contact, verification badges, and an official-information checklist.</p>
           <div className="button-row">
             <Link className="button secondary" href="/profiles">View public profile search</Link>
             <Link className="button secondary" href="/safety-policy">Read the safety policy</Link>
@@ -60,7 +60,7 @@ export default function HomePage() {
       <section className="container feature-grid support-grid">
         <div className="card calm-card"><h3>Shareable public profiles</h3><p>Clear links and public profiles make it easier to share verified facts without copying private or unsafe details across social media.</p></div>
         <div className="card calm-card"><h3>Correction/removal review</h3><p>Families and authorized contacts can request changes if information is wrong, unsafe, outdated, or should not be public.</p></div>
-        <div className="card calm-card"><h3>Accountability checklist</h3><p>Public profiles can show missing pieces like agency report/case number, NamUs number, Tribal notice, and last public update.</p></div>
+        <div className="card calm-card"><h3>Official-information checklist</h3><p>Public profiles can show missing pieces like agency report/case number, NamUs number, Tribal notice, and last public update.</p></div>
       </section>
     </main>
   );

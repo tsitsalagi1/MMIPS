@@ -81,7 +81,7 @@ export function FlyerActions(props: FlyerExportProps) {
 
     ctx.fillStyle = "#171411";
     ctx.font = "900 22px Arial";
-    ctx.fillText("MMIPS REVIEWED PUBLIC AWARENESS FLYER", 190, 82);
+    ctx.fillText("MMIPS PUBLIC AWARENESS FLYER", 190, 82);
     ctx.font = "900 58px Arial";
     ctx.fillText(props.statusLabel, 190, 145);
 
@@ -144,15 +144,6 @@ export function FlyerActions(props: FlyerExportProps) {
 
     drawBox("Tips / emergency information", props.tipPhone || "Call 911 for emergencies. Use only the official tip line listed by the investigating agency.", 610, 190);
     drawBox("Public summary", props.summary || "No public summary listed.", 830, 240);
-
-    ctx.fillStyle = "#fff2cd";
-    ctx.strokeStyle = "#d8ad5d";
-    ctx.beginPath();
-    ctx.roundRect(70, 1115, 360, 44, 22);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#6b4615";
-    ctx.font = "bold 18px Arial";
-    ctx.fillText("MMIPS reviewed for publication", 92, 1144);
 
     ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#b9372b";

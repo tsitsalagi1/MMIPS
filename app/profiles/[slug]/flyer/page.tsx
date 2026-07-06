@@ -41,7 +41,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
           <header className="flyer-header">
             <img src="/mmips-hand-transparent.png" alt="" aria-hidden="true" />
             <div>
-              <p className="flyer-eyebrow">MMIPS reviewed public awareness flyer</p>
+              <p className="flyer-eyebrow">MMIPS public awareness flyer</p>
               <h1>{flyerTitle}</h1>
             </div>
           </header>
@@ -76,9 +76,11 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
             <p>{item.summary}</p>
           </section>
 
-          <section className="flyer-verification-row">
-            {item.verification.map((status) => <VerificationBadge key={status} status={status} />)}
-          </section>
+          {item.verification.filter((status) => status !== "mmips_reviewed").length ? (
+            <section className="flyer-verification-row" aria-label="Public source notes">
+              {item.verification.filter((status) => status !== "mmips_reviewed").map((status) => <VerificationBadge key={status} status={status} />)}
+            </section>
+          ) : null}
 
           <section className="flyer-case-link-box" aria-label="Online public profile link">
             <p className="flyer-link-label">View the live MMIPS public profile</p>

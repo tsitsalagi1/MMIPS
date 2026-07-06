@@ -6,7 +6,7 @@ export default function HowItWorksPage() {
     <main className="container section legal-body">
       <h1>How MMIPS works</h1>
       <p className="lead">
-        MMIPS is a moderated public-awareness and accountability platform. It is built to help families,
+        MMIPS is a moderated public-awareness and family-support platform. It is built to help families,
         authorized advocates, Tribal representatives, and official contacts share reviewed submitted information
         without creating a rumor board or replacing official reporting systems.
       </p>
@@ -42,7 +42,7 @@ export default function HowItWorksPage() {
         <li>The submission is saved privately for review.</li>
         <li>An admin reviews safety, consent, public-source support, and contact information.</li>
         <li>The admin may approve, reject, request more information, or keep the submission hidden.</li>
-        <li>If approved, MMIPS creates a public profile with limited, reviewed public information.</li>
+        <li>If approved, MMIPS creates a public profile with limited, approved public information.</li>
       </ol>
 
       <h2>Contact</h2>

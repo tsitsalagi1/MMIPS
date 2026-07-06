@@ -4,7 +4,7 @@ export default function ResourcesPage() {
   return (
     <main className="container section">
       <h1>Resources</h1>
-      <p className="lead">This page should help families and advocates move information into official channels while MMIPS handles public visibility and accountability tracking.</p>
+      <p className="lead">This page helps families and advocates move information into official channels while MMIPS supports public visibility, careful sharing, and record tracking.</p>
       <SafetyNotice />
       <section className="feature-grid">
         <div className="card"><h3>MMIPS contacts</h3><p>General: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />Tips questions: <a href="mailto:tips@mmips.com">tips@mmips.com</a></p></div>

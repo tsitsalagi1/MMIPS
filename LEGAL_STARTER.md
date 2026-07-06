@@ -4,7 +4,7 @@ These are starter notes, not legal advice. Have counsel review before public lau
 
 ## Required public posture
 
-MMIPS is a public-awareness and accountability platform. It is not law enforcement and does not replace 911, police reports, NamUs, NCIC, tribal police, BIA MMU, FBI, or local authorities.
+MMIPS is a public-awareness and family-support platform. It is not law enforcement and does not replace 911, police reports, NamUs, NCIC, tribal police, BIA MMU, FBI, or local authorities.
 
 ## Publishing rules
 

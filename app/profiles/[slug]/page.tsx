@@ -27,7 +27,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <div className="public-photo-wrap">
           <img src={item.photoUrl || "/placeholder-person.svg"} alt={item.photoAltText || `${item.fullName} public profile image`} />
         </div>
-        <p className="muted small-text">Images are shown only after review and approval. Request removal if this image should not be public.</p>
+        <p className="muted small-text">Images are shown only after approval for public display. Request removal if this image should not be public.</p>
       </section>
 
       <section className="feature-grid">
@@ -46,7 +46,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
       <section className="section check-grid">
         <div className="card">
-          <h2>Agency accountability checklist</h2>
+          <h2>Official information checklist</h2>
           <table className="table"><tbody>
             <tr><th>Agency report/case number</th><td>{item.agencyCaseNumber ?? "Unknown"}</td></tr>
             <tr><th>NamUs number</th><td>{item.namusNumber ?? "Unknown"}</td></tr>
@@ -71,7 +71,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
       <section className="card flyer-cta">
         <h2>Print a flyer</h2>
-        <p>Use a printer-friendly version for community sharing. It includes only the public, reviewed information and the official tip information shown on this page.</p>
+        <p>Use a printer-friendly version for community sharing. It includes only the approved public information and the official tip information shown on this page.</p>
         <Link className="button secondary" href={`/profiles/${item.slug}/flyer`}>Open printable flyer</Link>
       </section>
 
