@@ -121,7 +121,7 @@ export async function PATCH(request: Request, context: Params) {
         .single();
 
       if (caseLoadError || !caseRow) {
-        return NextResponse.json({ ok: false, message: "Linked public case was not found, so updates were not applied." }, { status: 404 });
+        return NextResponse.json({ ok: false, message: "Linked public profile was not found, so updates were not applied." }, { status: 404 });
       }
 
       targetCase = caseRow;
@@ -172,8 +172,8 @@ export async function PATCH(request: Request, context: Params) {
     const appliedCount = Object.keys(appliedCaseUpdates).length + Object.keys(appliedPersonUpdates).length;
     const appliedText = action === "approved" && requestRow.case_id
       ? appliedCount
-        ? ` ${appliedCount} public case field${appliedCount === 1 ? "" : "s"} updated.`
-        : " No public case fields were changed; only the request status was updated."
+        ? ` ${appliedCount} public profile field${appliedCount === 1 ? "" : "s"} updated.`
+        : " No public profile fields were changed; only the request status was updated."
       : "";
 
     return NextResponse.json({ ok: true, message: `Correction/removal request marked ${action.replaceAll("_", " ")}.${appliedText}` });

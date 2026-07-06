@@ -11,8 +11,8 @@ export default function SafetyPolicyPage() {
       </p>
       <SafetyNotice />
 
-      <h2>Before a case is published</h2>
-      <p>MMIPS should review each case for:</p>
+      <h2>Before a public profile is published</h2>
+      <p>MMIPS should review each submission for:</p>
       <ul>
         <li>Family, authorized advocate, Tribal representative, legal representative, law-enforcement representative, or other authorized-submitter basis.</li>
         <li>No public suspect accusations unless supported by official public charges or official public statements.</li>
@@ -33,14 +33,14 @@ export default function SafetyPolicyPage() {
 
       <h2>Location masking</h2>
       <p>
-        Public case pages should use city, county, reservation, or general area when exact location information creates risk.
+        Public profiles should use city, county, reservation, or general area when exact location information creates risk.
         For minors, trafficking concerns, domestic violence, shelters, witness safety, or active investigations, location should be generalized or hidden.
       </p>
 
       <h2>Corrections and removals</h2>
       <p>
         Families, authorized advocates, Tribal representatives, official contacts, and legal/privacy contacts can request correction,
-        hiding, or removal of public case information. MMIPS may hide public information while a request is reviewed.
+        hiding, or removal of public submitted information. MMIPS may hide public information while a request is reviewed.
       </p>
 
       <h2>Emergency and official reporting</h2>

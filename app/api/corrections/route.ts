@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     let caseId: string | null = null;
 
     if (caseReference) {
-      const slug = caseReference.split("/cases/").pop()?.split("?")[0]?.split("#")[0]?.replace(/^\/+|\/+$/g, "") || caseReference;
+      const slug = caseReference.split("/profiles/").pop()?.split("?")[0]?.split("#")[0]?.replace(/^\/+|\/+$/g, "") || caseReference;
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
       const lookup = supabase.from("cases").select("id").limit(1);
       const { data: caseRows } = isUuid
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       relationship,
       request_type: requestType,
       request_details: [
-        caseReference ? `Case reference: ${caseReference}` : "Case reference: not provided",
+        caseReference ? `Profile reference: ${caseReference}` : "Profile reference: not provided",
         requesterPhone ? `Requester phone: ${requesterPhone}` : null,
         "",
         requestDetails

@@ -5,7 +5,7 @@ export const sampleCases: MmipsCase[] = [
   {
     id: "demo-001",
     slug: "demo-case-family-approved",
-    fullName: "Demo Case — Family Approved Placeholder",
+    fullName: "Demo Profile — Family Approved Placeholder",
     age: 27,
     tribalAffiliation: "Tribal affiliation shown only with family approval",
     status: "missing",
@@ -20,14 +20,14 @@ export const sampleCases: MmipsCase[] = [
     tribeNotified: "unknown",
     familyLiaison: "unknown",
     lastPublicUpdate: "2026-07-05",
-    summary: "This is a placeholder record to show how a public case page will look after moderation. Replace with verified, family-approved information only.",
+    summary: "This is a placeholder record to show how a public profile will look after moderation. Replace with verified, family-approved information only.",
     photoUrl: "/placeholder-person.svg",
     photoAltText: "MMIPS placeholder image",
-    tipPhone: "911 for emergencies; list official case tip line here",
+    tipPhone: "911 for emergencies; list official tip line here",
     latitude: 35.9154,
     longitude: -94.96996,
     locationPrecision: "city",
-    riskFlags: ["Public demo", "Do not use as a real case"]
+    riskFlags: ["Public demo", "Do not use as a real profile"]
   }
 ];
 
@@ -51,8 +51,8 @@ function mapCase(row: any): MmipsCase {
     ? row.case_verifications
         .map((item: any) => item.verification_type)
         .filter(Boolean)
-        // A public case has already been reviewed/approved. Never show a pending-review
-        // label on a public case page, even if an older verification row contains it.
+        // A public profile has already been reviewed/approved. Never show a pending-review
+        // label on a public profile, even if an older verification row contains it.
         .filter((status: string) => status !== "pending_review")
     : [];
 
@@ -77,7 +77,7 @@ function mapCase(row: any): MmipsCase {
     summary: row.public_summary,
     photoUrl: publicStorageUrl("mmips-public-case-photos", row.photo_storage_path) || "/placeholder-person.svg",
     photoAltText: row.photo_alt_text || null,
-    tipPhone: row.official_tip_contact || "911 for emergencies; list official case tip line here",
+    tipPhone: row.official_tip_contact || "911 for emergencies; list official tip line here",
     latitude: row.latitude ? Number(row.latitude) : undefined,
     longitude: row.longitude ? Number(row.longitude) : undefined,
     locationPrecision: row.location_precision || "city",
@@ -97,7 +97,7 @@ export async function getPublishedCases(): Promise<MmipsCase[]> {
     .order("published_at", { ascending: false });
 
   if (error) {
-    console.error("Could not load published cases", error);
+    console.error("Could not load published profiles", error);
     return [];
   }
 
@@ -118,7 +118,7 @@ export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
     .maybeSingle();
 
   if (error) {
-    console.error("Could not load case", error);
+    console.error("Could not load public profile", error);
     return null;
   }
 

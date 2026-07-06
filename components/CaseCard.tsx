@@ -1,28 +1,26 @@
 import Link from "next/link";
-import type { MmipsCase } from "../lib/types";
 import { CaseStatusBadge, VerificationBadge } from "./StatusBadge";
+import type { MmipsCase } from "../lib/types";
 
 export function CaseCard({ item }: { item: MmipsCase }) {
-  const imageSrc = item.photoUrl || "/mmips-hand-white-bg.png";
-  const imageAlt = item.photoAltText || (item.photoUrl ? `${item.fullName} case image` : "");
-
+  const imageAlt = item.photoAltText || (item.photoUrl ? `${item.fullName} public profile image` : "");
   return (
     <article className="card case-card">
       <div className="case-card-grid">
         <div className="case-image" aria-hidden={!item.photoUrl}>
-          <img src={imageSrc} alt={imageAlt} />
+          <img src={item.photoUrl || "/placeholder-person.svg"} alt={imageAlt} />
         </div>
         <div>
           <div className="case-header-line">
-            <h3>{item.fullName}</h3>
+            <h2>{item.fullName}</h2>
             <CaseStatusBadge status={item.status} />
           </div>
-          <p className="muted">Last seen: {item.lastSeenLocation}{item.lastSeenDate ? ` — ${item.lastSeenDate}` : ""}</p>
+          <p><strong>Last seen:</strong> {item.lastSeenLocation}</p>
           <p>{item.summary}</p>
           <div className="badge-row">
             {item.verification.map((status) => <VerificationBadge key={status} status={status} />)}
           </div>
-          <Link className="button secondary" href={`/cases/${item.slug}`}>View public case page</Link>
+          <Link className="button secondary" href={`/profiles/${item.slug}`}>View public profile</Link>
         </div>
       </div>
     </article>

@@ -104,7 +104,7 @@ function linkedPerson(request: CorrectionRequest) {
 
 function caseNameForCorrection(request: CorrectionRequest) {
   const person = linkedPerson(request);
-  return person?.full_name || request.cases?.slug || "Case reference not matched";
+  return person?.full_name || request.cases?.slug || "Profile reference not matched";
 }
 
 function blankIfNull(value: string | number | null | undefined) {
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
   async function act(submission: Submission, action: "approve" | "needs_more_info" | "rejected") {
     if (!sessionToken) return;
     if (action === "approve") {
-      const confirmed = window.confirm("Approve this submission and create a public case page? Only do this after consent, safety, and verification checks are complete.");
+      const confirmed = window.confirm("Approve this submission and create a public profile? Only do this after consent, safety, and verification checks are complete.");
       if (!confirmed) return;
     }
 
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.message || "Action failed.");
-      setMessage(json.slug ? `${json.message} /cases/${json.slug}` : json.message);
+      setMessage(json.slug ? `${json.message} /profiles/${json.slug}` : json.message);
       await loadAll();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Action failed.");
@@ -270,12 +270,12 @@ export default function AdminDashboard() {
     const edit = correctionEdits[request.id] || defaultCorrectionEdits(request);
 
     if (action === "approved") {
-      const confirmed = window.confirm("Mark this request applied and update the linked public case with the values shown in the Case updates panel? Confirm consent/safety review before applying.");
+      const confirmed = window.confirm("Mark this request applied and update the linked public profile with the values shown in the Public profile updates panel? Confirm consent/safety review before applying.");
       if (!confirmed) return;
     }
 
     if (action === "hidden") {
-      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public case must be hidden, use location precision/status fields or update the case record after documenting why.");
+      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public profile must be hidden, use location precision/status fields or update the public profile record after documenting why.");
       if (!confirmed) return;
     }
 
@@ -341,7 +341,7 @@ export default function AdminDashboard() {
       <div className="admin-topline">
         <div>
           <h1>Admin review dashboard</h1>
-          <p className="lead">Review submitted cases and correction/removal requests before anything changes publicly.</p>
+          <p className="lead">Review submitted information and correction/removal requests before anything changes publicly.</p>
           <p className="muted">Signed in as {userEmail}</p>
         </div>
         <button className="button secondary" onClick={signOut}>Sign out</button>
@@ -377,7 +377,7 @@ export default function AdminDashboard() {
       {message && <p className="notice small-notice">{message}</p>}
 
       <section className="admin-list">
-        <h2>Case submissions</h2>
+        <h2>Submissions for review</h2>
         {submissions.length === 0 ? (
           <div className="card"><p>No submissions found for {statusLabels[filter] || filter}.</p></div>
         ) : submissions.map((submission) => (
@@ -396,7 +396,7 @@ export default function AdminDashboard() {
               <p><strong>Last seen date:</strong> {submission.last_seen_date || "Not provided"}</p>
               <p><strong>Location:</strong> {submission.last_seen_location}</p>
               <p><strong>Lead agency:</strong> {submission.lead_agency || "Not provided"}</p>
-              <p><strong>Agency case #:</strong> {submission.agency_case_number || "Not provided"}</p>
+              <p><strong>Agency report/case #:</strong> {submission.agency_case_number || "Not provided"}</p>
               <p><strong>NamUs #:</strong> {submission.namus_number || "Not provided"}</p>
               <p><strong>Tip contact:</strong> {submission.tip_contact || "Not provided"}</p>
             </div>
@@ -433,7 +433,7 @@ export default function AdminDashboard() {
             </label>
 
             <div className="button-row">
-              <button type="button" onClick={() => act(submission, "approve")}>Approve + publish</button>
+              <button type="button" onClick={() => act(submission, "approve")}>Approve + publish profile</button>
               <button type="button" className="button secondary" onClick={() => act(submission, "needs_more_info")}>Needs more info</button>
               <button type="button" className="button danger" onClick={() => act(submission, "rejected")}>Reject</button>
             </div>
@@ -460,8 +460,8 @@ export default function AdminDashboard() {
               </div>
 
               <div className="admin-detail-grid">
-                <p><strong>Case:</strong> {caseNameForCorrection(request)}</p>
-                <p><strong>Case slug:</strong> {request.cases?.slug || "Not matched"}</p>
+                <p><strong>Profile:</strong> {caseNameForCorrection(request)}</p>
+                <p><strong>Profile slug:</strong> {request.cases?.slug || "Not matched"}</p>
                 <p><strong>Requester:</strong> {request.requester_name}</p>
                 <p><strong>Email:</strong> {request.requester_email}</p>
                 <p><strong>Relationship:</strong> {request.relationship}</p>
@@ -474,12 +474,12 @@ export default function AdminDashboard() {
               </div>
 
               <section className="card nested-admin-card">
-                <h3>Case updates to apply</h3>
-                <p className="muted">Edit only the fields that should change. “Mark applied” will update the linked public case and then mark this correction/removal request approved/applied.</p>
-                {!hasLinkedCase && <p className="notice small-notice">This request is not linked to a public case slug yet. Marking applied will only change the request status until it is matched to a case.</p>}
+                <h3>Public profile updates to apply</h3>
+                <p className="muted">Edit only the fields that should change. “Mark applied” will update the linked public profile and then mark this correction/removal request approved/applied.</p>
+                {!hasLinkedCase && <p className="notice small-notice">This request is not linked to a public profile slug yet. Marking applied will only change the request status until it is matched to a public profile.</p>}
 
                 <div className="admin-detail-grid edit-grid">
-                  <label>Public case title / person name
+                  <label>Public profile title / person name
                     <input value={edit.full_name} onChange={(e) => updateCorrectionEdit(request.id, "full_name", e.target.value)} disabled={!hasLinkedCase} />
                   </label>
                   <label>Age
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
                   <label>Tribal affiliation
                     <input value={edit.tribal_affiliation} onChange={(e) => updateCorrectionEdit(request.id, "tribal_affiliation", e.target.value)} disabled={!hasLinkedCase} />
                   </label>
-                  <label>Case status
+                  <label>Status
                     <select value={edit.status} onChange={(e) => updateCorrectionEdit(request.id, "status", e.target.value)} disabled={!hasLinkedCase}>
                       <option value="missing">Missing</option>
                       <option value="murdered_unsolved">Murdered / unsolved</option>
@@ -512,7 +512,7 @@ export default function AdminDashboard() {
                   <label>Lead agency
                     <input value={edit.lead_agency} onChange={(e) => updateCorrectionEdit(request.id, "lead_agency", e.target.value)} disabled={!hasLinkedCase} />
                   </label>
-                  <label>Agency case #
+                  <label>Agency report/case #
                     <input value={edit.agency_case_number} onChange={(e) => updateCorrectionEdit(request.id, "agency_case_number", e.target.value)} disabled={!hasLinkedCase} />
                   </label>
                   <label>NamUs #
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
               </label>
 
               <div className="button-row">
-                <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied + update case</button>
+                <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied + update profile</button>
                 <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "needs_more_info")}>Needs more info</button>
                 <button type="button" className="button danger" onClick={() => actOnCorrection(request, "rejected")}>Reject</button>
                 <button type="button" className="button danger" onClick={() => actOnCorrection(request, "hidden")}>Mark hidden/reviewed</button>

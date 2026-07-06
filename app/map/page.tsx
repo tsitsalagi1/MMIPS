@@ -9,7 +9,7 @@ export default function MapPage() {
       <section className="map-placeholder">
         <div>
           <h2>Map placeholder</h2>
-          <p>Phase 2 will connect this page to Supabase/PostGIS or a safe public case feed and display city/county-level points with filters.</p>
+          <p>Phase 2 will connect this page to Supabase/PostGIS or a safe public profile feed and display city/county-level points with filters.</p>
           <p className="muted">Recommended first map stack: Leaflet + OpenStreetMap tiles for light use, then MapLibre/Mapbox or self-hosted tiles if traffic grows.</p>
         </div>
       </section>

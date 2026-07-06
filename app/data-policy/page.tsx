@@ -7,15 +7,15 @@ export default function DataPolicyPage() {
       <h1>Data & Privacy Policy</h1>
       <p className="muted">Starter public policy draft. This is not legal advice. Have an attorney review before a broad public launch.</p>
       <p className="lead">
-        MMIPS separates private intake data from approved public case data. The purpose is to help public awareness while protecting families,
+        MMIPS separates private intake data from approved public profile data. The purpose is to help public awareness while protecting families,
         submitters, sensitive locations, and investigations.
       </p>
       <SafetyNotice />
 
       <h2>Data MMIPS may collect</h2>
       <ul>
-        <li>Case information submitted for review.</li>
-        <li>Submitter name, email, phone, and relationship to the case.</li>
+        <li>Submitted information submitted for review.</li>
+        <li>Submitter name, email, phone, and relationship to the person/profile.</li>
         <li>Correction/removal requests.</li>
         <li>Admin review notes and audit logs.</li>
         <li>Technical security data needed for spam prevention and site operation.</li>
@@ -23,7 +23,7 @@ export default function DataPolicyPage() {
 
       <h2>Public data</h2>
       <p>
-        Public case pages should contain only approved information intended for public awareness. Public pages should not include private submitter contact data, unsafe exact locations, or unverified accusations.
+        Public profiles should contain only approved information intended for public awareness. Public pages should not include private submitter contact data, unsafe exact locations, or unverified accusations.
       </p>
 
       <h2>Private data</h2>

@@ -137,7 +137,7 @@ export async function PATCH(request: Request, context: Params) {
       metadata: { submission_id: id, slug: caseRecord.slug, photo_storage_path: publicPhotoPath }
     });
 
-    return NextResponse.json({ ok: true, message: "Submission approved and public case page created.", slug: caseRecord.slug });
+    return NextResponse.json({ ok: true, message: "Submission approved and public profile created.", slug: caseRecord.slug });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Admin action failed.";
     return NextResponse.json({ ok: false, message }, { status: 500 });

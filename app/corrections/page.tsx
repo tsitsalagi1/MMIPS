@@ -4,16 +4,16 @@ import { TurnstileWidget } from "../../components/TurnstileWidget";
 export default async function CorrectionRequestPage({
   searchParams
 }: {
-  searchParams?: Promise<{ case?: string; error?: string }>;
+  searchParams?: Promise<{ case?: string; profile?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const caseSlug = params?.case || "";
+  const profileSlug = params?.profile || params?.case || "";
   const error = params?.error;
 
   return (
     <main className="container section">
       <h1>Request a correction or removal</h1>
-      <p className="lead">Families, authorized advocates, tribal representatives, and official contacts can ask MMIPS to correct, hide, or remove a public case page.</p>
+      <p className="lead">Families, authorized advocates, tribal representatives, and official contacts can ask MMIPS to correct, hide, or remove a public profile.</p>
       <SafetyNotice />
       <section className="notice">
         <strong>Safety rule:</strong> use this form for corrections, removal requests, consent questions, unsafe-location concerns, or updated official contact information. Do not submit public suspect accusations or rumors.
@@ -21,9 +21,9 @@ export default async function CorrectionRequestPage({
       {error ? <div className="notice warning"><strong>Request error:</strong> {error}</div> : null}
 
       <form className="card form" action="/api/corrections" method="post">
-        <h2>Case information</h2>
+        <h2>Public profile information</h2>
         <div className="check-grid">
-          <label>Case page URL or slug<input name="case_reference" defaultValue={caseSlug} placeholder="/cases/example-slug or case name" /></label>
+          <label>Public profile URL, slug, or person's name<input name="case_reference" defaultValue={profileSlug} placeholder="/profiles/example-slug or person's name" /></label>
           <label>Request type
             <select name="request_type" required>
               <option value="correction">Correction</option>
@@ -42,13 +42,13 @@ export default async function CorrectionRequestPage({
         <div className="check-grid">
           <label>Your name<input name="requester_name" required /></label>
           <label>Your email<input name="requester_email" type="email" required /></label>
-          <label>Your relationship to the case
+          <label>Your relationship to this profile
             <select name="relationship" required>
               <option value="family">Family member</option>
               <option value="authorized_advocate">Authorized advocate</option>
               <option value="tribal_representative">Tribal representative</option>
               <option value="law_enforcement">Law enforcement / agency</option>
-              <option value="official_contact">Official case contact</option>
+              <option value="official_contact">Official information contact</option>
               <option value="other">Other / needs review</option>
             </select>
           </label>

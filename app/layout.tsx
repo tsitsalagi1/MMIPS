@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MMIPS — Missing & Murdered Indigenous People Search",
-  description: "A moderated public-awareness, search, map, and accountability platform for missing and murdered Indigenous people cases.",
+  description: "A moderated public-awareness, search, map, and accountability platform for missing and murdered Indigenous people profiles.",
   icons: {
     icon: [
       { url: "/mmips-hand-transparent.png", sizes: "1024x1024", type: "image/png" },
@@ -31,8 +31,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <span>MMIPS</span>
             </Link>
             <div className="nav-links">
-              <Link href="/cases">Search Cases</Link>
-              <Link href="/submit">Submit Case</Link>
+              <Link href="/profiles">Search Profiles</Link>
+              <Link href="/submit">Submit Information</Link>
               <Link href="/map">Map</Link>
               <Link href="/alerts">Alerts</Link>
               <Link href="/resources">Resources</Link>
