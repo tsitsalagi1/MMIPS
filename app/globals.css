@@ -475,3 +475,31 @@ input[type="file"] {
   .flyer-sheet a { color: #000 !important; text-decoration: underline !important; }
   .flyer-case-link { font-size: 18px !important; font-weight: 900 !important; }
 }
+
+/* Profile sharing and flyer export controls */
+.share-status {
+  margin: 12px 0 0;
+  color: var(--gold);
+  font-weight: 800;
+}
+.share-link-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.flyer-actions button {
+  border: 1px solid rgba(216,173,93,.75);
+  color: var(--gold);
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.flyer-actions button:hover {
+  background: rgba(216,173,93,.12);
+}
+@media (max-width: 760px) {
+  .share-link-grid { grid-template-columns: 1fr; }
+}

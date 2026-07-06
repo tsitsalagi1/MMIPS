@@ -20,7 +20,21 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
       <div className="flyer-shell">
         <div className="flyer-top no-print">
           <Link className="button secondary" href={`/profiles/${item.slug}`}>Back to public profile</Link>
-          <FlyerActions />
+          <FlyerActions
+            title={item.fullName}
+            statusLabel={flyerTitle}
+            profileUrl={profileUrl}
+            imageUrl={item.photoUrl}
+            lastSeenLocation={item.lastSeenLocation}
+            lastSeenDate={item.lastSeenDate}
+            age={item.age}
+            tribalAffiliation={item.tribalAffiliation}
+            leadAgency={item.leadAgency}
+            agencyCaseNumber={item.agencyCaseNumber}
+            namusNumber={item.namusNumber}
+            tipPhone={item.tipPhone}
+            summary={item.summary}
+          />
         </div>
 
         <article className="flyer-sheet" aria-label={`${item.fullName} printable flyer`}>

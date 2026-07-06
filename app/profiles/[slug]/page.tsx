@@ -75,7 +75,21 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <Link className="button secondary" href={`/profiles/${item.slug}/flyer`}>Open printable flyer</Link>
       </section>
 
-      <ShareButtons title={item.fullName} path={`/profiles/${item.slug}`} imageUrl={item.photoUrl} />
+      <ShareButtons
+        title={item.fullName}
+        path={`/profiles/${item.slug}`}
+        imageUrl={item.photoUrl}
+        statusLabel={item.status === "missing" ? "Missing Indigenous Person" : "MMIPS Public Notice"}
+        lastSeenLocation={item.lastSeenLocation}
+        lastSeenDate={item.lastSeenDate}
+        age={item.age}
+        tribalAffiliation={item.tribalAffiliation}
+        leadAgency={item.leadAgency}
+        agencyCaseNumber={item.agencyCaseNumber}
+        namusNumber={item.namusNumber}
+        tipPhone={item.tipPhone}
+        summary={item.summary}
+      />
     </main>
   );
 }
