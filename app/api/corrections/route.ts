@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { sendTransactionalEmail } from "@/lib/email";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -64,22 +65,39 @@ export async function POST(request: Request) {
       caseId = caseRows?.[0]?.id || null;
     }
 
-    const { error } = await supabase.from("correction_requests").insert({
-      case_id: caseId,
-      requester_name: requesterName,
-      requester_email: requesterEmail,
-      relationship,
-      request_type: requestType,
-      request_details: [
-        caseReference ? `Profile reference: ${caseReference}` : "Profile reference: not provided",
-        requesterPhone ? `Requester phone: ${requesterPhone}` : null,
-        "",
-        requestDetails
-      ].filter(Boolean).join("\n"),
-      review_status: "pending_review"
-    });
+    const { data: correctionRow, error } = await supabase
+      .from("correction_requests")
+      .insert({
+        case_id: caseId,
+        requester_name: requesterName,
+        requester_email: requesterEmail,
+        relationship,
+        request_type: requestType,
+        request_details: [
+          caseReference ? `Profile reference: ${caseReference}` : "Profile reference: not provided",
+          requesterPhone ? `Requester phone: ${requesterPhone}` : null,
+          "",
+          requestDetails
+        ].filter(Boolean).join("\n"),
+        review_status: "pending_review"
+      })
+      .select("id")
+      .single();
 
     if (error) throw error;
+
+    await sendTransactionalEmail({
+      to: requesterEmail,
+      subject: "MMIPS received your correction/removal request",
+      text: [
+        `Hello ${requesterName},`,
+        "MMIPS received your correction/removal request.",
+        "Nothing changes publicly until an MMIPS reviewer reviews the request for authorization, safety, and accuracy.",
+        correctionRow?.id ? `Reference ID: ${correctionRow.id}` : null,
+        caseReference ? `Public profile reference: ${caseReference}` : null,
+        "Questions or updates: corrections@mmips.com"
+      ].filter(Boolean).join("\n\n")
+    });
 
     return redirectTo(request, "/corrections/received");
   } catch (error) {

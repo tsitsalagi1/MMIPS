@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { sendTransactionalEmail, siteUrl } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +95,7 @@ export async function PATCH(request: Request, context: Params) {
     const action = String(body.action || "");
     const moderatorNotes = String(body.moderator_notes || "").trim() || null;
 
-    const allowed = new Set(["needs_more_info", "approved", "rejected", "hidden"]);
+    const allowed = new Set(["needs_more_info", "approved", "rejected", "hidden", "remove_public_profile"]);
     if (!allowed.has(action)) {
       return NextResponse.json({ ok: false, message: "Unknown correction-request action." }, { status: 400 });
     }
@@ -111,20 +112,38 @@ export async function PATCH(request: Request, context: Params) {
 
     let appliedCaseUpdates: Record<string, unknown> = {};
     let appliedPersonUpdates: Record<string, unknown> = {};
-    let targetCase: { id: string; person_id: string | null } | null = null;
+    let targetCase: { id: string; person_id: string | null; slug?: string | null } | null = null;
 
-    if (action === "approved" && requestRow.case_id) {
+    if ((action === "approved" || action === "remove_public_profile") && requestRow.case_id) {
       const { data: caseRow, error: caseLoadError } = await admin.supabase
         .from("cases")
-        .select("id, person_id")
+        .select("id, person_id, slug")
         .eq("id", requestRow.case_id)
         .single();
 
       if (caseLoadError || !caseRow) {
-        return NextResponse.json({ ok: false, message: "Linked public profile was not found, so updates were not applied." }, { status: 404 });
+        return NextResponse.json({ ok: false, message: "Linked public profile was not found, so updates/removal were not applied." }, { status: 404 });
       }
 
       targetCase = caseRow;
+
+      if (action === "remove_public_profile") {
+        appliedCaseUpdates = {
+          review_status: "hidden",
+          published_at: null,
+          updated_at: new Date().toISOString(),
+          last_public_update: new Date().toISOString().slice(0, 10)
+        };
+
+        const { error: removeError } = await admin.supabase
+          .from("cases")
+          .update(appliedCaseUpdates)
+          .eq("id", targetCase.id);
+        if (removeError) throw removeError;
+      }
+    }
+
+    if (action === "approved" && targetCase) {
       appliedCaseUpdates = buildCaseUpdates(body.case_updates);
       appliedPersonUpdates = buildPersonUpdates(body.person_updates);
 
@@ -149,9 +168,11 @@ export async function PATCH(request: Request, context: Params) {
       ? `${requestRow.request_details || ""}\n\n--- Moderator note (${new Date().toISOString()}) ---\n${moderatorNotes}`
       : requestRow.request_details;
 
+    const requestReviewStatus = action === "remove_public_profile" ? "hidden" : action;
+
     const { error } = await admin.supabase
       .from("correction_requests")
-      .update({ review_status: action, request_details: details })
+      .update({ review_status: requestReviewStatus, request_details: details })
       .eq("id", id);
     if (error) throw error;
 
@@ -169,12 +190,46 @@ export async function PATCH(request: Request, context: Params) {
       }
     });
 
+    const profileUrl = targetCase?.slug ? `${siteUrl()}/profiles/${targetCase.slug}` : null;
     const appliedCount = Object.keys(appliedCaseUpdates).length + Object.keys(appliedPersonUpdates).length;
     const appliedText = action === "approved" && requestRow.case_id
       ? appliedCount
         ? ` ${appliedCount} public profile field${appliedCount === 1 ? "" : "s"} updated.`
         : " No public profile fields were changed; only the request status was updated."
-      : "";
+      : action === "remove_public_profile"
+        ? " The linked public profile was removed from public view."
+        : "";
+
+    const emailSubject = action === "remove_public_profile"
+      ? "MMIPS public profile removed from public view"
+      : action === "approved"
+        ? "MMIPS correction/removal request completed"
+        : action === "needs_more_info"
+          ? "MMIPS needs more information"
+          : "MMIPS update on your correction/removal request";
+
+    const actionText = action === "remove_public_profile"
+      ? "The linked public profile has been removed from public view."
+      : action === "approved"
+        ? "Your correction/removal request was reviewed and the public profile was updated or marked applied."
+        : action === "needs_more_info"
+          ? "An MMIPS reviewer marked your correction/removal request as needing more information."
+          : action === "rejected"
+            ? "An MMIPS reviewer reviewed your correction/removal request and did not make the requested public change."
+            : "An MMIPS reviewer closed your correction/removal request without a public profile change.";
+
+    await sendTransactionalEmail({
+      to: requestRow.requester_email,
+      subject: emailSubject,
+      text: [
+        `Hello ${requestRow.requester_name || ""},`,
+        actionText,
+        profileUrl && action !== "remove_public_profile" ? `Public profile: ${profileUrl}` : null,
+        moderatorNotes ? `Reviewer note: ${moderatorNotes}` : null,
+        "Questions or updates: corrections@mmips.com",
+        "MMIPS is not law enforcement and does not replace emergency reporting or official missing-person databases."
+      ].filter(Boolean).join("\n\n")
+    });
 
     return NextResponse.json({ ok: true, message: `Correction/removal request marked ${action.replaceAll("_", " ")}.${appliedText}` });
   } catch (error) {

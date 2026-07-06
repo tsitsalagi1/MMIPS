@@ -265,7 +265,7 @@ export default function AdminDashboard() {
     setCorrectionEdits({ ...correctionEdits, [id]: { ...current, [key]: value } });
   }
 
-  async function actOnCorrection(request: CorrectionRequest, action: "approved" | "needs_more_info" | "rejected" | "hidden") {
+  async function actOnCorrection(request: CorrectionRequest, action: "approved" | "needs_more_info" | "rejected" | "hidden" | "remove_public_profile") {
     if (!sessionToken) return;
     const edit = correctionEdits[request.id] || defaultCorrectionEdits(request);
 
@@ -274,8 +274,13 @@ export default function AdminDashboard() {
       if (!confirmed) return;
     }
 
+    if (action === "remove_public_profile") {
+      const confirmed = window.confirm("Remove the linked public profile from public view? Use this only after confirming the requester is authorized and documenting the reason in moderator notes.");
+      if (!confirmed) return;
+    }
+
     if (action === "hidden") {
-      const confirmed = window.confirm("This marks the correction/removal request as hidden/reviewed. If a public profile must be hidden, use location precision/status fields or update the public profile record after documenting why.");
+      const confirmed = window.confirm("Close this correction/removal request without changing the public profile? Document the reason in moderator notes.");
       if (!confirmed) return;
     }
 
@@ -543,9 +548,10 @@ export default function AdminDashboard() {
 
               <div className="button-row">
                 <button type="button" onClick={() => actOnCorrection(request, "approved")}>Mark applied + update profile</button>
+                {hasLinkedCase ? <button type="button" className="button danger" onClick={() => actOnCorrection(request, "remove_public_profile")}>Remove public profile</button> : null}
                 <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "needs_more_info")}>Needs more info</button>
                 <button type="button" className="button danger" onClick={() => actOnCorrection(request, "rejected")}>Reject</button>
-                <button type="button" className="button danger" onClick={() => actOnCorrection(request, "hidden")}>Mark hidden/reviewed</button>
+                <button type="button" className="button secondary" onClick={() => actOnCorrection(request, "hidden")}>Close request / no public change</button>
               </div>
             </article>
           );

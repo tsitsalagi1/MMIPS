@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { sendTransactionalEmail, siteUrl } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,20 @@ export async function PATCH(request: Request, context: Params) {
         entity_type: "submissions",
         entity_id: id,
         reason: moderatorNotes
+      });
+
+      await sendTransactionalEmail({
+        to: submission.submitter_email,
+        subject: action === "needs_more_info" ? "MMIPS needs more information" : "MMIPS update on your submitted information",
+        text: [
+          `Hello ${submission.submitter_name || ""},`,
+          action === "needs_more_info"
+            ? "An MMIPS reviewer marked your submitted information as needing more information before it can be considered further."
+            : "An MMIPS reviewer reviewed your submitted information and it was not published.",
+          moderatorNotes ? `Reviewer note: ${moderatorNotes}` : null,
+          "You can reply to contact@mmips.com with questions or updated information.",
+          "MMIPS is not law enforcement and does not replace emergency reporting or official missing-person databases."
+        ].filter(Boolean).join("\n\n")
       });
 
       return NextResponse.json({ ok: true, message: `Submission marked ${action.replaceAll("_", " ")}.` });
@@ -135,6 +150,20 @@ export async function PATCH(request: Request, context: Params) {
       entity_id: caseRecord.id,
       reason: moderatorNotes,
       metadata: { submission_id: id, slug: caseRecord.slug, photo_storage_path: publicPhotoPath }
+    });
+
+    const publicProfileUrl = `${siteUrl()}/profiles/${caseRecord.slug}`;
+    await sendTransactionalEmail({
+      to: submission.submitter_email,
+      subject: "MMIPS public profile published",
+      text: [
+        `Hello ${submission.submitter_name || ""},`,
+        "An MMIPS reviewer approved the submitted information and published the public awareness profile.",
+        `Public profile: ${publicProfileUrl}`,
+        moderatorNotes ? `Reviewer note: ${moderatorNotes}` : null,
+        "If anything needs to be corrected or removed, use the correction/removal form or email corrections@mmips.com.",
+        "MMIPS is not law enforcement and does not replace emergency reporting or official missing-person databases."
+      ].filter(Boolean).join("\n\n")
     });
 
     return NextResponse.json({ ok: true, message: "Submission approved and public profile created.", slug: caseRecord.slug });

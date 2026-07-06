@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
+import { sendTransactionalEmail } from "@/lib/email";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -98,9 +99,26 @@ export async function POST(request: Request) {
       payload.photo_permission_confirmed = true;
     }
 
-    const { error } = await supabase.from("submissions").insert(payload);
+    const { data: submissionRow, error } = await supabase
+      .from("submissions")
+      .insert(payload)
+      .select("id")
+      .single();
 
     if (error) throw error;
+
+    await sendTransactionalEmail({
+      to: String(payload.submitter_email || ""),
+      subject: "MMIPS received your submitted information",
+      text: [
+        `Hello ${payload.submitter_name || ""},`,
+        "MMIPS received the information you submitted for review.",
+        "Nothing has been published. An MMIPS reviewer will review it for consent, safety, and accuracy before anything appears publicly.",
+        submissionRow?.id ? `Reference ID: ${submissionRow.id}` : null,
+        "If this is an emergency or someone is in immediate danger, call 911. MMIPS is not law enforcement and does not replace a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.",
+        "Questions or updates: contact@mmips.com"
+      ].filter(Boolean).join("\n\n")
+    });
 
     return redirectTo(request, "/submit/received");
   } catch (error) {

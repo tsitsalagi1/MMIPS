@@ -286,9 +286,9 @@ export function ShareButtons({
       <div className="button-row">
         <Link className="button secondary" href={`${path}/flyer`}>Print / save PDF flyer</Link>
         <button className="button secondary" type="button" onClick={downloadJpegFlyer}>Download JPEG flyer</button>
-        <button className="button secondary" type="button" onClick={copyRichEmail}>Copy email body with image</button>
         <a className="button secondary" href={`mailto:?subject=${shareData.encodedSubject}&body=${shareData.encodedBody}`}>Email with links</a>
         <a className="button secondary" href={`https://mail.google.com/mail/?view=cm&fs=1&su=${shareData.encodedSubject}&body=${shareData.encodedBody}`} target="_blank" rel="noopener noreferrer">Open Gmail with links</a>
+        <button className="button secondary" type="button" onClick={copyRichEmail}>Copy email body with image</button>
         <a className="button secondary" href={`https://www.facebook.com/sharer/sharer.php?u=${shareData.encodedUrl}`} target="_blank" rel="noopener noreferrer">Facebook</a>
         <a className="button secondary" href={`https://twitter.com/intent/tweet?text=${shareData.shareText}&url=${shareData.encodedUrl}`} target="_blank" rel="noopener noreferrer">X</a>
       </div>
