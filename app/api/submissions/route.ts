@@ -33,6 +33,30 @@ function getOptionalImage(form: FormData) {
   return file;
 }
 
+
+function normalizeProfileType(value: FormDataEntryValue | null) {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (["urgent_missing", "missing", "murdered_info_needed", "unidentified"].includes(text)) return text;
+  return "missing";
+}
+
+function statusForProfileType(profileType: string) {
+  if (profileType === "murdered_info_needed") return "murdered_unsolved";
+  if (profileType === "unidentified") return "unidentified";
+  return "missing";
+}
+
+function optionalText(form: FormData, name: string) {
+  return String(form.get(name) ?? "").trim() || null;
+}
+
+function optionalDateTimeLocal(form: FormData, name: string) {
+  const value = optionalText(form, name);
+  if (!value) return null;
+  // datetime-local arrives without a timezone. Store a best-effort ISO-like string so admins can read it.
+  return value;
+}
+
 function redirectTo(request: Request, path: string) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const base = siteUrl || new URL(request.url).origin;
@@ -53,23 +77,43 @@ export async function POST(request: Request) {
     }
 
     const imageFile = getOptionalImage(form);
-    const photoAltText = String(form.get("photo_alt_text") ?? "").trim() || null;
+    const photoAltText = optionalText(form, "photo_alt_text");
+    const profileType = normalizeProfileType(form.get("profile_type"));
+    const isUrgent = profileType === "urgent_missing";
+
+    if (isUrgent && form.get("confirm_report_first") !== "on") {
+      throw new Error("For urgent public-awareness requests, please confirm that official reporting has been started or must be started immediately.");
+    }
+    if (isUrgent && form.get("confirm_mmips_no_tips") !== "on") {
+      throw new Error("Please confirm that tips should go to 911 or the listed official contact, not MMIPS.");
+    }
 
     const payload: Record<string, unknown> = {
       full_name: required(form.get("full_name"), "Full name"),
       age: form.get("age") ? Number(form.get("age")) : null,
-      status: required(form.get("status"), "Status"),
-      tribal_affiliation: String(form.get("tribal_affiliation") ?? "").trim() || null,
-      last_seen_date: String(form.get("last_seen_date") ?? "").trim() || null,
-      last_seen_location: required(form.get("last_seen_location"), "Last seen location"),
-      lead_agency: String(form.get("lead_agency") ?? "").trim() || null,
-      agency_case_number: String(form.get("agency_case_number") ?? "").trim() || null,
-      namus_number: String(form.get("namus_number") ?? "").trim() || null,
-      tip_contact: String(form.get("tip_contact") ?? "").trim() || null,
+      status: statusForProfileType(profileType),
+      profile_type: profileType,
+      urgency_level: optionalText(form, "urgency_level") || (isUrgent ? "urgent_public_awareness" : profileType === "murdered_info_needed" ? "renewed_visibility" : "standard"),
+      tribal_affiliation: optionalText(form, "tribal_affiliation"),
+      last_seen_date: optionalText(form, "last_seen_date"),
+      last_seen_location: required(form.get("last_seen_location"), "Public location text"),
+      last_known_datetime: optionalDateTimeLocal(form, "last_known_datetime"),
+      last_known_time_zone: optionalText(form, "last_known_time_zone"),
+      last_known_location_private: optionalText(form, "last_known_location_private"),
+      notification_area_requested: optionalText(form, "notification_area_requested"),
+      likely_travel_mode: optionalText(form, "likely_travel_mode"),
+      possible_direction: optionalText(form, "possible_direction"),
+      vehicle_description: optionalText(form, "vehicle_description"),
+      official_info_pending: form.get("official_info_pending") === "on",
+      official_report_contacted: form.get("confirm_report_first") === "on",
+      lead_agency: optionalText(form, "lead_agency"),
+      agency_case_number: optionalText(form, "agency_case_number"),
+      namus_number: optionalText(form, "namus_number"),
+      tip_contact: optionalText(form, "tip_contact"),
       summary: required(form.get("summary"), "Summary"),
       submitter_name: required(form.get("submitter_name"), "Submitter name"),
       submitter_email: required(form.get("submitter_email"), "Submitter email"),
-      submitter_phone: String(form.get("submitter_phone") ?? "").trim() || null,
+      submitter_phone: optionalText(form, "submitter_phone"),
       relationship: required(form.get("relationship"), "Relationship"),
       source_ip: clientIpFromRequest(request),
       review_status: "pending_review",
@@ -112,7 +156,7 @@ export async function POST(request: Request) {
       subject: "MMIPS received your submitted information",
       text: [
         `Hello ${payload.submitter_name || ""},`,
-        "MMIPS received the information you submitted for review.",
+        `MMIPS received your ${profileType === "urgent_missing" ? "urgent public-awareness" : profileType === "murdered_info_needed" ? "information-needed" : "public-awareness"} submission for review.`,
         "Nothing has been published. An MMIPS reviewer will review it for consent, safety, and accuracy before anything appears publicly.",
         submissionRow?.id ? `Reference ID: ${submissionRow.id}` : null,
         "If this is an emergency or someone is in immediate danger, call 911. MMIPS is not law enforcement and does not replace a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.",

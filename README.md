@@ -1,11 +1,45 @@
-# MMIPS photo permission submit fix
+# MMIPS Starter
 
-This update makes the optional photo/flyer permission checkbox more visible and prevents the submit button from being used when a photo is selected but permission has not been confirmed.
+MMIPS = Missing & Murdered Indigenous People Search.
 
-Changed files:
+This Next.js/Supabase project is a public-awareness and family-support layer. It is not law enforcement, does not collect or investigate tips, and does not replace 911, police reports, NamUs, NCIC, Tribal law enforcement, BIA MMU, FBI, or local authorities.
 
-- `app/submit/page.tsx`
-- `components/PhotoPermissionUpload.tsx`
-- `app/globals.css`
+## This update adds
 
-The server-side validation remains in place as a backup safety check. The checkbox becomes required only when an image is selected, and the submit button is disabled until permission is checked.
+- Profile types:
+  - urgent missing-person public awareness
+  - standard missing-person public profile
+  - murdered loved one / information-needed profile
+  - unidentified person public profile
+- Urgent submitter-entered public-awareness planning fields:
+  - last known date/time
+  - likely travel mode
+  - possible direction
+  - requested notification area
+  - vehicle/public detail if safe and authorized
+- Admin review display for urgent/map planning fields.
+- Dynamic public profile and flyer tone by profile type.
+- Map page categories for urgent missing, missing, murdered/information-needed, located/resolved, and unidentified.
+- Stronger “MMIPS does not collect tips” wording.
+
+## Required database migration
+
+After uploading this code, run this in Supabase SQL Editor:
+
+```text
+supabase/profile_types.sql
+```
+
+Run the migration before testing new submissions, because the submit API writes new profile-type fields.
+
+## Test checklist
+
+1. Submit an urgent missing-person public-awareness request with fake data.
+2. Confirm the urgent required checkboxes work.
+3. Confirm the admin dashboard shows urgent planning fields.
+4. Approve the fake profile.
+5. Confirm the public profile and flyer show urgent public-awareness language.
+6. Submit a murdered/information-needed fake profile.
+7. Confirm the public profile/flyer use remembrance/information-needed language, not urgent missing language.
+8. Check `/map` and confirm profile categories display.
+9. Remove/delete all fake profiles before real use.

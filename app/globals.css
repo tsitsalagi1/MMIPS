@@ -641,3 +641,127 @@ button:disabled {
   opacity: .58;
   filter: grayscale(.15);
 }
+
+/* Profile type + urgent public-awareness update */
+.profile-type-panel {
+  display: grid;
+  gap: 1rem;
+}
+.profile-type-panel .notice p {
+  margin-bottom: 0;
+}
+.inset-card {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.notice.urgent-soft,
+.urgent-soft {
+  background: rgba(154, 42, 42, 0.16);
+  border: 1px solid rgba(237, 127, 127, 0.32);
+  border-radius: var(--radius, 16px);
+  padding: 1rem;
+}
+.notice.soft,
+.soft-note,
+.notice.small-notice {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius, 16px);
+  padding: 1rem;
+}
+.urgent-checkbox {
+  border-color: rgba(237, 127, 127, 0.42);
+}
+.badge-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+.badge-profile-urgent_missing {
+  background: rgba(196, 54, 54, 0.18);
+  border-color: rgba(235, 111, 111, 0.55);
+  color: #ffd1d1;
+}
+.badge-profile-missing {
+  background: rgba(230, 191, 98, 0.15);
+  border-color: rgba(230, 191, 98, 0.42);
+}
+.badge-profile-murdered_info_needed {
+  background: rgba(139, 116, 186, 0.18);
+  border-color: rgba(170, 148, 214, 0.45);
+}
+.badge-profile-unidentified {
+  background: rgba(94, 145, 163, 0.18);
+  border-color: rgba(123, 183, 202, 0.45);
+}
+.profile-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.045);
+}
+.profile-hero h1 {
+  margin-top: 0.2rem;
+}
+.profile-hero-urgent_missing {
+  border-color: rgba(235, 111, 111, 0.34);
+  background: linear-gradient(135deg, rgba(154, 42, 42, 0.18), rgba(255,255,255,0.035));
+}
+.profile-hero-murdered_info_needed {
+  border-color: rgba(170, 148, 214, 0.34);
+  background: linear-gradient(135deg, rgba(94, 75, 140, 0.16), rgba(255,255,255,0.035));
+}
+.alert-planning-summary,
+.alert-planning-public {
+  border-color: rgba(230, 191, 98, 0.32);
+}
+.map-filter-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+.profile-map-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.map-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+}
+.flyer-urgent-note {
+  border: 1px solid rgba(235, 111, 111, 0.35);
+  border-radius: 14px;
+  padding: 0.8rem;
+  margin: 0 0 1rem;
+  font-weight: 700;
+}
+.flyer-murdered_info_needed .flyer-header,
+.flyer-urgent_missing .flyer-header {
+  border-bottom-width: 4px;
+}
+@media (max-width: 760px) {
+  .profile-hero {
+    grid-template-columns: 1fr;
+  }
+  .badge-stack {
+    justify-content: flex-start;
+  }
+  .map-list-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

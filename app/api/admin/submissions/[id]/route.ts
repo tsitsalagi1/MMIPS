@@ -119,10 +119,19 @@ export async function PATCH(request: Request, context: Params) {
         person_id: person.id,
         slug,
         status: submission.status,
+        profile_type: submission.profile_type || (submission.status === "murdered_unsolved" ? "murdered_info_needed" : "missing"),
+        urgency_level: submission.urgency_level || "standard",
         review_status: "approved",
         public_summary: submission.summary,
         last_seen_date: submission.last_seen_date,
+        last_known_datetime: submission.last_known_datetime,
+        last_known_time_zone: submission.last_known_time_zone,
         last_seen_area_public: submission.last_seen_location,
+        notification_area_requested: submission.notification_area_requested,
+        likely_travel_mode: submission.likely_travel_mode,
+        possible_direction: submission.possible_direction,
+        vehicle_description: submission.vehicle_description,
+        official_info_pending: submission.official_info_pending || false,
         location_precision: "city",
         lead_agency: submission.lead_agency,
         agency_case_number: submission.agency_case_number,
@@ -149,7 +158,7 @@ export async function PATCH(request: Request, context: Params) {
       entity_type: "cases",
       entity_id: caseRecord.id,
       reason: moderatorNotes,
-      metadata: { submission_id: id, slug: caseRecord.slug, photo_storage_path: publicPhotoPath }
+      metadata: { submission_id: id, slug: caseRecord.slug, profile_type: submission.profile_type, urgency_level: submission.urgency_level, photo_storage_path: publicPhotoPath }
     });
 
     const publicProfileUrl = `${siteUrl()}/profiles/${caseRecord.slug}`;

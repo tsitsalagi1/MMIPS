@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CaseStatusBadge, VerificationBadge } from "../../../components/StatusBadge";
+import { CaseStatusBadge, ProfileTypeBadge, VerificationBadge } from "../../../components/StatusBadge";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { SafetyNotice } from "../../../components/SafetyNotice";
 import { getCaseBySlug } from "../../../lib/cases";
+import { flyerTitleForProfile, profileIntroForType } from "../../../lib/status";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +13,35 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const item = await getCaseBySlug(slug);
   if (!item) notFound();
 
+  const title = flyerTitleForProfile(item.profileType, item.status);
+  const isMurdered = item.profileType === "murdered_info_needed";
+  const isUrgent = item.profileType === "urgent_missing";
+
   return (
     <main className="container section">
-      <div className="case-header-line">
+      <div className={`profile-hero profile-hero-${item.profileType}`}>
         <div>
           <p className="muted">MMIPS public profile</p>
           <h1>{item.fullName}</h1>
+          <p>{profileIntroForType(item.profileType)}</p>
         </div>
-        <CaseStatusBadge status={item.status} />
+        <div className="badge-stack"><ProfileTypeBadge profileType={item.profileType} /><CaseStatusBadge status={item.status} /></div>
       </div>
       <SafetyNotice />
+
+      {isUrgent ? (
+        <section className="notice urgent-soft">
+          <strong>Urgent public awareness</strong>
+          <p>Information may still be updated as official details become available. MMIPS does not collect tips or direct searches. Use the listed official contact or call 911 in an emergency.</p>
+        </section>
+      ) : null}
+
+      {isMurdered ? (
+        <section className="notice soft">
+          <strong>Remembering / information needed</strong>
+          <p>This profile is shared for dignity, visibility, and official information routing. It does not use urgent missing-person alert tools.</p>
+        </section>
+      ) : null}
 
       <section className="card public-photo-card">
         <div className="public-photo-wrap">
@@ -31,14 +51,26 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       </section>
 
       <section className="feature-grid">
-        <div className="card"><h3>Last seen / location</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>
-        <div className="card"><h3>Lead agency</h3><p>{item.leadAgency ?? "Unknown"}</p><p className="muted">Agency report/case #: {item.agencyCaseNumber ?? "Unknown"}</p></div>
-        <div className="card"><h3>Tips</h3><p>{item.tipPhone ?? "List official tip line only."}</p><p className="muted">Never post public rumors or accusations.</p></div>
+        <div className="card"><h3>{isMurdered ? "Public area" : "Last seen / location"}</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>
+        <div className="card"><h3>Official contact</h3><p>{item.leadAgency ?? "Unknown"}</p><p className="muted">Agency report/case #: {item.agencyCaseNumber ?? "Unknown"}</p></div>
+        <div className="card"><h3>Have information?</h3><p>{item.tipPhone ?? "Use the listed official contact or call 911 in an emergency."}</p><p className="muted">Do not send tips to MMIPS. Never post public rumors or accusations.</p></div>
       </section>
+
+      {(isUrgent || item.notificationAreaRequested || item.likelyTravelMode) ? (
+        <section className="card alert-planning-public">
+          <h2>{isMurdered ? "Map / visibility area" : "Public-awareness area"}</h2>
+          <p>{item.notificationAreaRequested || "Broad awareness area not publicly listed."}</p>
+          {item.lastKnownDatetime ? <p><strong>Last known date/time:</strong> {item.lastKnownDatetime}{item.lastKnownTimeZone ? ` (${item.lastKnownTimeZone})` : ""}</p> : null}
+          {item.likelyTravelMode ? <p><strong>Likely travel mode:</strong> {item.likelyTravelMode}</p> : null}
+          {item.possibleDirection ? <p><strong>Possible direction:</strong> {item.possibleDirection}</p> : null}
+          <p className="muted">This is for broad public-awareness routing only. It is not a prediction, a search plan, or an official investigative finding.</p>
+        </section>
+      ) : null}
 
       <section className="card">
         <h2>Public summary</h2>
         <p>{item.summary}</p>
+        {item.officialInfoPending ? <p className="notice small-notice">Official numbers or public agency details may be updated later.</p> : null}
         <div className="badge-row">
           {item.verification.filter((status) => status !== "mmips_reviewed").map((status) => <VerificationBadge key={status} status={status} />)}
         </div>
@@ -65,13 +97,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
       <section className="card correction-cta">
         <h2>Need to correct or remove this public profile?</h2>
-        <p>Family members, authorized advocates, tribal representatives, and official contacts can request corrections, safety edits, updated tip contacts, or removal review.</p>
+        <p>Family members, authorized advocates, tribal representatives, and official contacts can request corrections, safety edits, updated official contacts, status changes, or removal review.</p>
         <Link className="button secondary" href={`/corrections?profile=${encodeURIComponent(item.slug)}`}>Request correction/removal review</Link>
       </section>
 
       <section className="card flyer-cta">
         <h2>Print a flyer</h2>
-        <p>Use a printer-friendly version for community sharing. It includes only the approved public information and the official tip information shown on this page.</p>
+        <p>Use a printer-friendly version for community sharing. It includes only the approved public information and the official contact information shown on this page.</p>
         <Link className="button secondary" href={`/profiles/${item.slug}/flyer`}>Open printable flyer</Link>
       </section>
 
@@ -79,7 +111,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         title={item.fullName}
         path={`/profiles/${item.slug}`}
         imageUrl={item.photoUrl}
-        statusLabel={item.status === "missing" ? "Missing Indigenous Person" : "MMIPS Public Notice"}
+        statusLabel={title}
         lastSeenLocation={item.lastSeenLocation}
         lastSeenDate={item.lastSeenDate}
         age={item.age}

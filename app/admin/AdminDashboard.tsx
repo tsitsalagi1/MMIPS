@@ -10,9 +10,19 @@ type Submission = {
   full_name: string;
   age: number | null;
   status: string;
+  profile_type: string | null;
+  urgency_level: string | null;
   tribal_affiliation: string | null;
   last_seen_date: string | null;
   last_seen_location: string;
+  last_known_datetime: string | null;
+  last_known_time_zone: string | null;
+  notification_area_requested: string | null;
+  likely_travel_mode: string | null;
+  possible_direction: string | null;
+  vehicle_description: string | null;
+  official_info_pending: boolean | null;
+  official_report_contacted: boolean | null;
   lead_agency: string | null;
   agency_case_number: string | null;
   namus_number: string | null;
@@ -95,6 +105,13 @@ const statusLabels: Record<string, string> = {
   rejected: "Rejected",
   hidden: "Hidden",
   all: "All"
+};
+
+const profileTypeLabels: Record<string, string> = {
+  urgent_missing: "Urgent public awareness",
+  missing: "Missing public profile",
+  murdered_info_needed: "Remembering / information needed",
+  unidentified: "Unidentified public profile"
 };
 
 function linkedPerson(request: CorrectionRequest) {
@@ -392,19 +409,37 @@ export default function AdminDashboard() {
                 <h2>{submission.full_name}</h2>
                 <p className="muted">{statusLabels[submission.review_status] || submission.review_status} · submitted {new Date(submission.created_at).toLocaleString()}</p>
               </div>
-              <span className="badge badge-neutral">{submission.status}</span>
+              <div className="badge-stack"><span className={`badge badge-profile-${submission.profile_type || "missing"}`}>{profileTypeLabels[submission.profile_type || "missing"] || submission.status}</span><span className="badge badge-neutral">{submission.status}</span></div>
             </div>
 
             <div className="admin-detail-grid">
               <p><strong>Age:</strong> {submission.age ?? "Unknown"}</p>
               <p><strong>Tribe:</strong> {submission.tribal_affiliation || "Not provided"}</p>
-              <p><strong>Last seen date:</strong> {submission.last_seen_date || "Not provided"}</p>
-              <p><strong>Location:</strong> {submission.last_seen_location}</p>
+              <p><strong>Last seen/public date:</strong> {submission.last_seen_date || "Not provided"}</p>
+              <p><strong>Public location:</strong> {submission.last_seen_location}</p>
+              <p><strong>Urgency level:</strong> {submission.urgency_level || "standard"}</p>
+              <p><strong>Official info pending:</strong> {submission.official_info_pending ? "Yes" : "No"}</p>
               <p><strong>Lead agency:</strong> {submission.lead_agency || "Not provided"}</p>
               <p><strong>Agency report/case #:</strong> {submission.agency_case_number || "Not provided"}</p>
               <p><strong>NamUs #:</strong> {submission.namus_number || "Not provided"}</p>
               <p><strong>Tip contact:</strong> {submission.tip_contact || "Not provided"}</p>
             </div>
+
+            {(submission.profile_type === "urgent_missing" || submission.profile_type === "murdered_info_needed" || submission.notification_area_requested) ? (
+              <div className="admin-summary alert-planning-summary">
+                <h3>{submission.profile_type === "murdered_info_needed" ? "Map / renewed visibility notes" : "Urgent public-awareness planning"}</h3>
+                <div className="admin-detail-grid">
+                  <p><strong>Last known date/time:</strong> {submission.last_known_datetime || "Not provided"}</p>
+                  <p><strong>Time zone:</strong> {submission.last_known_time_zone || "Not provided"}</p>
+                  <p><strong>Likely travel mode:</strong> {submission.likely_travel_mode || "Unknown"}</p>
+                  <p><strong>Possible direction:</strong> {submission.possible_direction || "Not provided"}</p>
+                  <p><strong>Vehicle/public detail:</strong> {submission.vehicle_description || "Not provided"}</p>
+                  <p><strong>Official reporting started:</strong> {submission.official_report_contacted ? "Confirmed by submitter" : "Not confirmed"}</p>
+                </div>
+                {submission.notification_area_requested ? <p><strong>Requested notification/map area:</strong> {submission.notification_area_requested}</p> : null}
+                <p className="muted">Use this only to choose broad public-awareness areas after review. MMIPS does not collect tips, direct searches, or replace official response.</p>
+              </div>
+            ) : null}
 
             <div className="admin-summary">
               <h3>Public summary draft</h3>

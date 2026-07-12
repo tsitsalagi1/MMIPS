@@ -1,6 +1,7 @@
 import { SafetyNotice } from "../../components/SafetyNotice";
 import { TurnstileWidget } from "../../components/TurnstileWidget";
 import { PhotoPermissionUpload } from "../../components/PhotoPermissionUpload";
+import { ProfileTypeFields } from "../../components/ProfileTypeFields";
 
 export default async function SubmitPage({
   searchParams
@@ -17,20 +18,21 @@ export default async function SubmitPage({
       <SafetyNotice />
       {error ? <div className="notice warning"><strong>Submission error:</strong> {error}</div> : null}
       <form className="card form" data-submit-info-form="true" action="/api/submissions" method="post" encType="multipart/form-data">
+        <ProfileTypeFields />
+
         <h2>Person and public-awareness information</h2>
         <div className="check-grid">
           <label>Person's full name<input name="full_name" required /></label>
           <label>Age<input name="age" type="number" min="0" /></label>
-          <label>Status<select name="status" required><option value="missing">Missing</option><option value="murdered_unsolved">Murdered / Unsolved</option><option value="unidentified">Unidentified</option><option value="unknown">Unknown</option></select></label>
           <label>Tribal affiliation, if family approves<input name="tribal_affiliation" /></label>
-          <label>Last seen date<input name="last_seen_date" type="date" /></label>
-          <label>Last seen city/county/state<input name="last_seen_location" required /></label>
+          <label>Last seen / public location date<input name="last_seen_date" type="date" /></label>
+          <label>Public location text<input name="last_seen_location" required placeholder="Example: Tahlequah area, Cherokee County, or location withheld for safety" /></label>
           <label>Lead agency<input name="lead_agency" placeholder="Police, sheriff, tribal police, FBI, BIA MMU..." /></label>
           <label>Agency report/case number<input name="agency_case_number" /></label>
           <label>NamUs number or link<input name="namus_number" /></label>
-          <label>Official tip phone / link<input name="tip_contact" /></label>
+          <label>Official tip phone / link<input name="tip_contact" placeholder="Send public information to this official contact, not MMIPS" /></label>
         </div>
-        <label>Summary of verified public facts<textarea name="summary" required placeholder="Use facts only. No suspect accusations, rumors, or private addresses."></textarea></label>
+        <label>Summary of verified public facts<textarea name="summary" required placeholder="Use facts only. No suspect accusations, rumors, private addresses, or sensitive location details."></textarea></label>
 
         <h2>Photo or flyer, optional</h2>
         <PhotoPermissionUpload />
