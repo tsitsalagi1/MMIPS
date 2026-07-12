@@ -43,3 +43,27 @@ Run the migration before testing new submissions, because the submit API writes 
 7. Confirm the public profile/flyer use remembrance/information-needed language, not urgent missing language.
 8. Check `/map` and confirm profile categories display.
 9. Remove/delete all fake profiles before real use.
+
+## Multiple photo + flyer-preview update
+
+This update changes the submit form from one optional image to up to five family-approved photos/flyers. Submitters can label each photo, choose the main profile/flyer photo, select which photos can appear on the public profile and flyer, and preview a calm flyer-style layout before submission.
+
+Run this migration before testing the feature:
+
+```sql
+supabase/multiple_photos.sql
+```
+
+What it adds:
+
+- `submission_photos` private review table.
+- `profile_photos` public approved-photo table.
+- Up to five images per submission, max 5 MB each.
+- Main-photo selection.
+- Profile/flyer usage preferences.
+- Submitter-side flyer preview.
+- Admin photo-gallery review.
+- Public profile gallery.
+- Flyer collage layout using approved flyer photos.
+
+The older single-photo fields stay in place for backward compatibility.

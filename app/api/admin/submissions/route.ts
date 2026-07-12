@@ -24,12 +24,34 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) throw error;
 
+    const submissionIds = (data || []).map((item: any) => item.id);
+    let photosBySubmission: Record<string, any[]> = {};
+
+    if (submissionIds.length) {
+      const { data: photoRows, error: photoError } = await admin.supabase
+        .from("submission_photos")
+        .select("*")
+        .in("submission_id", submissionIds)
+        .order("sort_order", { ascending: true });
+      if (photoError && photoError.code !== "42P01") throw photoError;
+
+      for (const photo of photoRows || []) {
+        const { data: signed } = await admin.supabase.storage
+          .from("mmips-submission-photos")
+          .createSignedUrl(photo.storage_path, 60 * 60);
+        const next = { ...photo, signed_url: signed?.signedUrl || null };
+        photosBySubmission[photo.submission_id] = [...(photosBySubmission[photo.submission_id] || []), next];
+      }
+    }
+
     const submissions = await Promise.all((data || []).map(async (item: any) => {
-      if (!item.photo_storage_path) return item;
+      const photos = photosBySubmission[item.id] || [];
+      if (photos.length) return { ...item, photos, photo_signed_url: photos.find((photo) => photo.is_main)?.signed_url || photos[0]?.signed_url || null };
+      if (!item.photo_storage_path) return { ...item, photos: [] };
       const { data: signed } = await admin.supabase.storage
         .from("mmips-submission-photos")
         .createSignedUrl(item.photo_storage_path, 60 * 60);
-      return { ...item, photo_signed_url: signed?.signedUrl || null };
+      return { ...item, photos: [], photo_signed_url: signed?.signedUrl || null };
     }));
 
     return NextResponse.json({ ok: true, submissions });

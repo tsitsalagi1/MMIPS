@@ -11,6 +11,18 @@ export type VerificationStatus =
   | "family_authorized";
 export type LocationPrecision = "exact_private" | "approximate" | "city" | "county" | "hidden";
 
+export interface MmipsPhoto {
+  id?: string;
+  url: string;
+  altText?: string | null;
+  caption?: string | null;
+  photoType?: string | null;
+  useOnProfile?: boolean | null;
+  useOnFlyer?: boolean | null;
+  isMain?: boolean | null;
+  sortOrder?: number | null;
+}
+
 export interface MmipsCase {
   id: string;
   slug: string;
@@ -41,6 +53,7 @@ export interface MmipsCase {
   summary: string;
   photoUrl?: string | null;
   photoAltText?: string | null;
+  photos?: MmipsPhoto[];
   flyerUrl?: string | null;
   tipPhone?: string | null;
   tipUrl?: string | null;

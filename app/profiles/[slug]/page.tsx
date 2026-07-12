@@ -47,8 +47,23 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <div className="public-photo-wrap">
           <img src={item.photoUrl || "/placeholder-person.svg"} alt={item.photoAltText || `${item.fullName} public profile image`} />
         </div>
-        <p className="muted small-text">Images are shown only after approval for public display. Request removal if this image should not be public.</p>
+        <p className="muted small-text">Images are shown only after approval for public display. Request removal if an image should not be public.</p>
       </section>
+
+      {item.photos && item.photos.length > 1 ? (
+        <section className="card public-gallery-card">
+          <h2>Additional approved photos</h2>
+          <p className="muted">These images were approved for public display to help with recognition. Do not repost with rumors, accusations, or unsafe private-location details.</p>
+          <div className="public-photo-gallery">
+            {item.photos.filter((photo) => !photo.isMain).map((photo) => (
+              <figure key={photo.id || photo.url}>
+                <img src={photo.url} alt={photo.altText || photo.caption || `${item.fullName} additional approved image`} />
+                {photo.caption || photo.photoType ? <figcaption>{photo.caption || String(photo.photoType).replaceAll("_", " ")}</figcaption> : null}
+              </figure>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="feature-grid">
         <div className="card"><h3>{isMurdered ? "Public area" : "Last seen / location"}</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>

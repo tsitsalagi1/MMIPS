@@ -25,6 +25,7 @@ export const sampleCases: MmipsCase[] = [
     summary: "This is a placeholder record to show how a public profile will look after moderation. Replace with verified, family-approved information only.",
     photoUrl: "/placeholder-person.svg",
     photoAltText: "MMIPS placeholder image",
+    photos: [{ url: "/placeholder-person.svg", altText: "MMIPS placeholder image", caption: "Placeholder image", photoType: "main_face", isMain: true, useOnProfile: true, useOnFlyer: true, sortOrder: 0 }],
     tipPhone: "911 for emergencies; list official tip line here",
     latitude: 35.9154,
     longitude: -94.96996,
@@ -58,6 +59,23 @@ function mapCase(row: any): MmipsCase {
         .filter((status: string) => status !== "pending_review")
     : [];
 
+  const rawPhotos = Array.isArray(row.profile_photos) ? row.profile_photos : [];
+  const photos = rawPhotos
+    .filter((photo: any) => photo.use_on_profile !== false)
+    .map((photo: any) => ({
+      id: photo.id,
+      url: publicStorageUrl("mmips-public-case-photos", photo.storage_path) || "/placeholder-person.svg",
+      altText: photo.alt_text || photo.caption || null,
+      caption: photo.caption || null,
+      photoType: photo.photo_type || null,
+      useOnProfile: photo.use_on_profile,
+      useOnFlyer: photo.use_on_flyer,
+      isMain: photo.is_main,
+      sortOrder: photo.sort_order ?? 0
+    }))
+    .sort((a: any, b: any) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+  const mainPhoto = photos.find((photo: any) => photo.isMain) || photos[0] || null;
+
   return {
     id: row.id,
     slug: row.slug,
@@ -86,8 +104,9 @@ function mapCase(row: any): MmipsCase {
     familyLiaison: row.family_liaison || "unknown",
     lastPublicUpdate: row.last_public_update || null,
     summary: row.public_summary,
-    photoUrl: publicStorageUrl("mmips-public-case-photos", row.photo_storage_path) || "/placeholder-person.svg",
-    photoAltText: row.photo_alt_text || null,
+    photoUrl: mainPhoto?.url || publicStorageUrl("mmips-public-case-photos", row.photo_storage_path) || "/placeholder-person.svg",
+    photoAltText: mainPhoto?.altText || row.photo_alt_text || null,
+    photos,
     tipPhone: row.official_tip_contact || "911 for emergencies; list official tip line here",
     latitude: row.latitude ? Number(row.latitude) : undefined,
     longitude: row.longitude ? Number(row.longitude) : undefined,
@@ -102,7 +121,7 @@ export async function getPublishedCases(): Promise<MmipsCase[]> {
 
   const { data, error } = await supabase
     .from("cases")
-    .select("*, persons(*), case_verifications(*)")
+    .select("*, persons(*), case_verifications(*), profile_photos(*)")
     .eq("review_status", "approved")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false });
@@ -122,7 +141,7 @@ export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
 
   const { data, error } = await supabase
     .from("cases")
-    .select("*, persons(*), case_verifications(*)")
+    .select("*, persons(*), case_verifications(*), profile_photos(*)")
     .eq("slug", slug)
     .eq("review_status", "approved")
     .not("published_at", "is", null)

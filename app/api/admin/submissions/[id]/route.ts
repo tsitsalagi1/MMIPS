@@ -83,22 +83,64 @@ export async function PATCH(request: Request, context: Params) {
 
     const slug = makeSlug(submission.full_name, submission.id);
 
-    let publicPhotoPath: string | null = null;
-    if (submission.photo_storage_path) {
+    const { data: submittedPhotos, error: submittedPhotosError } = await admin.supabase
+      .from("submission_photos")
+      .select("*")
+      .eq("submission_id", id)
+      .order("sort_order", { ascending: true });
+    if (submittedPhotosError && submittedPhotosError.code !== "42P01") throw submittedPhotosError;
+
+    const photosToCopy = submittedPhotos?.length
+      ? submittedPhotos
+      : submission.photo_storage_path
+        ? [{
+            storage_path: submission.photo_storage_path,
+            original_name: submission.photo_original_name || "profile-photo",
+            content_type: submission.photo_content_type || null,
+            size_bytes: submission.photo_size || null,
+            alt_text: submission.photo_alt_text || null,
+            caption: submission.photo_alt_text || null,
+            photo_type: "main_face",
+            use_on_profile: true,
+            use_on_flyer: true,
+            is_main: true,
+            sort_order: 0
+          }]
+        : [];
+
+    const copiedPhotos = [];
+    for (const photo of photosToCopy || []) {
       const { data: privateFile, error: downloadError } = await admin.supabase.storage
         .from("mmips-submission-photos")
-        .download(submission.photo_storage_path);
+        .download(photo.storage_path);
       if (downloadError) throw downloadError;
 
-      publicPhotoPath = `cases/${slug}-${safeFileName(submission.photo_original_name || "case-photo")}`;
+      const publicPath = `profiles/${slug}/${photo.sort_order ?? copiedPhotos.length}-${crypto.randomUUID()}-${safeFileName(photo.original_name || "profile-photo")}`;
       const { error: uploadPhotoError } = await admin.supabase.storage
         .from("mmips-public-case-photos")
-        .upload(publicPhotoPath, privateFile, {
-          contentType: submission.photo_content_type || privateFile.type || "application/octet-stream",
+        .upload(publicPath, privateFile, {
+          contentType: photo.content_type || privateFile.type || "application/octet-stream",
           upsert: false
         });
       if (uploadPhotoError) throw uploadPhotoError;
+
+      copiedPhotos.push({
+        storage_path: publicPath,
+        original_name: photo.original_name || "profile-photo",
+        content_type: photo.content_type || privateFile.type || null,
+        size_bytes: photo.size_bytes || privateFile.size || null,
+        alt_text: photo.alt_text || photo.caption || submission.photo_alt_text || null,
+        caption: photo.caption || null,
+        photo_type: photo.photo_type || "other",
+        use_on_profile: photo.use_on_profile !== false,
+        use_on_flyer: photo.use_on_flyer !== false,
+        is_main: photo.is_main === true || copiedPhotos.length === 0,
+        sort_order: photo.sort_order ?? copiedPhotos.length
+      });
     }
+
+    const mainCopiedPhoto = copiedPhotos.find((photo) => photo.is_main) || copiedPhotos[0] || null;
+    const publicPhotoPath = mainCopiedPhoto?.storage_path || null;
 
     const { data: person, error: personError } = await admin.supabase
       .from("persons")
@@ -138,7 +180,7 @@ export async function PATCH(request: Request, context: Params) {
         namus_number: submission.namus_number,
         official_tip_contact: submission.tip_contact,
         photo_storage_path: publicPhotoPath,
-        photo_alt_text: submission.photo_alt_text,
+        photo_alt_text: mainCopiedPhoto?.alt_text || submission.photo_alt_text,
         last_public_update: todayIsoDate(),
         published_at: new Date().toISOString()
       })
@@ -146,6 +188,15 @@ export async function PATCH(request: Request, context: Params) {
       .single();
 
     if (caseError) throw caseError;
+
+    if (copiedPhotos.length) {
+      const { error: publicPhotosError } = await admin.supabase.from("profile_photos").insert(copiedPhotos.map((photo) => ({
+        case_id: caseRecord.id,
+        ...photo,
+        permission_confirmed: true
+      })));
+      if (publicPhotosError && publicPhotosError.code !== "42P01") throw publicPhotosError;
+    }
 
     await admin.supabase
       .from("submissions")
@@ -158,7 +209,7 @@ export async function PATCH(request: Request, context: Params) {
       entity_type: "cases",
       entity_id: caseRecord.id,
       reason: moderatorNotes,
-      metadata: { submission_id: id, slug: caseRecord.slug, profile_type: submission.profile_type, urgency_level: submission.urgency_level, photo_storage_path: publicPhotoPath }
+      metadata: { submission_id: id, slug: caseRecord.slug, profile_type: submission.profile_type, urgency_level: submission.urgency_level, photo_storage_path: publicPhotoPath, photo_count: copiedPhotos.length }
     });
 
     const publicProfileUrl = `${siteUrl()}/profiles/${caseRecord.slug}`;

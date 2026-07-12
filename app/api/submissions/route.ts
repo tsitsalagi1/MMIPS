@@ -17,20 +17,86 @@ function safeFileName(name: string) {
   return cleaned || "uploaded-image";
 }
 
-function getOptionalImage(form: FormData) {
-  const file = form.get("case_photo");
-  if (!(file instanceof File) || file.size === 0) return null;
-  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    throw new Error("Photo upload must be a JPG, PNG, WebP, or GIF image.");
+const MAX_UPLOAD_COUNT = 5;
+
+type SubmittedPhotoPreference = {
+  index: number;
+  originalName?: string;
+  photoType?: string;
+  caption?: string;
+  useOnProfile?: boolean;
+  useOnFlyer?: boolean;
+  isMain?: boolean;
+  sortOrder?: number;
+};
+
+function parsePhotoPreferences(form: FormData): SubmittedPhotoPreference[] {
+  const raw = String(form.get("photo_preferences") ?? "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed?.photos)) return [];
+    return parsed.photos.map((item: any, fallbackIndex: number) => ({
+      index: Number.isFinite(Number(item.index)) ? Number(item.index) : fallbackIndex,
+      originalName: typeof item.originalName === "string" ? item.originalName : undefined,
+      photoType: typeof item.photoType === "string" ? item.photoType : "other",
+      caption: typeof item.caption === "string" ? item.caption.trim().slice(0, 240) : "",
+      useOnProfile: item.useOnProfile !== false,
+      useOnFlyer: item.useOnFlyer !== false,
+      isMain: item.isMain === true,
+      sortOrder: Number.isFinite(Number(item.sortOrder)) ? Number(item.sortOrder) : fallbackIndex
+    }));
+  } catch {
+    return [];
   }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error("Photo upload must be 5 MB or smaller.");
+}
+
+function normalizePhotoType(value?: string) {
+  const allowed = new Set(["main_face", "full_body", "identifying_mark", "clothing_item", "vehicle", "official_flyer", "other"]);
+  return value && allowed.has(value) ? value : "other";
+}
+
+function getOptionalImages(form: FormData) {
+  let files = form.getAll("profile_photos").filter((item): item is File => item instanceof File && item.size > 0);
+  const legacyFile = form.get("case_photo");
+  if (!files.length && legacyFile instanceof File && legacyFile.size > 0) files = [legacyFile];
+  if (!files.length) return [];
+
+  if (files.length > MAX_UPLOAD_COUNT) {
+    throw new Error(`Please upload no more than ${MAX_UPLOAD_COUNT} images.`);
   }
+
   const confirmed = form.get("confirm_photo_permission") === "on";
   if (!confirmed) {
-    throw new Error("Please confirm you have permission to share the uploaded image.");
+    throw new Error("Please confirm you have permission to share the uploaded images.");
   }
-  return file;
+
+  const preferences = parsePhotoPreferences(form);
+  const mainIndexFromPrefs = preferences.find((pref) => pref.isMain)?.index;
+
+  return files.map((file, index) => {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      throw new Error("Photo uploads must be JPG, PNG, WebP, or GIF images.");
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error("Each photo upload must be 5 MB or smaller.");
+    }
+    const pref = preferences.find((item) => item.index === index) || preferences[index] || { index };
+    return {
+      file,
+      index,
+      photoType: normalizePhotoType(pref.photoType),
+      caption: pref.caption || null,
+      useOnProfile: pref.useOnProfile !== false,
+      useOnFlyer: pref.useOnFlyer !== false,
+      isMain: mainIndexFromPrefs === undefined ? index === 0 : mainIndexFromPrefs === index,
+      sortOrder: Number.isFinite(Number(pref.sortOrder)) ? Number(pref.sortOrder) : index
+    };
+  }).map((photo, index, all) => {
+    if (!all.some((item) => item.isMain) && index === 0) return { ...photo, isMain: true, useOnProfile: true, useOnFlyer: true };
+    if (photo.isMain) return { ...photo, useOnProfile: true, useOnFlyer: true };
+    return photo;
+  });
 }
 
 
@@ -76,7 +142,7 @@ export async function POST(request: Request) {
       throw new Error(verification.message);
     }
 
-    const imageFile = getOptionalImage(form);
+    const imageFiles = getOptionalImages(form);
     const photoAltText = optionalText(form, "photo_alt_text");
     const profileType = normalizeProfileType(form.get("profile_type"));
     const isUrgent = profileType === "urgent_missing";
@@ -124,24 +190,11 @@ export async function POST(request: Request) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !serviceKey) {
-      console.info("Submission captured in demo mode:", { ...payload, imageFile: imageFile ? { name: imageFile.name, type: imageFile.type, size: imageFile.size } : null });
+      console.info("Submission captured in demo mode:", { ...payload, imageFiles: imageFiles.map((item) => ({ name: item.file.name, type: item.file.type, size: item.file.size })) });
       return redirectTo(request, "/submit/received?mode=demo");
     }
 
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
-
-    if (imageFile) {
-      const filePath = `submissions/${crypto.randomUUID()}-${safeFileName(imageFile.name)}`;
-      const { error: uploadError } = await supabase.storage
-        .from("mmips-submission-photos")
-        .upload(filePath, imageFile, { contentType: imageFile.type, upsert: false });
-      if (uploadError) throw uploadError;
-      payload.photo_storage_path = filePath;
-      payload.photo_original_name = imageFile.name;
-      payload.photo_content_type = imageFile.type;
-      payload.photo_size = imageFile.size;
-      payload.photo_permission_confirmed = true;
-    }
 
     const { data: submissionRow, error } = await supabase
       .from("submissions")
@@ -150,6 +203,48 @@ export async function POST(request: Request) {
       .single();
 
     if (error) throw error;
+
+    if (imageFiles.length && submissionRow?.id) {
+      const photoRows = [];
+      for (const photo of imageFiles) {
+        const filePath = `submissions/${submissionRow.id}/${photo.sortOrder}-${crypto.randomUUID()}-${safeFileName(photo.file.name)}`;
+        const { error: uploadError } = await supabase.storage
+          .from("mmips-submission-photos")
+          .upload(filePath, photo.file, { contentType: photo.file.type, upsert: false });
+        if (uploadError) throw uploadError;
+        photoRows.push({
+          submission_id: submissionRow.id,
+          storage_path: filePath,
+          original_name: photo.file.name,
+          content_type: photo.file.type,
+          size_bytes: photo.file.size,
+          alt_text: photo.caption || photoAltText,
+          caption: photo.caption,
+          photo_type: photo.photoType,
+          use_on_profile: photo.useOnProfile,
+          use_on_flyer: photo.useOnFlyer,
+          is_main: photo.isMain,
+          sort_order: photo.sortOrder,
+          permission_confirmed: true
+        });
+      }
+
+      const { error: photoRowsError } = await supabase.from("submission_photos").insert(photoRows);
+      if (photoRowsError) throw photoRowsError;
+
+      const mainPhoto = photoRows.find((photo) => photo.is_main) || photoRows[0];
+      await supabase
+        .from("submissions")
+        .update({
+          photo_storage_path: mainPhoto.storage_path,
+          photo_original_name: mainPhoto.original_name,
+          photo_content_type: mainPhoto.content_type,
+          photo_size: mainPhoto.size_bytes,
+          photo_alt_text: mainPhoto.alt_text,
+          photo_permission_confirmed: true
+        })
+        .eq("id", submissionRow.id);
+    }
 
     await sendTransactionalEmail({
       to: String(payload.submitter_email || ""),

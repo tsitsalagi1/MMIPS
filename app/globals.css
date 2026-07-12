@@ -765,3 +765,53 @@ button:disabled {
     flex-direction: column;
   }
 }
+
+/* Multiple photo upload, submitter flyer preview, and gallery support */
+.multi-photo-panel { gap: 18px; }
+.section-heading-row { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.badge-warning { color: #ffd9d3; border-color: rgba(185,55,43,.5); background: rgba(185,55,43,.18); }
+.photo-review-builder { display: grid; gap: 18px; }
+.photo-choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.photo-choice-card { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.03); display: grid; }
+.photo-choice-card.main { border-color: rgba(216,173,93,.75); box-shadow: 0 0 0 2px rgba(216,173,93,.08); }
+.photo-choice-card > img { width: 100%; height: 190px; object-fit: contain; background: rgba(0,0,0,.16); }
+.photo-choice-body { padding: 14px; display: grid; gap: 10px; }
+.compact-checkbox { margin: 0; font-size: .92rem; }
+.compact-checkbox input { margin-right: 8px; }
+.flyer-preview-card { border: 1px solid rgba(216,173,93,.32); background: rgba(216,173,93,.06); border-radius: 20px; padding: 16px; display: grid; gap: 12px; }
+.flyer-preview-header { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.flyer-preview-header span { text-transform: uppercase; letter-spacing: .06em; font-weight: 900; color: var(--gold); }
+.flyer-preview-layout { display: grid; grid-template-columns: minmax(180px, 300px) 1fr; gap: 14px; align-items: stretch; }
+.flyer-preview-main { min-height: 260px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.04); display: grid; place-items: center; overflow: hidden; }
+.flyer-preview-main img { width: 100%; height: 100%; max-height: 320px; object-fit: contain; }
+.flyer-preview-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.flyer-preview-detail { border: 1px solid var(--line); border-radius: 16px; padding: 8px; background: rgba(255,255,255,.035); display: grid; gap: 6px; }
+.flyer-preview-detail img { width: 100%; height: 110px; object-fit: contain; border-radius: 10px; background: rgba(0,0,0,.14); }
+.flyer-preview-detail small { color: var(--muted); }
+.admin-photo-gallery-review { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.admin-photo-review-card { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.03); }
+.admin-photo-review-card.main { border-color: rgba(216,173,93,.75); }
+.admin-photo-review-card img { width: 100%; height: 190px; object-fit: contain; background: rgba(0,0,0,.16); }
+.admin-photo-review-card div { padding: 12px; }
+.admin-photo-review-card p { margin-bottom: 6px; }
+.public-gallery-card { margin: 0 0 22px; }
+.public-photo-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.public-photo-gallery figure { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.03); margin: 0; }
+.public-photo-gallery img { width: 100%; height: 190px; object-fit: contain; background: rgba(0,0,0,.12); }
+.public-photo-gallery figcaption { padding: 10px 12px; color: var(--muted); font-size: .92rem; }
+.flyer-photo-stack { display: grid; gap: 10px; }
+.flyer-detail-photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.flyer-detail-photo-grid figure { border: 1px solid #d8c9b9; border-radius: 16px; padding: 8px; margin: 0; background: #fff; }
+.flyer-detail-photo-grid img { width: 100%; height: 96px; object-fit: contain; display: block; }
+.flyer-detail-photo-grid figcaption { font-size: 12px; line-height: 1.25; color: #5e5146; margin-top: 6px; }
+@media (max-width: 760px) {
+  .section-heading-row,
+  .flyer-preview-header { flex-direction: column; }
+  .flyer-preview-layout { grid-template-columns: 1fr; }
+}
+@media print {
+  .flyer-detail-photo-grid { grid-template-columns: repeat(2, 1fr) !important; gap: .08in !important; }
+  .flyer-detail-photo-grid img { height: .82in !important; }
+  .flyer-detail-photo-grid figure { break-inside: avoid; padding: .05in !important; }
+  .flyer-detail-photo-grid figcaption { font-size: 9px !important; }
+}

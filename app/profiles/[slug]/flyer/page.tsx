@@ -17,6 +17,9 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
   const flyerTitle = flyerTitleForProfile(item.profileType, item.status);
   const isUrgent = item.profileType === "urgent_missing";
   const isMurdered = item.profileType === "murdered_info_needed";
+  const flyerPhotos = (item.photos || []).filter((photo) => photo.useOnFlyer !== false);
+  const mainPhoto = flyerPhotos.find((photo) => photo.isMain) || flyerPhotos[0] || { url: item.photoUrl, altText: item.photoAltText, caption: null };
+  const detailPhotos = flyerPhotos.filter((photo) => photo.url !== mainPhoto.url).slice(0, 4);
 
   return (
     <main className="flyer-page">
@@ -28,6 +31,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
             statusLabel={flyerTitle}
             profileUrl={profileUrl}
             imageUrl={item.photoUrl}
+            galleryImages={flyerPhotos.map((photo) => ({ url: photo.url, caption: photo.caption || photo.photoType || "" }))}
             lastSeenLocation={item.lastSeenLocation}
             lastSeenDate={item.lastSeenDate}
             age={item.age}
@@ -52,9 +56,21 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
           {isUrgent ? <p className="flyer-urgent-note">Public awareness may be time-sensitive. Contact the official agency/tip line below or call 911 in an emergency. MMIPS does not collect tips.</p> : null}
           {isMurdered ? <p className="flyer-urgent-note soft-note">Shared for remembrance, visibility, and official information routing. Send information to the listed official contact.</p> : null}
 
-          <section className="flyer-main-grid">
-            <div className="flyer-photo-box">
-              <img src={item.photoUrl || "/mmips-hand-white-bg.png"} alt={item.photoAltText || `${item.fullName} public profile image`} />
+          <section className={detailPhotos.length ? "flyer-main-grid flyer-main-grid-collage" : "flyer-main-grid"}>
+            <div className="flyer-photo-stack">
+              <div className="flyer-photo-box">
+                <img src={mainPhoto.url || "/mmips-hand-white-bg.png"} alt={mainPhoto.altText || item.photoAltText || `${item.fullName} public profile image`} />
+              </div>
+              {detailPhotos.length ? (
+                <div className="flyer-detail-photo-grid">
+                  {detailPhotos.map((photo) => (
+                    <figure key={photo.id || photo.url}>
+                      <img src={photo.url} alt={photo.altText || photo.caption || `${item.fullName} detail image`} />
+                      {photo.caption || photo.photoType ? <figcaption>{photo.caption || String(photo.photoType).replaceAll("_", " ")}</figcaption> : null}
+                    </figure>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="flyer-case-summary">
               <div className="case-header-line">

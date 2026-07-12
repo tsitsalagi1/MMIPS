@@ -3,6 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
+type SubmissionPhoto = {
+  id: string;
+  submission_id: string;
+  signed_url?: string | null;
+  storage_path: string;
+  original_name: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
+  alt_text: string | null;
+  caption: string | null;
+  photo_type: string | null;
+  use_on_profile: boolean | null;
+  use_on_flyer: boolean | null;
+  is_main: boolean | null;
+  sort_order: number | null;
+};
+
 type Submission = {
   id: string;
   created_at: string;
@@ -39,6 +56,7 @@ type Submission = {
   photo_size: number | null;
   photo_alt_text: string | null;
   photo_signed_url?: string | null;
+  photos?: SubmissionPhoto[];
 };
 
 type LinkedCase = {
@@ -447,19 +465,37 @@ export default function AdminDashboard() {
             </div>
 
 
-            {submission.photo_signed_url ? (
+            {(submission.photos?.length || submission.photo_signed_url) ? (
               <div className="admin-summary">
-                <h3>Submitted image / flyer</h3>
-                <div className="admin-photo-review">
-                  <img src={submission.photo_signed_url} alt={submission.photo_alt_text || `${submission.full_name} submitted image`} />
-                  <div>
-                    <p><strong>Original file:</strong> {submission.photo_original_name || "Unknown"}</p>
-                    <p><strong>Type:</strong> {submission.photo_content_type || "Unknown"}</p>
-                    <p><strong>Size:</strong> {submission.photo_size ? `${Math.round(submission.photo_size / 1024)} KB` : "Unknown"}</p>
-                    <p><strong>Description:</strong> {submission.photo_alt_text || "Not provided"}</p>
-                    <p className="muted">Only approve images that are family/authorized, non-graphic, and safe to publish.</p>
+                <h3>Submitted photos / flyers</h3>
+                {submission.photos?.length ? (
+                  <div className="admin-photo-gallery-review">
+                    {submission.photos.map((photo) => (
+                      <article className={photo.is_main ? "admin-photo-review-card main" : "admin-photo-review-card"} key={photo.id || photo.storage_path}>
+                        {photo.signed_url ? <img src={photo.signed_url} alt={photo.alt_text || photo.caption || `${submission.full_name} submitted image`} /> : null}
+                        <div>
+                          <p><strong>{photo.is_main ? "Main photo" : "Submitted image"}</strong></p>
+                          <p><strong>File:</strong> {photo.original_name || "Unknown"}</p>
+                          <p><strong>Type:</strong> {photo.photo_type ? photo.photo_type.replaceAll("_", " ") : "Not labeled"}</p>
+                          <p><strong>Use:</strong> {[photo.use_on_profile ? "profile" : null, photo.use_on_flyer ? "flyer" : null].filter(Boolean).join(" + ") || "admin review only"}</p>
+                          <p><strong>Caption:</strong> {photo.caption || photo.alt_text || "Not provided"}</p>
+                          <p><strong>Size:</strong> {photo.size_bytes ? `${Math.round(photo.size_bytes / 1024)} KB` : "Unknown"}</p>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="admin-photo-review">
+                    <img src={submission.photo_signed_url || ""} alt={submission.photo_alt_text || `${submission.full_name} submitted image`} />
+                    <div>
+                      <p><strong>Original file:</strong> {submission.photo_original_name || "Unknown"}</p>
+                      <p><strong>Type:</strong> {submission.photo_content_type || "Unknown"}</p>
+                      <p><strong>Size:</strong> {submission.photo_size ? `${Math.round(submission.photo_size / 1024)} KB` : "Unknown"}</p>
+                      <p><strong>Description:</strong> {submission.photo_alt_text || "Not provided"}</p>
+                    </div>
+                  </div>
+                )}
+                <p className="muted small-text">Only approve images that are family/authorized, non-graphic, and safe to publish. Use the submitter’s main/profile/flyer choices unless a safety reason requires edits.</p>
               </div>
             ) : null}
 

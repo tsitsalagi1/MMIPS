@@ -34,7 +34,7 @@ export default async function SubmitPage({
         </div>
         <label>Summary of verified public facts<textarea name="summary" required placeholder="Use facts only. No suspect accusations, rumors, private addresses, or sensitive location details."></textarea></label>
 
-        <h2>Photo or flyer, optional</h2>
+        <h2>Photos, flyer preview, and image permissions</h2>
         <PhotoPermissionUpload />
 
         <h2>Submitter information</h2>
