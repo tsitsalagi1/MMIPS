@@ -6,6 +6,35 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> | { id: string } };
 
+type SubmissionPhotoForPublish = {
+  storage_path: string;
+  original_name?: string | null;
+  content_type?: string | null;
+  size_bytes?: number | null;
+  alt_text?: string | null;
+  caption?: string | null;
+  photo_type?: string | null;
+  use_on_profile?: boolean | null;
+  use_on_flyer?: boolean | null;
+  is_main?: boolean | null;
+  sort_order?: number | null;
+};
+
+type CopiedProfilePhoto = {
+  storage_path: string;
+  original_name: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  alt_text: string | null;
+  caption: string | null;
+  photo_type: string;
+  use_on_profile: boolean;
+  use_on_flyer: boolean;
+  is_main: boolean;
+  sort_order: number;
+};
+
+
 function makeSlug(name: string, id: string) {
   const base = name
     .toLowerCase()
@@ -90,7 +119,7 @@ export async function PATCH(request: Request, context: Params) {
       .order("sort_order", { ascending: true });
     if (submittedPhotosError && submittedPhotosError.code !== "42P01") throw submittedPhotosError;
 
-    const photosToCopy = submittedPhotos?.length
+    const photosToCopy: SubmissionPhotoForPublish[] = submittedPhotos?.length
       ? submittedPhotos
       : submission.photo_storage_path
         ? [{
@@ -108,14 +137,15 @@ export async function PATCH(request: Request, context: Params) {
           }]
         : [];
 
-    const copiedPhotos = [];
+    const copiedPhotos: CopiedProfilePhoto[] = [];
     for (const photo of photosToCopy || []) {
       const { data: privateFile, error: downloadError } = await admin.supabase.storage
         .from("mmips-submission-photos")
         .download(photo.storage_path);
       if (downloadError) throw downloadError;
 
-      const publicPath = `profiles/${slug}/${photo.sort_order ?? copiedPhotos.length}-${crypto.randomUUID()}-${safeFileName(photo.original_name || "profile-photo")}`;
+      const sortOrder = photo.sort_order ?? copiedPhotos.length;
+      const publicPath: string = `profiles/${slug}/${sortOrder}-${crypto.randomUUID()}-${safeFileName(photo.original_name || "profile-photo")}`;
       const { error: uploadPhotoError } = await admin.supabase.storage
         .from("mmips-public-case-photos")
         .upload(publicPath, privateFile, {
@@ -135,7 +165,7 @@ export async function PATCH(request: Request, context: Params) {
         use_on_profile: photo.use_on_profile !== false,
         use_on_flyer: photo.use_on_flyer !== false,
         is_main: photo.is_main === true || copiedPhotos.length === 0,
-        sort_order: photo.sort_order ?? copiedPhotos.length
+        sort_order: sortOrder
       });
     }
 
