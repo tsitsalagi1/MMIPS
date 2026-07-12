@@ -349,11 +349,15 @@ export default function AdminDashboard() {
 
   async function loadPublicProfiles(token = sessionToken) {
     if (!token) return;
+    const q = profileSearch.trim();
+    if (q.length < 2) {
+      setPublicProfiles([]);
+      return;
+    }
     setLoading(true);
     setMessage("");
     try {
-      const params = new URLSearchParams({ visibility: profileVisibilityFilter });
-      if (profileSearch.trim()) params.set("q", profileSearch.trim());
+      const params = new URLSearchParams({ visibility: profileVisibilityFilter, q });
       const res = await fetch(`/api/admin/profiles?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -635,22 +639,7 @@ export default function AdminDashboard() {
             placeholder="Requester, email, request details..."
           />
         </label>
-        <label>Public profile editor
-          <select value={profileVisibilityFilter} onChange={(e) => setProfileVisibilityFilter(e.target.value)}>
-            <option value="published">Published profiles</option>
-            <option value="hidden">Hidden profiles</option>
-            <option value="all">All profiles</option>
-          </select>
-        </label>
-        <label>Quick lookup public profiles
-          <input
-            type="search"
-            value={profileSearch}
-            onChange={(e) => setProfileSearch(e.target.value)}
-            placeholder="Name, slug, city, Tribe, agency, report #, NamUs..."
-          />
-        </label>
-        <button onClick={() => loadAll()} disabled={loading}>{loading ? "Loading..." : "Refresh all"}</button>
+        <button onClick={() => loadAll()} disabled={loading}>{loading ? "Loading..." : "Refresh queues"}</button>
       </section>
 
       {message && <p className="notice small-notice">{message}</p>}
@@ -760,9 +749,42 @@ export default function AdminDashboard() {
       <section className="admin-list public-profile-admin-section">
         <h2>Published profile status/type editor</h2>
         <p className="muted">Use this when a profile changes stages, for example urgent missing → standard missing, missing → remembering/information needed, or located/resolved. This updates the live profile, flyer, JPEG export, map category, and QR-linked page.</p>
-        <p className="muted small-text">Showing {publicProfiles.length} profile{publicProfiles.length === 1 ? "" : "s"}{profileSearch.trim() ? ` matching “${profileSearch.trim()}”` : ""}. Use the quick lookup box above to jump to a name, slug, city, agency, report number, or NamUs number.</p>
-        {publicProfiles.length === 0 ? (
-          <div className="card"><p>No public profiles found for this filter.</p></div>
+
+        <section className="card profile-lookup-card">
+          <div>
+            <h3>Look up one public profile to edit</h3>
+            <p className="muted small-text">Search first by name, slug, city, Tribal affiliation, agency, report number, or NamUs number. Profiles are hidden here until you search, so this page stays usable when MMIPS has a national volume of records.</p>
+          </div>
+          <div className="profile-lookup-grid">
+            <label>Profile visibility
+              <select value={profileVisibilityFilter} onChange={(e) => setProfileVisibilityFilter(e.target.value)}>
+                <option value="published">Published profiles</option>
+                <option value="hidden">Hidden profiles</option>
+                <option value="all">All profiles</option>
+              </select>
+            </label>
+            <label>Search public profiles
+              <input
+                type="search"
+                value={profileSearch}
+                onChange={(e) => setProfileSearch(e.target.value)}
+                placeholder="Name, slug, city, Tribe, agency, report #, NamUs..."
+              />
+            </label>
+            <button type="button" onClick={() => loadPublicProfiles()} disabled={loading || profileSearch.trim().length < 2}>{loading ? "Searching..." : "Search profiles"}</button>
+            <button type="button" className="button secondary" onClick={() => { setProfileSearch(""); setPublicProfiles([]); }}>Clear</button>
+          </div>
+        </section>
+
+        <p className="muted small-text">
+          {profileSearch.trim().length < 2
+            ? "Enter at least 2 characters to show editable public profiles."
+            : `Showing ${publicProfiles.length} profile${publicProfiles.length === 1 ? "" : "s"} matching “${profileSearch.trim()}”.`}
+        </p>
+        {profileSearch.trim().length < 2 ? (
+          <div className="card"><p>No public profiles are shown until you search.</p></div>
+        ) : publicProfiles.length === 0 ? (
+          <div className="card"><p>No public profiles found for this search and visibility filter.</p></div>
         ) : publicProfiles.map((profile) => {
           const edit = profileEdits[profile.id] || defaultPublicProfileEdits(profile);
           return (

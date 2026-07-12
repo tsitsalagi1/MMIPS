@@ -872,3 +872,35 @@ button:disabled {
 .contact-line {
   line-height: 1.9;
 }
+
+/* Admin lookup layout fix: keep queue filters separate from profile editor lookup. */
+.admin-search-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  align-items: end;
+  gap: 16px;
+}
+.admin-search-controls label { min-width: 0; }
+.admin-search-controls button { width: max-content; }
+.profile-lookup-card {
+  margin: 20px 0 18px;
+  display: grid;
+  gap: 16px;
+}
+.profile-lookup-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, .75fr) minmax(280px, 1.5fr) auto auto;
+  gap: 14px;
+  align-items: end;
+}
+.profile-lookup-grid label { min-width: 0; margin: 0; }
+.profile-lookup-grid input[type="search"],
+.profile-lookup-grid select { width: 100%; }
+@media (max-width: 900px) {
+  .admin-search-controls,
+  .profile-lookup-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-search-controls button,
+  .profile-lookup-grid button { width: 100%; }
+}

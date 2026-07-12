@@ -16,6 +16,10 @@ export async function GET(request: Request) {
     const visibility = searchParams.get("visibility") || "published";
     const q = cleanSearch(searchParams.get("q"));
 
+    if (q.length < 2) {
+      return NextResponse.json({ ok: true, profiles: [], requiresSearch: true });
+    }
+
     let personIds: string[] = [];
     if (q) {
       const term = `%${q}%`;
@@ -61,7 +65,7 @@ export async function GET(request: Request) {
         persons(id, full_name, age, tribal_affiliation)
       `)
       .order("updated_at", { ascending: false })
-      .limit(q ? 250 : 100);
+      .limit(250);
 
     if (visibility === "published") {
       query.eq("review_status", "approved").not("published_at", "is", null);
