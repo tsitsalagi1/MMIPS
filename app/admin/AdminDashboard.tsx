@@ -99,6 +99,69 @@ type CorrectionRequest = {
   cases?: LinkedCase | null;
 };
 
+
+
+type PublicProfile = {
+  id: string;
+  slug: string;
+  status: string;
+  profile_type: string | null;
+  urgency_level: string | null;
+  review_status: string;
+  public_summary: string;
+  last_seen_area_public: string | null;
+  notification_area_requested: string | null;
+  likely_travel_mode: string | null;
+  possible_direction: string | null;
+  vehicle_description: string | null;
+  official_info_pending: boolean | null;
+  location_precision: string | null;
+  lead_agency: string | null;
+  agency_case_number: string | null;
+  namus_number: string | null;
+  official_tip_contact: string | null;
+  ncic_status: string | null;
+  tribe_notified: string | null;
+  family_liaison: string | null;
+  last_public_update: string | null;
+  published_at: string | null;
+  persons?: {
+    id?: string | null;
+    full_name?: string | null;
+    age?: number | null;
+    tribal_affiliation?: string | null;
+  } | {
+    id?: string | null;
+    full_name?: string | null;
+    age?: number | null;
+    tribal_affiliation?: string | null;
+  }[] | null;
+};
+
+type PublicProfileEditState = {
+  full_name: string;
+  age: string;
+  tribal_affiliation: string;
+  status: string;
+  profile_type: string;
+  urgency_level: string;
+  public_summary: string;
+  last_seen_area_public: string;
+  location_precision: string;
+  lead_agency: string;
+  agency_case_number: string;
+  namus_number: string;
+  official_tip_contact: string;
+  ncic_status: string;
+  tribe_notified: string;
+  family_liaison: string;
+  notification_area_requested: string;
+  likely_travel_mode: string;
+  possible_direction: string;
+  vehicle_description: string;
+  official_info_pending: boolean;
+};
+
 type CorrectionEditState = {
   full_name: string;
   age: string;
@@ -137,6 +200,11 @@ function linkedPerson(request: CorrectionRequest) {
   return Array.isArray(persons) ? persons[0] : persons;
 }
 
+function profilePerson(profile: PublicProfile) {
+  const persons = profile.persons;
+  return Array.isArray(persons) ? persons[0] : persons;
+}
+
 function caseNameForCorrection(request: CorrectionRequest) {
   const person = linkedPerson(request);
   return person?.full_name || request.cases?.slug || "Profile reference not matched";
@@ -166,6 +234,43 @@ function defaultCorrectionEdits(request: CorrectionRequest): CorrectionEditState
   };
 }
 
+function defaultPublicProfileEdits(profile: PublicProfile): PublicProfileEditState {
+  const person = profilePerson(profile);
+  return {
+    full_name: blankIfNull(person?.full_name),
+    age: blankIfNull(person?.age),
+    tribal_affiliation: blankIfNull(person?.tribal_affiliation),
+    status: profile.status || "missing",
+    profile_type: profile.profile_type || (profile.status === "murdered_unsolved" ? "murdered_info_needed" : profile.status === "unidentified" ? "unidentified" : profile.status === "resolved" ? "located" : "missing"),
+    urgency_level: profile.urgency_level || "standard",
+    public_summary: blankIfNull(profile.public_summary),
+    last_seen_area_public: blankIfNull(profile.last_seen_area_public),
+    location_precision: profile.location_precision || "city",
+    lead_agency: blankIfNull(profile.lead_agency),
+    agency_case_number: blankIfNull(profile.agency_case_number),
+    namus_number: blankIfNull(profile.namus_number),
+    official_tip_contact: blankIfNull(profile.official_tip_contact),
+    ncic_status: blankIfNull(profile.ncic_status),
+    tribe_notified: blankIfNull(profile.tribe_notified),
+    family_liaison: blankIfNull(profile.family_liaison),
+    notification_area_requested: blankIfNull(profile.notification_area_requested),
+    likely_travel_mode: blankIfNull(profile.likely_travel_mode),
+    possible_direction: blankIfNull(profile.possible_direction),
+    vehicle_description: blankIfNull(profile.vehicle_description),
+    official_info_pending: profile.official_info_pending === true
+  };
+}
+
+function transitionEdits(current: PublicProfileEditState, transition: "urgent_to_missing" | "missing_to_murdered" | "located") {
+  if (transition === "urgent_to_missing") {
+    return { ...current, status: "missing", profile_type: "missing", urgency_level: "standard", official_info_pending: current.official_info_pending };
+  }
+  if (transition === "missing_to_murdered") {
+    return { ...current, status: "murdered_unsolved", profile_type: "murdered_info_needed", urgency_level: "renewed_visibility", official_info_pending: current.official_info_pending };
+  }
+  return { ...current, status: "resolved", profile_type: "located", urgency_level: "status_update", official_info_pending: false };
+}
+
 export default function AdminDashboard() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [email, setEmail] = useState("");
@@ -174,13 +279,17 @@ export default function AdminDashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [correctionRequests, setCorrectionRequests] = useState<CorrectionRequest[]>([]);
+  const [publicProfiles, setPublicProfiles] = useState<PublicProfile[]>([]);
   const [filter, setFilter] = useState("pending_review");
   const [correctionFilter, setCorrectionFilter] = useState("pending_review");
+  const [profileVisibilityFilter, setProfileVisibilityFilter] = useState("published");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [correctionNotes, setCorrectionNotes] = useState<Record<string, string>>({});
   const [correctionEdits, setCorrectionEdits] = useState<Record<string, CorrectionEditState>>({});
+  const [profileNotes, setProfileNotes] = useState<Record<string, string>>({});
+  const [profileEdits, setProfileEdits] = useState<Record<string, PublicProfileEditState>>({});
 
   async function refreshSession() {
     const { data } = await supabase.auth.getSession();
@@ -231,8 +340,26 @@ export default function AdminDashboard() {
     }
   }
 
+  async function loadPublicProfiles(token = sessionToken) {
+    if (!token) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(`/api/admin/profiles?visibility=${encodeURIComponent(profileVisibilityFilter)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Could not load public profiles.");
+      setPublicProfiles(json.profiles || []);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not load public profiles.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function loadAll(token = sessionToken) {
-    await Promise.all([loadSubmissions(token), loadCorrectionRequests(token)]);
+    await Promise.all([loadSubmissions(token), loadCorrectionRequests(token), loadPublicProfiles(token)]);
   }
 
   useEffect(() => {
@@ -244,6 +371,12 @@ export default function AdminDashboard() {
     if (sessionToken) loadCorrectionRequests(sessionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken, correctionFilter]);
+
+
+  useEffect(() => {
+    if (sessionToken) loadPublicProfiles(sessionToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionToken, profileVisibilityFilter]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -266,6 +399,7 @@ export default function AdminDashboard() {
     setUserEmail(null);
     setSubmissions([]);
     setCorrectionRequests([]);
+    setPublicProfiles([]);
   }
 
   async function act(submission: Submission, action: "approve" | "needs_more_info" | "rejected") {
@@ -298,6 +432,71 @@ export default function AdminDashboard() {
     const request = correctionRequests.find((item) => item.id === id);
     const current = correctionEdits[id] || (request ? defaultCorrectionEdits(request) : defaultCorrectionEdits({ id, created_at: "", case_id: null, requester_name: "", requester_email: "", relationship: "", request_type: "", request_details: "", review_status: "" }));
     setCorrectionEdits({ ...correctionEdits, [id]: { ...current, [key]: value } });
+  }
+
+
+  function updateProfileEdit(id: string, key: keyof PublicProfileEditState, value: string | boolean) {
+    const profile = publicProfiles.find((item) => item.id === id);
+    if (!profile) return;
+    const current = profileEdits[id] || defaultPublicProfileEdits(profile);
+    setProfileEdits({ ...profileEdits, [id]: { ...current, [key]: value } });
+  }
+
+  function applyQuickTransition(profile: PublicProfile, transition: "urgent_to_missing" | "missing_to_murdered" | "located") {
+    const current = profileEdits[profile.id] || defaultPublicProfileEdits(profile);
+    setProfileEdits({ ...profileEdits, [profile.id]: transitionEdits(current, transition) });
+  }
+
+  async function savePublicProfile(profile: PublicProfile) {
+    if (!sessionToken) return;
+    const edit = profileEdits[profile.id] || defaultPublicProfileEdits(profile);
+    const confirmed = window.confirm("Update this public profile status/type? This will change the live profile, flyer, JPEG export, map category, and QR-linked page. Document the reason in moderator notes.");
+    if (!confirmed) return;
+
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(`/api/admin/profiles/${profile.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionToken}` },
+        body: JSON.stringify({
+          moderator_notes: profileNotes[profile.id] || "",
+          case_updates: {
+            status: edit.status,
+            profile_type: edit.profile_type,
+            urgency_level: edit.urgency_level,
+            public_summary: edit.public_summary,
+            last_seen_area_public: edit.last_seen_area_public,
+            location_precision: edit.location_precision,
+            lead_agency: edit.lead_agency,
+            agency_case_number: edit.agency_case_number,
+            namus_number: edit.namus_number,
+            official_tip_contact: edit.official_tip_contact,
+            ncic_status: edit.ncic_status,
+            tribe_notified: edit.tribe_notified,
+            family_liaison: edit.family_liaison,
+            notification_area_requested: edit.notification_area_requested,
+            likely_travel_mode: edit.likely_travel_mode,
+            possible_direction: edit.possible_direction,
+            vehicle_description: edit.vehicle_description,
+            official_info_pending: edit.official_info_pending
+          },
+          person_updates: {
+            full_name: edit.full_name,
+            age: edit.age,
+            tribal_affiliation: edit.tribal_affiliation
+          }
+        })
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Profile update failed.");
+      setMessage(json.slug ? `${json.message} /profiles/${json.slug}` : json.message);
+      await loadAll();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Profile update failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function actOnCorrection(request: CorrectionRequest, action: "approved" | "needs_more_info" | "rejected" | "hidden" | "remove_public_profile") {
@@ -411,6 +610,13 @@ export default function AdminDashboard() {
             <option value="all">All</option>
           </select>
         </label>
+        <label>Public profile editor
+          <select value={profileVisibilityFilter} onChange={(e) => setProfileVisibilityFilter(e.target.value)}>
+            <option value="published">Published profiles</option>
+            <option value="hidden">Hidden profiles</option>
+            <option value="all">All profiles</option>
+          </select>
+        </label>
         <button onClick={() => loadAll()} disabled={loading}>{loading ? "Loading..." : "Refresh all"}</button>
       </section>
 
@@ -515,6 +721,141 @@ export default function AdminDashboard() {
             </div>
           </article>
         ))}
+      </section>
+
+      <section className="admin-list public-profile-admin-section">
+        <h2>Published profile status/type editor</h2>
+        <p className="muted">Use this when a profile changes stages, for example urgent missing → standard missing, missing → remembering/information needed, or located/resolved. This updates the live profile, flyer, JPEG export, map category, and QR-linked page.</p>
+        {publicProfiles.length === 0 ? (
+          <div className="card"><p>No public profiles found for this filter.</p></div>
+        ) : publicProfiles.map((profile) => {
+          const edit = profileEdits[profile.id] || defaultPublicProfileEdits(profile);
+          return (
+            <article className="card admin-submission" key={profile.id}>
+              <div className="case-header-line">
+                <div>
+                  <h2>{edit.full_name || profile.slug}</h2>
+                  <p className="muted">/{profile.slug} · last public update {profile.last_public_update || "not listed"}</p>
+                </div>
+                <div className="badge-stack"><span className={`badge badge-profile-${edit.profile_type}`}>{profileTypeLabels[edit.profile_type] || edit.profile_type}</span><span className="badge badge-neutral">{edit.status}</span></div>
+              </div>
+
+              <div className="button-row small-button-row">
+                <button type="button" className="button secondary" onClick={() => applyQuickTransition(profile, "urgent_to_missing")}>Urgent → standard missing</button>
+                <button type="button" className="button secondary" onClick={() => applyQuickTransition(profile, "missing_to_murdered")}>Missing → information needed</button>
+                <button type="button" className="button secondary" onClick={() => applyQuickTransition(profile, "located")}>Mark located/resolved</button>
+                <a className="button secondary" href={`/profiles/${profile.slug}`} target="_blank" rel="noreferrer">View live profile</a>
+              </div>
+
+              <section className="card nested-admin-card">
+                <h3>Status and public wording</h3>
+                <div className="admin-detail-grid edit-grid">
+                  <label>Public profile title / person name
+                    <input value={edit.full_name} onChange={(e) => updateProfileEdit(profile.id, "full_name", e.target.value)} />
+                  </label>
+                  <label>Age
+                    <input value={edit.age} onChange={(e) => updateProfileEdit(profile.id, "age", e.target.value)} />
+                  </label>
+                  <label>Tribal affiliation
+                    <input value={edit.tribal_affiliation} onChange={(e) => updateProfileEdit(profile.id, "tribal_affiliation", e.target.value)} />
+                  </label>
+                  <label>Profile type
+                    <select value={edit.profile_type} onChange={(e) => updateProfileEdit(profile.id, "profile_type", e.target.value)}>
+                      <option value="urgent_missing">Urgent public awareness</option>
+                      <option value="missing">Missing public profile</option>
+                      <option value="murdered_info_needed">Remembering / information needed</option>
+                      <option value="unidentified">Unidentified public profile</option>
+                      <option value="located">Located / status update</option>
+                    </select>
+                  </label>
+                  <label>Status
+                    <select value={edit.status} onChange={(e) => updateProfileEdit(profile.id, "status", e.target.value)}>
+                      <option value="missing">Missing</option>
+                      <option value="murdered_unsolved">Information needed</option>
+                      <option value="unidentified">Unidentified</option>
+                      <option value="resolved">Located / resolved</option>
+                      <option value="unknown">Unknown</option>
+                    </select>
+                  </label>
+                  <label>Urgency level
+                    <select value={edit.urgency_level} onChange={(e) => updateProfileEdit(profile.id, "urgency_level", e.target.value)}>
+                      <option value="standard">Standard</option>
+                      <option value="urgent_public_awareness">Urgent public awareness</option>
+                      <option value="renewed_visibility">Renewed visibility</option>
+                      <option value="status_update">Status update</option>
+                    </select>
+                  </label>
+                  <label>Public last-seen/location text
+                    <input value={edit.last_seen_area_public} onChange={(e) => updateProfileEdit(profile.id, "last_seen_area_public", e.target.value)} />
+                  </label>
+                  <label>Location precision
+                    <select value={edit.location_precision} onChange={(e) => updateProfileEdit(profile.id, "location_precision", e.target.value)}>
+                      <option value="city">City</option>
+                      <option value="county">County</option>
+                      <option value="approximate">Approximate</option>
+                      <option value="hidden">Hidden</option>
+                      <option value="exact_private">Exact/private - do not display exact public address</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Public summary
+                  <textarea value={edit.public_summary} onChange={(e) => updateProfileEdit(profile.id, "public_summary", e.target.value)} />
+                </label>
+              </section>
+
+              <section className="card nested-admin-card">
+                <h3>Official information and notification planning</h3>
+                <div className="admin-detail-grid edit-grid">
+                  <label>Lead agency
+                    <input value={edit.lead_agency} onChange={(e) => updateProfileEdit(profile.id, "lead_agency", e.target.value)} />
+                  </label>
+                  <label>Agency report/case #
+                    <input value={edit.agency_case_number} onChange={(e) => updateProfileEdit(profile.id, "agency_case_number", e.target.value)} />
+                  </label>
+                  <label>NamUs #
+                    <input value={edit.namus_number} onChange={(e) => updateProfileEdit(profile.id, "namus_number", e.target.value)} />
+                  </label>
+                  <label>Official tip contact
+                    <input value={edit.official_tip_contact} onChange={(e) => updateProfileEdit(profile.id, "official_tip_contact", e.target.value)} />
+                  </label>
+                  <label>NCIC status
+                    <input value={edit.ncic_status} onChange={(e) => updateProfileEdit(profile.id, "ncic_status", e.target.value)} />
+                  </label>
+                  <label>Tribe notified
+                    <input value={edit.tribe_notified} onChange={(e) => updateProfileEdit(profile.id, "tribe_notified", e.target.value)} />
+                  </label>
+                  <label>Family liaison
+                    <input value={edit.family_liaison} onChange={(e) => updateProfileEdit(profile.id, "family_liaison", e.target.value)} />
+                  </label>
+                  <label>Requested notification/map area
+                    <input value={edit.notification_area_requested} onChange={(e) => updateProfileEdit(profile.id, "notification_area_requested", e.target.value)} />
+                  </label>
+                  <label>Likely travel mode
+                    <input value={edit.likely_travel_mode} onChange={(e) => updateProfileEdit(profile.id, "likely_travel_mode", e.target.value)} />
+                  </label>
+                  <label>Possible direction
+                    <input value={edit.possible_direction} onChange={(e) => updateProfileEdit(profile.id, "possible_direction", e.target.value)} />
+                  </label>
+                  <label>Vehicle description
+                    <input value={edit.vehicle_description} onChange={(e) => updateProfileEdit(profile.id, "vehicle_description", e.target.value)} />
+                  </label>
+                  <label className="checkbox-label compact-checkbox">
+                    <input type="checkbox" checked={edit.official_info_pending} onChange={(e) => updateProfileEdit(profile.id, "official_info_pending", e.target.checked)} />
+                    Official information still pending
+                  </label>
+                </div>
+              </section>
+
+              <label>Moderator note / reason for profile status change
+                <textarea value={profileNotes[profile.id] ?? ""} onChange={(e) => setProfileNotes({ ...profileNotes, [profile.id]: e.target.value })} placeholder="Example: Family confirmed located update; official agency public flyer updated; urgent period changed to standard missing profile; etc." />
+              </label>
+
+              <div className="button-row">
+                <button type="button" onClick={() => savePublicProfile(profile)}>Save profile status/type update</button>
+              </div>
+            </article>
+          );
+        })}
       </section>
 
       <section className="admin-list correction-admin-section">
