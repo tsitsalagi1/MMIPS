@@ -281,8 +281,11 @@ export default function AdminDashboard() {
   const [correctionRequests, setCorrectionRequests] = useState<CorrectionRequest[]>([]);
   const [publicProfiles, setPublicProfiles] = useState<PublicProfile[]>([]);
   const [filter, setFilter] = useState("pending_review");
+  const [submissionSearch, setSubmissionSearch] = useState("");
   const [correctionFilter, setCorrectionFilter] = useState("pending_review");
+  const [correctionSearch, setCorrectionSearch] = useState("");
   const [profileVisibilityFilter, setProfileVisibilityFilter] = useState("published");
+  const [profileSearch, setProfileSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -309,7 +312,9 @@ export default function AdminDashboard() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/admin/submissions?status=${encodeURIComponent(filter)}`, {
+      const params = new URLSearchParams({ status: filter });
+      if (submissionSearch.trim()) params.set("q", submissionSearch.trim());
+      const res = await fetch(`/api/admin/submissions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -327,7 +332,9 @@ export default function AdminDashboard() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/admin/corrections?status=${encodeURIComponent(correctionFilter)}`, {
+      const params = new URLSearchParams({ status: correctionFilter });
+      if (correctionSearch.trim()) params.set("q", correctionSearch.trim());
+      const res = await fetch(`/api/admin/corrections?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -345,7 +352,9 @@ export default function AdminDashboard() {
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/admin/profiles?visibility=${encodeURIComponent(profileVisibilityFilter)}`, {
+      const params = new URLSearchParams({ visibility: profileVisibilityFilter });
+      if (profileSearch.trim()) params.set("q", profileSearch.trim());
+      const res = await fetch(`/api/admin/profiles?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -365,18 +374,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (sessionToken) loadSubmissions(sessionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionToken, filter]);
+  }, [sessionToken, filter, submissionSearch]);
 
   useEffect(() => {
     if (sessionToken) loadCorrectionRequests(sessionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionToken, correctionFilter]);
+  }, [sessionToken, correctionFilter, correctionSearch]);
 
 
   useEffect(() => {
     if (sessionToken) loadPublicProfiles(sessionToken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionToken, profileVisibilityFilter]);
+  }, [sessionToken, profileVisibilityFilter, profileSearch]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -590,7 +599,7 @@ export default function AdminDashboard() {
         <strong>Publishing rule:</strong> approve only after family/authorized submitter consent, no suspect accusations, no exact unsafe location, and an official/family-approved tip contact.
       </section>
 
-      <section className="card admin-controls">
+      <section className="card admin-controls admin-search-controls">
         <label>Submission queue filter
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="pending_review">Pending review</option>
@@ -599,6 +608,14 @@ export default function AdminDashboard() {
             <option value="rejected">Rejected</option>
             <option value="all">All</option>
           </select>
+        </label>
+        <label>Search submissions
+          <input
+            type="search"
+            value={submissionSearch}
+            onChange={(e) => setSubmissionSearch(e.target.value)}
+            placeholder="Name, submitter, location, agency, NamUs..."
+          />
         </label>
         <label>Correction/removal filter
           <select value={correctionFilter} onChange={(e) => setCorrectionFilter(e.target.value)}>
@@ -610,12 +627,28 @@ export default function AdminDashboard() {
             <option value="all">All</option>
           </select>
         </label>
+        <label>Search correction/removal
+          <input
+            type="search"
+            value={correctionSearch}
+            onChange={(e) => setCorrectionSearch(e.target.value)}
+            placeholder="Requester, email, request details..."
+          />
+        </label>
         <label>Public profile editor
           <select value={profileVisibilityFilter} onChange={(e) => setProfileVisibilityFilter(e.target.value)}>
             <option value="published">Published profiles</option>
             <option value="hidden">Hidden profiles</option>
             <option value="all">All profiles</option>
           </select>
+        </label>
+        <label>Quick lookup public profiles
+          <input
+            type="search"
+            value={profileSearch}
+            onChange={(e) => setProfileSearch(e.target.value)}
+            placeholder="Name, slug, city, Tribe, agency, report #, NamUs..."
+          />
         </label>
         <button onClick={() => loadAll()} disabled={loading}>{loading ? "Loading..." : "Refresh all"}</button>
       </section>
@@ -624,6 +657,7 @@ export default function AdminDashboard() {
 
       <section className="admin-list">
         <h2>Submissions for review</h2>
+        <p className="muted small-text">Showing {submissions.length} submission{submissions.length === 1 ? "" : "s"}{submissionSearch.trim() ? ` matching “${submissionSearch.trim()}”` : ""}.</p>
         {submissions.length === 0 ? (
           <div className="card"><p>No submissions found for {statusLabels[filter] || filter}.</p></div>
         ) : submissions.map((submission) => (
@@ -726,6 +760,7 @@ export default function AdminDashboard() {
       <section className="admin-list public-profile-admin-section">
         <h2>Published profile status/type editor</h2>
         <p className="muted">Use this when a profile changes stages, for example urgent missing → standard missing, missing → remembering/information needed, or located/resolved. This updates the live profile, flyer, JPEG export, map category, and QR-linked page.</p>
+        <p className="muted small-text">Showing {publicProfiles.length} profile{publicProfiles.length === 1 ? "" : "s"}{profileSearch.trim() ? ` matching “${profileSearch.trim()}”` : ""}. Use the quick lookup box above to jump to a name, slug, city, agency, report number, or NamUs number.</p>
         {publicProfiles.length === 0 ? (
           <div className="card"><p>No public profiles found for this filter.</p></div>
         ) : publicProfiles.map((profile) => {
@@ -860,6 +895,7 @@ export default function AdminDashboard() {
 
       <section className="admin-list correction-admin-section">
         <h2>Correction/removal requests</h2>
+        <p className="muted small-text">Showing {correctionRequests.length} request{correctionRequests.length === 1 ? "" : "s"}{correctionSearch.trim() ? ` matching “${correctionSearch.trim()}”` : ""}.</p>
         {correctionRequests.length === 0 ? (
           <div className="card"><p>No correction/removal requests found for {statusLabels[correctionFilter] || correctionFilter}.</p></div>
         ) : correctionRequests.map((request) => {

@@ -3,6 +3,10 @@ import { requireAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+function cleanSearch(value: string | null) {
+  return (value || "").trim().replace(/[,%]/g, " ").slice(0, 120);
+}
+
 export async function GET(request: Request) {
   try {
     const admin = await requireAdmin(request);
@@ -10,15 +14,40 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "pending_review";
+    const q = cleanSearch(searchParams.get("q"));
 
     const query = admin.supabase
       .from("submissions")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(q ? 250 : 100);
 
     if (status !== "all") {
       query.eq("review_status", status);
+    }
+
+    if (q) {
+      const term = `%${q}%`;
+      query.or([
+        `full_name.ilike.${term}`,
+        `status.ilike.${term}`,
+        `profile_type.ilike.${term}`,
+        `urgency_level.ilike.${term}`,
+        `tribal_affiliation.ilike.${term}`,
+        `last_seen_location.ilike.${term}`,
+        `last_known_datetime.ilike.${term}`,
+        `notification_area_requested.ilike.${term}`,
+        `likely_travel_mode.ilike.${term}`,
+        `possible_direction.ilike.${term}`,
+        `vehicle_description.ilike.${term}`,
+        `lead_agency.ilike.${term}`,
+        `agency_case_number.ilike.${term}`,
+        `namus_number.ilike.${term}`,
+        `tip_contact.ilike.${term}`,
+        `summary.ilike.${term}`,
+        `submitter_name.ilike.${term}`,
+        `submitter_email.ilike.${term}`
+      ].join(","));
     }
 
     const { data, error } = await query;

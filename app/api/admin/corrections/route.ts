@@ -3,6 +3,10 @@ import { requireAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+function cleanSearch(value: string | null) {
+  return (value || "").trim().replace(/[,%]/g, " ").slice(0, 120);
+}
+
 export async function GET(request: Request) {
   try {
     const admin = await requireAdmin(request);
@@ -10,6 +14,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "pending_review";
+    const q = cleanSearch(searchParams.get("q"));
 
     const query = admin.supabase
       .from("correction_requests")
@@ -34,9 +39,21 @@ export async function GET(request: Request) {
         )
       `)
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(q ? 250 : 100);
 
     if (status !== "all") query.eq("review_status", status);
+
+    if (q) {
+      const term = `%${q}%`;
+      query.or([
+        `requester_name.ilike.${term}`,
+        `requester_email.ilike.${term}`,
+        `relationship.ilike.${term}`,
+        `request_type.ilike.${term}`,
+        `request_details.ilike.${term}`,
+        `review_status.ilike.${term}`
+      ].join(","));
+    }
 
     const { data, error } = await query;
     if (error) throw error;

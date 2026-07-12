@@ -815,3 +815,60 @@ button:disabled {
   .flyer-detail-photo-grid figure { break-inside: avoid; padding: .05in !important; }
   .flyer-detail-photo-grid figcaption { font-size: 9px !important; }
 }
+
+/* Admin quick lookup and resource-page improvements */
+.admin-search-controls {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  align-items: end;
+}
+.admin-search-controls input[type="search"] {
+  width: 100%;
+}
+.resources-page .card h2,
+.resources-page .card h3 {
+  margin-top: 0;
+}
+.resource-priority-card {
+  border-left: 6px solid var(--gold);
+}
+.compact-lead {
+  font-size: 1.05rem;
+  max-width: 850px;
+}
+.resource-checklist {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.35rem;
+  margin: 1rem 0 0;
+}
+.resource-checklist li {
+  padding-left: 0.25rem;
+}
+.resource-link-grid .card {
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+}
+.resource-link-grid .button {
+  justify-self: start;
+}
+.resource-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+.resource-chip {
+  border: 1px solid rgba(216, 173, 93, 0.36);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  color: var(--cream);
+  background: rgba(216, 173, 93, 0.08);
+  font-weight: 700;
+}
+.compact-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.contact-line {
+  line-height: 1.9;
+}
