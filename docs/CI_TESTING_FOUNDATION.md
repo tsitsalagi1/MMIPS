@@ -40,6 +40,7 @@ Do not commit `node_modules`, `.next`, `.test-dist`, test videos, traces, local 
 - `npm run test:unit` runs unit tests against compiled production status/type logic.
 - `npm run test:static` runs static source checks, including synthetic/demo public-data contract checks.
 - `npm run test:contract` runs static authorization and build/rendering contract checks. It is not a live HTTP or database integration suite.
+- `npm run test:security` runs security unit/static/contract checks, including upload validation, public-data minimization, admin guard coverage, storage-migration static contracts, safe API error patterns, and service-role browser-import boundaries. It is not live RLS/storage verification or penetration testing.
 - `npm run test:smoke` runs no-browser public route/source smoke checks. It is not browser end-to-end testing.
 - `npm run test:accessibility:baseline` checks static source patterns such as a homepage landmark and image alternative text. It is not an axe scan, keyboard test, screen-reader test, or WCAG conformance result.
 - `npm run security:secrets` scans tracked text files for high-confidence accidental secret patterns.
@@ -61,7 +62,7 @@ Ordinary CI must not require production secrets. Future protected staging suites
 
 ## CI jobs and future branch protection
 
-The workflow `.github/workflows/ci.yml` defines the check name `release-foundation-verify` for pull requests and pushes to `main`. The job uses `.nvmrc` through `actions/setup-node`, runs `npm ci`, then runs named steps for lint, typecheck, unit, static, contract, production build, smoke, accessibility baseline, secret-pattern scan, and online dependency audit. After review, branch protection should require this check before merge.
+The workflow `.github/workflows/ci.yml` defines the check name `release-foundation-verify` for pull requests and pushes to `main`. The job uses `.nvmrc` through `actions/setup-node`, runs `npm ci`, then runs named steps for lint, typecheck, unit, static, contract, security, production build, smoke, accessibility baseline, secret-pattern scan, and online dependency audit. After review, branch protection should require this check before merge.
 
 ## Known coverage gaps
 

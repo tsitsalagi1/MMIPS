@@ -32,6 +32,8 @@ jobs:
         run: npm run test:static
       - name: Authorization and rendering contract checks
         run: npm run test:contract
+      - name: Security unit and contract tests
+        run: npm run test:security
       - name: Production build
         run: npm run build
       - name: Public smoke checks without browser automation

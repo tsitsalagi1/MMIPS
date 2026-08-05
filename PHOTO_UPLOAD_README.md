@@ -7,7 +7,7 @@ Before testing uploads, run `supabase/photo_uploads.sql` in Supabase SQL Editor.
 - `mmips-submission-photos` — private pending-review uploads.
 - `mmips-public-case-photos` — public images copied here only when an admin approves/publishes a case.
 
-Then redeploy Vercel and test with a fake case and one small JPG/PNG/WebP/GIF image under 5 MB.
+Then redeploy Vercel and test with a fake case and one small JPG/PNG/WebP image under 5 MB.
 
 Safety behavior:
 

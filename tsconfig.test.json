@@ -12,6 +12,7 @@
   },
   "include": [
     "lib/status.ts",
-    "lib/types.ts"
+    "lib/types.ts",
+    "lib/security/uploads.ts"
   ]
 }

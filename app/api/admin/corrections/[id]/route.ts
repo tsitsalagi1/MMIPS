@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeApiError } from "@/lib/security/api-errors";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { sendTransactionalEmail, siteUrl } from "@/lib/email";
 
@@ -232,8 +233,7 @@ export async function PATCH(request: Request, context: Params) {
     });
 
     return NextResponse.json({ ok: true, message: `Correction/removal request marked ${action.replaceAll("_", " ")}.${appliedText}` });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Correction request action failed.";
-    return NextResponse.json({ ok: false, message }, { status: 500 });
+  } catch {
+    return safeApiError({ code: "correction_request_action_failed", message: "Correction request action failed." });
   }
 }

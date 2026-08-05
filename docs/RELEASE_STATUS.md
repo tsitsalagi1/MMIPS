@@ -38,3 +38,20 @@ Real family, victim, witness, subscriber, requester, or investigative data must 
 
 - Added pinned dependency declarations, `package-lock.json` usage, Node 22.23.1 runtime documentation, ESLint flat config, `typecheck`, accurately named synthetic unit/static/contract/smoke/accessibility-baseline scripts, secret-pattern scan, separate online/offline dependency audit commands, and pull-request CI workflow.
 - Evidence is limited to commands run in the Codex workspace plus the configured GitHub workflow. Browser end-to-end testing, axe or equivalent browser accessibility scanning, live/isolated Supabase integration, protected staging lifecycle testing, RLS/storage verification, full secret-scanning service evidence, and independent trauma-informed accessibility review remain incomplete.
+
+## Security audit update (codex/security-audit, 2026-08-05)
+
+- Added static threat model, access-control matrix, Supabase/RLS audit, security findings register, secure logging standard, and abuse-protection plan.
+- Fixed confirmed high-risk public overfetch in public profile loaders by replacing broad `SELECT *` joins with explicit public field selection and by not exposing latitude/longitude from the public loader.
+- Hardened upload validation with extension/MIME agreement, image magic-byte checks, SVG/active-content rejection, and generated UUID-only object names that do not include original filenames.
+- Added a forward SQL hardening migration that explicitly enables RLS, revokes anon/authenticated access to private tables, grants SELECT only for RLS-protected public tables, and reasserts private/public storage bucket posture.
+- Added static/unit security checks for upload validation, admin guard coverage, public data overfetch prevention, security headers, and audit-log grant hardening.
+- Live Supabase RLS behavior, live storage policies, isolated staging lifecycle, browser E2E, full malware scanning/re-encoding, distributed rate limiting, report-only/full CSP verification, manual penetration testing, independent security review, and incident-response exercise remain incomplete release blockers.
+
+## Security audit correction-pass update (codex/security-audit, 2026-08-05)
+
+- Removed direct `storage.buckets` mutation from `supabase/security_hardening_20260805.sql`; bucket configuration is now documented in `docs/STORAGE_CONFIGURATION_RUNBOOK.md` for approved Supabase Storage API/dashboard handling and separate synthetic verification.
+- Restricted Version 1 uploads to JPEG/JPG, PNG, and WebP; GIF remains deferred until a reviewed image-processing pipeline exists.
+- Added safer API error handling for current identified `app/api/**` 500 responses and privacy-minimized operational error codes.
+- Added regression tests for GIF/SVG rejection, empty/oversized/spoofed/mismatched images, storage migration bucket-mutation prohibition, raw-error response prevention, public coordinate exclusion, and service-role browser-import boundaries.
+- The SQL migration remains static review only and was not executed. Live RLS/storage verification remains incomplete.
