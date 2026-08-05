@@ -11,28 +11,28 @@ Each gate is binary: complete every item or do not enable real submissions.
 
 ## Reproducible installation
 
-- [ ] A clean install command is documented and succeeds in CI.
-- [ ] Required Node/runtime versions are documented.
-- [ ] Install uses the lockfile.
+- [ ] A clean install command is documented; GitHub CI evidence is pending after this PR runs.
+- [x] Required Node/runtime versions are documented.
+- [x] Install uses the lockfile.
 
 ## Dependency lockfile
 
-- [ ] A dependency lockfile is committed.
-- [ ] Dependencies are pinned or reviewed for release stability.
-- [ ] Dependency audit/remediation policy is documented.
+- [x] A dependency lockfile is committed.
+- [x] Dependencies are pinned or reviewed for release stability.
+- [x] Dependency audit/remediation policy is documented.
 
 ## CI
 
-- [ ] CI runs on pull requests.
+- [ ] CI runs on pull requests; workflow is configured and awaits GitHub run evidence.
 - [ ] CI runs clean install, lint, type check, tests, build, and security checks where configured.
 - [ ] CI blocks merge on required failures.
 
 ## Tests
 
-- [ ] Unit tests cover critical pure logic.
-- [ ] Integration tests cover server routes and Supabase interactions with synthetic data.
-- [ ] E2E tests cover submission, moderation, profiles, flyers, alerts, map/list, and correction/removal.
-- [ ] Tests never use real family or investigative data.
+- [x] Foundation unit tests cover selected production status/type pure logic; broader critical-flow coverage remains incomplete.
+- [ ] Integration tests cover server routes and Supabase interactions with synthetic data. Current static contract tests are not live HTTP/database integration evidence.
+- [ ] Browser E2E tests cover submission, moderation, profiles, flyers, alerts, map/list, and correction/removal. Current smoke checks are source/route-presence checks only.
+- [x] Tests never use real family or investigative data.
 
 ## Security
 
@@ -94,7 +94,7 @@ Each gate is binary: complete every item or do not enable real submissions.
 - [ ] Focus states are visible.
 - [ ] Color contrast meets AA.
 - [ ] Forms have labels and meaningful errors.
-- [ ] Automated and manual accessibility checks are documented.
+- [ ] Automated browser accessibility and manual accessibility checks are documented and completed. Current static baseline documentation is not WCAG 2.2 AA evidence.
 
 ## Monitoring
 

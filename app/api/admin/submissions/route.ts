@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     const submissionIds = (data || []).map((item: any) => item.id);
-    let photosBySubmission: Record<string, any[]> = {};
+    const photosBySubmission: Record<string, any[]> = {};
 
     if (submissionIds.length) {
       const { data: photoRows, error: photoError } = await admin.supabase
