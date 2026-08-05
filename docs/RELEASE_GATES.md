@@ -1,0 +1,124 @@
+# MMIPS Version 1 Release Gates
+
+Each gate is binary: complete every item or do not enable real submissions.
+
+## Repository controls
+
+- [ ] All work is reviewed through pull requests.
+- [ ] No direct commits to `main`.
+- [ ] No agent merges its own pull request.
+- [ ] Branch protection or equivalent review controls are enabled.
+
+## Reproducible installation
+
+- [ ] A clean install command is documented and succeeds in CI.
+- [ ] Required Node/runtime versions are documented.
+- [ ] Install uses the lockfile.
+
+## Dependency lockfile
+
+- [ ] A dependency lockfile is committed.
+- [ ] Dependencies are pinned or reviewed for release stability.
+- [ ] Dependency audit/remediation policy is documented.
+
+## CI
+
+- [ ] CI runs on pull requests.
+- [ ] CI runs clean install, lint, type check, tests, build, and security checks where configured.
+- [ ] CI blocks merge on required failures.
+
+## Tests
+
+- [ ] Unit tests cover critical pure logic.
+- [ ] Integration tests cover server routes and Supabase interactions with synthetic data.
+- [ ] E2E tests cover submission, moderation, profiles, flyers, alerts, map/list, and correction/removal.
+- [ ] Tests never use real family or investigative data.
+
+## Security
+
+- [ ] Secrets are absent from the repository.
+- [ ] Production secrets are absent from Codex environments.
+- [ ] Admin routes require authentication and authorization.
+- [ ] Security headers and dependency scanning are reviewed.
+
+## RLS and storage access
+
+- [ ] RLS is enabled on all sensitive tables.
+- [ ] Anonymous users can read only approved public records.
+- [ ] Pending submissions, correction requests, subscriber data, moderator notes, audit logs, private images, and authorization evidence are not public.
+- [ ] Private storage buckets deny public reads.
+- [ ] Public storage buckets contain only moderator-approved public assets.
+
+## Submission journey
+
+- [ ] Submitters see safety, privacy, emergency, and official-reporting notices.
+- [ ] Review-before-submit exists.
+- [ ] Confirmation includes a reference number.
+- [ ] Submissions remain private until moderation.
+
+## Moderation
+
+- [ ] Moderators can approve, reject, request more information, hide, correct, and remove.
+- [ ] Actions require notes and audit entries.
+- [ ] Publication requires documented authorization and safety review.
+
+## Profiles, flyers, and sharing
+
+- [ ] Public profiles show only approved public information.
+- [ ] Flyers use only approved public fields and photos.
+- [ ] QR/share links point to public profile/flyer URLs.
+- [ ] Share copy discourages rumors and points tips to official contacts.
+
+## Alerts
+
+- [ ] Double opt-in works.
+- [ ] Unsubscribe works.
+- [ ] Alert sends are logged without leaking unnecessary personal information.
+- [ ] Alert scope respects family approval and map/location privacy.
+
+## Map privacy
+
+- [ ] Map uses approximate public locations only.
+- [ ] Sensitive exact locations are never exposed.
+- [ ] Accessible list alternative is available.
+
+## Trauma-informed UX
+
+- [ ] Family-facing language is calm, direct, non-blaming, and non-coercive.
+- [ ] Forms minimize cognitive load and explain why information is requested.
+- [ ] Users can pause, review, and correct before final submission.
+
+## WCAG 2.2 AA
+
+- [ ] Keyboard navigation works.
+- [ ] Focus states are visible.
+- [ ] Color contrast meets AA.
+- [ ] Forms have labels and meaningful errors.
+- [ ] Automated and manual accessibility checks are documented.
+
+## Monitoring
+
+- [ ] App health and critical failures are monitored.
+- [ ] Email, storage, submission, moderation, and auth failures alert operators.
+- [ ] Logs avoid secrets and unnecessary sensitive personal data.
+
+## Backup and restoration
+
+- [ ] Database backups are scheduled and encrypted.
+- [ ] Storage backups are scheduled and encrypted.
+- [ ] Restore rehearsal is completed and documented.
+
+## Final policies
+
+- [ ] Terms, privacy, data policy, safety policy, correction/removal policy, photo permission policy, moderation policy, and alert consent policy are final and reviewed.
+
+## Synthetic staging rehearsal
+
+- [ ] Full launch rehearsal uses synthetic data only.
+- [ ] Staging tests submission through removal, alerts, map/list, public sharing, backup, and restore.
+
+## Final go/no-go approval
+
+- [ ] Independent family-support/victim-services review is complete.
+- [ ] Remaining risks are documented.
+- [ ] Named human decision-maker records go/no-go before enabling real submissions.
