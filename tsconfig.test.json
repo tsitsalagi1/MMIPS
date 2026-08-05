@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": ".test-dist",
+    "rootDir": ".",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "incremental": false,
+    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
+  },
+  "include": [
+    "lib/status.ts",
+    "lib/types.ts"
+  ]
+}

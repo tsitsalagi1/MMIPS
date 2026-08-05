@@ -1,0 +1,55 @@
+name: MMIPS release foundation CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  release-foundation-verify:
+    name: release-foundation-verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup selected Node 22 LTS runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Clean install from package-lock.json
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests for compiled production modules
+        run: npm run test:unit
+      - name: Static source checks
+        run: npm run test:static
+      - name: Authorization and rendering contract checks
+        run: npm run test:contract
+      - name: Production build
+        run: npm run build
+      - name: Public smoke checks without browser automation
+        run: npm run test:smoke
+      - name: Static accessibility baseline checks
+        run: npm run test:accessibility:baseline
+      - name: Secret-pattern scan
+        run: npm run security:secrets
+      - name: Online dependency audit
+        run: npm run security:audit
+      - name: Upload safe failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-foundation-failure-artifacts
+          path: |
+            .next/diagnostics/**
+            test-results/**
+            playwright-report/**
+          if-no-files-found: ignore
+          retention-days: 7

@@ -2,24 +2,40 @@
   "name": "mmips-starter",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.23.1 <23",
+    "npm": ">=10.9.0 <12"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "build:test-modules": "rm -rf .test-dist && tsc -p tsconfig.test.json",
+    "test": "npm run test:unit",
+    "test:unit": "npm run build:test-modules && node --test tests/unit/*.test.mjs",
+    "test:static": "node --test tests/static/*.test.mjs",
+    "test:contract": "node --test tests/contract/*.test.mjs",
+    "test:smoke": "node --test tests/smoke/*.test.mjs",
+    "test:accessibility:baseline": "node --test tests/accessibility/*.test.mjs",
+    "security:secrets": "node scripts/check-no-secrets.mjs",
+    "security:audit": "npm audit --audit-level=high",
+    "security:audit:offline": "npm audit --offline --audit-level=high",
+    "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run test:static && npm run test:contract && npm run build && npm run test:smoke && npm run test:accessibility:baseline && npm run security:secrets && npm run security:audit:offline"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "@supabase/supabase-js": "2.112.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "eslint": "latest",
-    "eslint-config-next": "latest",
-    "typescript": "latest"
+    "@types/node": "26.1.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.0",
+    "typescript": "6.0.3"
   }
 }

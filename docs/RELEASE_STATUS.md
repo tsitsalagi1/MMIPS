@@ -26,10 +26,15 @@ Real family, victim, witness, subscriber, requester, or investigative data must 
 
 ## Release blockers
 
-- CI and automated test suites are missing or not configured.
+- CI and automated checks now have a foundation workflow and accurately named synthetic unit/static/contract/smoke/accessibility-baseline checks, but full Version 1 protected staging, browser E2E, axe/browser accessibility, live database integration, security, RLS, and live deployment verification remain incomplete.
 - Alerts V1 is not implemented.
 - Interactive privacy-safe map V1 is not implemented.
 - Live RLS/storage policies are unverified.
 - Monitoring, backups, and restore rehearsal are not complete.
 - Independent family-support/victim-services review is not complete.
 - Final policies and final go/no-go are not complete.
+
+## Foundation CI evidence (codex/foundation-ci)
+
+- Added pinned dependency declarations, `package-lock.json` usage, Node 22.23.1 runtime documentation, ESLint flat config, `typecheck`, accurately named synthetic unit/static/contract/smoke/accessibility-baseline scripts, secret-pattern scan, separate online/offline dependency audit commands, and pull-request CI workflow.
+- Evidence is limited to commands run in the Codex workspace plus the configured GitHub workflow. Browser end-to-end testing, axe or equivalent browser accessibility scanning, live/isolated Supabase integration, protected staging lifecycle testing, RLS/storage verification, full secret-scanning service evidence, and independent trauma-informed accessibility review remain incomplete.
