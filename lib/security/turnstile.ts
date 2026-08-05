@@ -42,15 +42,16 @@ export async function verifyTurnstileToken(token: FormDataEntryValue | null, req
 
     const json = (await result.json()) as TurnstileResponse;
     if (!json.success) {
+      console.error("Turnstile verification failed.", { code: "turnstile_rejected" });
       return {
         ok: false,
-        message: `Verification failed. Please try again. ${json["error-codes"]?.join(", ") || ""}`.trim()
+        message: "Verification failed. Please try again."
       };
     }
 
     return { ok: true, skipped: false as const };
-  } catch (error) {
-    console.error("Turnstile validation error", error);
+  } catch {
+    console.error("Turnstile validation error", { code: "turnstile_validation_exception" });
     return { ok: false, message: "Verification failed. Please try again." };
   }
 }

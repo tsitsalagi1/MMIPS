@@ -40,15 +40,7 @@ export async function POST(request: Request) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !serviceKey) {
-      console.info("Correction/removal request captured in demo mode:", {
-        caseReference,
-        requestType,
-        requestDetails,
-        requesterName,
-        requesterEmail,
-        requesterPhone,
-        relationship
-      });
+      console.info("Correction/removal request captured in demo mode.", { mode: "demo", hasCaseReference: Boolean(caseReference), requestType });
       return redirectTo(request, "/corrections/received?mode=demo");
     }
 
@@ -100,8 +92,7 @@ export async function POST(request: Request) {
     });
 
     return redirectTo(request, "/corrections/received");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Request failed.";
-    return redirectTo(request, `/corrections?error=${encodeURIComponent(message)}`);
+  } catch {
+    return redirectTo(request, "/corrections?error=Correction%20request%20could%20not%20be%20processed.%20Please%20review%20the%20form%20and%20try%20again.");
   }
 }

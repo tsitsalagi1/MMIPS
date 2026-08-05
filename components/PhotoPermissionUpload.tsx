@@ -106,7 +106,7 @@ export function PhotoPermissionUpload() {
         <input
           name="profile_photos"
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept="image/jpeg,image/png,image/webp"
           multiple
           aria-describedby={`${helpId} ${previewId}`}
           onChange={(event) => {
@@ -224,7 +224,7 @@ export function PhotoPermissionUpload() {
       </div>
 
       <p id={helpId} className="small-text muted">
-        Allowed image types: JPG, PNG, WebP, or GIF. Maximum size: 5 MB per image, up to {MAX_PHOTOS} images. Do not upload graphic images, private addresses, or images that could endanger the person/family/investigation.
+        Allowed image types: JPG, PNG, or WebP. Maximum size: 5 MB per image, up to {MAX_PHOTOS} images. Do not upload graphic images, private addresses, or images that could endanger the person/family/investigation.
       </p>
     </section>
   );

@@ -2,22 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
+import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) throw new Error(`${field} is required.`);
   return text;
 }
-
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-
-function safeFileName(name: string) {
-  const cleaned = name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-  return cleaned || "uploaded-image";
-}
-
-const MAX_UPLOAD_COUNT = 5;
 
 type SubmittedPhotoPreference = {
   index: number;
@@ -56,7 +47,7 @@ function normalizePhotoType(value?: string) {
   return value && allowed.has(value) ? value : "other";
 }
 
-function getOptionalImages(form: FormData) {
+async function getOptionalImages(form: FormData) {
   let files = form.getAll("profile_photos").filter((item): item is File => item instanceof File && item.size > 0);
   const legacyFile = form.get("case_photo");
   if (!files.length && legacyFile instanceof File && legacyFile.size > 0) files = [legacyFile];
@@ -74,17 +65,13 @@ function getOptionalImages(form: FormData) {
   const preferences = parsePhotoPreferences(form);
   const mainIndexFromPrefs = preferences.find((pref) => pref.isMain)?.index;
 
-  return files.map((file, index) => {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      throw new Error("Photo uploads must be JPG, PNG, WebP, or GIF images.");
-    }
-    if (file.size > MAX_UPLOAD_BYTES) {
-      throw new Error("Each photo upload must be 5 MB or smaller.");
-    }
+  const validated = await Promise.all(files.map(async (file, index) => {
     const pref = preferences.find((item) => item.index === index) || preferences[index] || { index };
+    const safeImage = await validateImageFile(file);
     return {
       file,
       index,
+      safeImage,
       photoType: normalizePhotoType(pref.photoType),
       caption: pref.caption || null,
       useOnProfile: pref.useOnProfile !== false,
@@ -92,7 +79,9 @@ function getOptionalImages(form: FormData) {
       isMain: mainIndexFromPrefs === undefined ? index === 0 : mainIndexFromPrefs === index,
       sortOrder: Number.isFinite(Number(pref.sortOrder)) ? Number(pref.sortOrder) : index
     };
-  }).map((photo, index, all) => {
+  }));
+
+  return validated.map((photo, index, all) => {
     if (!all.some((item) => item.isMain) && index === 0) return { ...photo, isMain: true, useOnProfile: true, useOnFlyer: true };
     if (photo.isMain) return { ...photo, useOnProfile: true, useOnFlyer: true };
     return photo;
@@ -142,7 +131,7 @@ export async function POST(request: Request) {
       throw new Error(verification.message);
     }
 
-    const imageFiles = getOptionalImages(form);
+    const imageFiles = await getOptionalImages(form);
     const photoAltText = optionalText(form, "photo_alt_text");
     const profileType = normalizeProfileType(form.get("profile_type"));
     const isUrgent = profileType === "urgent_missing";
@@ -190,7 +179,7 @@ export async function POST(request: Request) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!url || !serviceKey) {
-      console.info("Submission captured in demo mode:", { ...payload, imageFiles: imageFiles.map((item) => ({ name: item.file.name, type: item.file.type, size: item.file.size })) });
+      console.info("Submission captured in demo mode.", { mode: "demo", imageCount: imageFiles.length, profileType });
       return redirectTo(request, "/submit/received?mode=demo");
     }
 
@@ -207,16 +196,16 @@ export async function POST(request: Request) {
     if (imageFiles.length && submissionRow?.id) {
       const photoRows = [];
       for (const photo of imageFiles) {
-        const filePath = `submissions/${submissionRow.id}/${photo.sortOrder}-${crypto.randomUUID()}-${safeFileName(photo.file.name)}`;
+        const filePath = generatedPrivatePhotoPath(submissionRow.id, photo.sortOrder, photo.safeImage.extension);
         const { error: uploadError } = await supabase.storage
           .from("mmips-submission-photos")
-          .upload(filePath, photo.file, { contentType: photo.file.type, upsert: false });
+          .upload(filePath, photo.file, { contentType: photo.safeImage.contentType, upsert: false });
         if (uploadError) throw uploadError;
         photoRows.push({
           submission_id: submissionRow.id,
           storage_path: filePath,
           original_name: photo.file.name,
-          content_type: photo.file.type,
+          content_type: photo.safeImage.contentType,
           size_bytes: photo.file.size,
           alt_text: photo.caption || photoAltText,
           caption: photo.caption,
@@ -260,8 +249,7 @@ export async function POST(request: Request) {
     });
 
     return redirectTo(request, "/submit/received");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Submission failed.";
-    return redirectTo(request, `/submit?error=${encodeURIComponent(message)}`);
+  } catch {
+    return redirectTo(request, "/submit?error=Submission%20could%20not%20be%20processed.%20Please%20review%20the%20form%20and%20try%20again.");
   }
 }

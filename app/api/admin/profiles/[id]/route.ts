@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeApiError } from "@/lib/security/api-errors";
 import { requireAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -166,8 +167,7 @@ export async function PATCH(request: Request, context: Params) {
       message: `Public profile updated. The live profile, flyer, JPEG export, map category, and QR-linked page now use the updated status/type.`,
       slug: current.slug
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not update public profile.";
-    return NextResponse.json({ ok: false, message }, { status: 500 });
+  } catch {
+    return safeApiError({ code: "public_profile_update_failed", message: "Could not update public profile." });
   }
 }

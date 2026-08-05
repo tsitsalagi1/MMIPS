@@ -33,7 +33,7 @@ export async function sendTransactionalEmail({ to, subject, text, html, replyTo 
   const defaultReplyTo = process.env.EMAIL_REPLY_TO || "contact@mmips.com";
 
   if (!apiKey) {
-    console.info("MMIPS email not sent because RESEND_API_KEY is not configured.", { to: recipient, subject });
+    console.info("MMIPS email not sent because RESEND_API_KEY is not configured.", { reason: "missing_resend_api_key", hasRecipient: Boolean(recipient), subjectLength: subject.length });
     return { ok: false, skipped: true, reason: "RESEND_API_KEY not configured." };
   }
 
@@ -54,8 +54,8 @@ export async function sendTransactionalEmail({ to, subject, text, html, replyTo 
   });
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    console.error("MMIPS email send failed.", { to: recipient, subject, status: response.status, body });
+    await response.text().catch(() => "");
+    console.error("MMIPS email send failed.", { code: "email_provider_non_2xx", status: response.status });
     return { ok: false, skipped: false, reason: `Email provider returned ${response.status}.` };
   }
 

@@ -108,8 +108,8 @@ function mapCase(row: any): MmipsCase {
     photoAltText: mainPhoto?.altText || row.photo_alt_text || null,
     photos,
     tipPhone: row.official_tip_contact || "911 for emergencies; list official tip line here",
-    latitude: row.latitude ? Number(row.latitude) : undefined,
-    longitude: row.longitude ? Number(row.longitude) : undefined,
+    latitude: undefined,
+    longitude: undefined,
     locationPrecision: row.location_precision || "city",
     riskFlags: []
   };
@@ -121,13 +121,13 @@ export async function getPublishedCases(): Promise<MmipsCase[]> {
 
   const { data, error } = await supabase
     .from("cases")
-    .select("*, persons(*), case_verifications(*), profile_photos(*)")
+    .select("id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)")
     .eq("review_status", "approved")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false });
 
   if (error) {
-    console.error("Could not load published profiles", error);
+    console.error("Could not load published profiles", { code: error.code });
     return [];
   }
 
@@ -141,14 +141,14 @@ export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
 
   const { data, error } = await supabase
     .from("cases")
-    .select("*, persons(*), case_verifications(*), profile_photos(*)")
+    .select("id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)")
     .eq("slug", slug)
     .eq("review_status", "approved")
     .not("published_at", "is", null)
     .maybeSingle();
 
   if (error) {
-    console.error("Could not load public profile", error);
+    console.error("Could not load public profile", { code: error.code });
     return null;
   }
 

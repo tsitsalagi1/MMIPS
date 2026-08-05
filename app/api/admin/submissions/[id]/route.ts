@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { safeApiError } from "@/lib/security/api-errors";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { sendTransactionalEmail, siteUrl } from "@/lib/email";
+import { generatedPublicPhotoPath, normalizedImageExtension } from "@/lib/security/uploads";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +44,6 @@ function makeSlug(name: string, id: string) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "case";
   return `${base}-${id.slice(0, 8)}`;
-}
-
-function safeFileName(name: string) {
-  const cleaned = name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-  return cleaned || "case-photo";
 }
 
 function todayIsoDate() {
@@ -145,7 +142,9 @@ export async function PATCH(request: Request, context: Params) {
       if (downloadError) throw downloadError;
 
       const sortOrder = photo.sort_order ?? copiedPhotos.length;
-      const publicPath: string = `profiles/${slug}/${sortOrder}-${crypto.randomUUID()}-${safeFileName(photo.original_name || "profile-photo")}`;
+      const extension = normalizedImageExtension(photo.original_name || "profile-photo.jpg", photo.content_type || privateFile.type || "");
+      if (!extension) throw new Error("Submitted photo cannot be published because its stored type is not an approved image type.");
+      const publicPath: string = generatedPublicPhotoPath(slug, sortOrder, extension);
       const { error: uploadPhotoError } = await admin.supabase.storage
         .from("mmips-public-case-photos")
         .upload(publicPath, privateFile, {
@@ -257,8 +256,7 @@ export async function PATCH(request: Request, context: Params) {
     });
 
     return NextResponse.json({ ok: true, message: "Submission approved and public profile created.", slug: caseRecord.slug });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Admin action failed.";
-    return NextResponse.json({ ok: false, message }, { status: 500 });
+  } catch {
+    return safeApiError({ code: "submission_admin_action_failed", message: "Admin action failed." });
   }
 }

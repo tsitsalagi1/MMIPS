@@ -22,7 +22,8 @@
     "security:secrets": "node scripts/check-no-secrets.mjs",
     "security:audit": "npm audit --audit-level=high",
     "security:audit:offline": "npm audit --offline --audit-level=high",
-    "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run test:static && npm run test:contract && npm run build && npm run test:smoke && npm run test:accessibility:baseline && npm run security:secrets && npm run security:audit:offline"
+    "verify": "npm run lint && npm run typecheck && npm run test:unit && npm run test:static && npm run test:contract && npm run test:security && npm run build && npm run test:smoke && npm run test:accessibility:baseline && npm run security:secrets && npm run security:audit:offline",
+    "test:security": "npm run build:test-modules && node --test tests/security/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.0",

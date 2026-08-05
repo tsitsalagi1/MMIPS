@@ -39,15 +39,15 @@ Each gate is binary: complete every item or do not enable real submissions.
 - [ ] Secrets are absent from the repository.
 - [ ] Production secrets are absent from Codex environments.
 - [ ] Admin routes require authentication and authorization.
-- [ ] Security headers and dependency scanning are reviewed.
+- [ ] Security headers and dependency scanning are reviewed. Baseline headers and local dependency audit were added/reviewed in `codex/security-audit`, but full CSP enforcement, GitHub audit evidence, manual penetration testing, and independent security review remain incomplete.
 
 ## RLS and storage access
 
-- [ ] RLS is enabled on all sensitive tables.
-- [ ] Anonymous users can read only approved public records.
+- [ ] RLS is enabled on all sensitive tables. Static SQL now enables/reasserts RLS, but live isolated-database verification remains incomplete.
+- [ ] Anonymous users can read only approved public records. Static policies and public loader allowlists were reviewed, but live anon-role tests remain incomplete.
 - [ ] Pending submissions, correction requests, subscriber data, moderator notes, audit logs, private images, and authorization evidence are not public.
-- [ ] Private storage buckets deny public reads.
-- [ ] Public storage buckets contain only moderator-approved public assets.
+- [ ] Private storage buckets deny public reads. Static bucket posture is private for pending uploads, but live storage/object-policy verification remains incomplete. Bucket metadata must be configured through the approved Supabase Storage API/dashboard process, not direct application migration mutation.
+- [ ] Public storage buckets contain only moderator-approved public assets. Code copies approved photos during moderation, but live storage contents/policies and cleanup are unverified. GIF uploads are deferred until secure image-processing controls exist.
 
 ## Submission journey
 

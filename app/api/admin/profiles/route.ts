@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeApiError } from "@/lib/security/api-errors";
 import { requireAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -102,8 +103,7 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ ok: true, profiles: data || [] });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not load public profiles.";
-    return NextResponse.json({ ok: false, message }, { status: 500 });
+  } catch {
+    return safeApiError({ code: "public_profiles_load_failed", message: "Could not load public profiles." });
   }
 }
