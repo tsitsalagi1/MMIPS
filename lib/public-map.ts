@@ -1,8 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CaseStatus, ProfileType } from "./types";
 
 export const PUBLIC_MAP_PRECISIONS = ["state", "broad_region", "tribal_region", "county", "city_centroid"] as const;
 export type PublicMapPrecision = typeof PUBLIC_MAP_PRECISIONS[number];
+export type PublicMapAvailability = "available" | "unconfigured" | "error";
 
 export interface PublicMapPoint {
   caseId: string;
@@ -16,8 +17,11 @@ export interface PublicMapPoint {
   precision: PublicMapPrecision;
   regionType: string;
   lastPublicUpdate: string | null;
-  thumbnailUrl: string | null;
-  thumbnailAlt: string | null;
+}
+
+export interface PublicMapResult {
+  points: PublicMapPoint[];
+  availability: PublicMapAvailability;
 }
 
 const FORBIDDEN_PRECISIONS = new Set(["exact", "address", "street", "building", "shelter", "home", "gps_device", "raw_last_known_coordinate"]);
@@ -33,37 +37,12 @@ function createPublicSupabaseClient() {
   return createClient(url, anonKey, { auth: { persistSession: false } });
 }
 
-function publicStorageUrl(bucket: string, path?: string | null) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url || !path) return null;
-  return `${url}/storage/v1/object/public/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}`;
-}
-
-export const syntheticPublicMapPoints: PublicMapPoint[] = [
-  {
-    caseId: "synthetic-map-001",
-    slug: "demo-case-family-approved",
-    publicName: "Synthetic Demo Profile — Family Approved Placeholder",
-    profileType: "missing",
-    publicStatus: "missing",
-    publicMapLabel: "Synthetic Northeast Oklahoma broad public-awareness area",
-    publicLatitude: 35.9,
-    publicLongitude: -95.0,
-    precision: "broad_region",
-    regionType: "Synthetic demo region",
-    lastPublicUpdate: "2026-07-05",
-    thumbnailUrl: "/placeholder-person.svg",
-    thumbnailAlt: "MMIPS synthetic demo placeholder image"
-  }
-];
-
-export function sanitizePublicMapRows(rows: any[] | null | undefined): PublicMapPoint[] {
+export function sanitizePublicMapRows(rows: unknown[] | null | undefined): PublicMapPoint[] {
   if (!Array.isArray(rows)) return [];
-  return rows.flatMap((row) => {
+  return rows.flatMap((unknownRow) => {
+    const row = unknownRow as Record<string, any>;
     const caseRow = Array.isArray(row.cases) ? row.cases[0] : row.cases;
     const person = Array.isArray(caseRow?.persons) ? caseRow.persons[0] : caseRow?.persons;
-    const photos = Array.isArray(caseRow?.profile_photos) ? caseRow.profile_photos : [];
-    const mainPhoto = photos.find((photo: any) => photo?.is_main) || photos[0] || null;
     if (!caseRow || caseRow.review_status !== "approved" || !caseRow.published_at) return [];
     if (row.moderator_approved !== true || row.hidden_at) return [];
     if (!isPublicMapPrecision(row.precision)) return [];
@@ -81,28 +60,32 @@ export function sanitizePublicMapRows(rows: any[] | null | undefined): PublicMap
       publicLongitude: lon,
       precision: row.precision,
       regionType: row.region_type || "approved public area",
-      lastPublicUpdate: caseRow.last_public_update || null,
-      thumbnailUrl: publicStorageUrl("mmips-public-case-photos", mainPhoto?.storage_path) || null,
-      thumbnailAlt: mainPhoto?.alt_text || null
+      lastPublicUpdate: caseRow.last_public_update || null
     } satisfies PublicMapPoint];
   });
 }
 
-export async function getPublicMapPoints(): Promise<PublicMapPoint[]> {
-  const supabase = createPublicSupabaseClient();
-  if (!supabase) return syntheticPublicMapPoints;
-  const { data, error } = await supabase
+type PublicMapClient = Pick<SupabaseClient, "from">;
+
+export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
+  const { data, error } = await client
     .from("public_case_map_points")
-    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, moderator_approved, hidden_at, cases!inner(id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name), profile_photos(storage_path, alt_text, use_on_profile, is_main, sort_order))")
+    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, moderator_approved, hidden_at, cases!inner(id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name))")
     .eq("moderator_approved", true)
     .is("hidden_at", null)
     .order("updated_at", { ascending: false })
     .limit(250);
   if (error) {
-    console.error("Could not load public map points", { code: error.code });
-    return [];
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
+    return { points: [], availability: "error" };
   }
-  return sanitizePublicMapRows(data);
+  return { points: sanitizePublicMapRows(data), availability: "available" };
+}
+
+export async function getPublicMapPoints(): Promise<PublicMapResult> {
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return { points: [], availability: "unconfigured" };
+  return loadPublicMapPoints(supabase);
 }
 
 export interface PublicMapFilters { profileType: string; status: string; region: string; }

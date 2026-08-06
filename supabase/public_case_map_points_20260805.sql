@@ -15,14 +15,12 @@ create table if not exists public_case_map_points (
   moderator_approved boolean not null default false,
   safety_reviewed_at timestamptz,
   approved_by uuid,
-  public_notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   hidden_at timestamptz,
   constraint public_case_map_points_lat_range check (public_latitude between -90 and 90),
   constraint public_case_map_points_lon_range check (public_longitude between -180 and 180),
-  constraint public_case_map_points_review_requires_approval check ((moderator_approved = false) or (safety_reviewed_at is not null)),
-  constraint public_case_map_points_notes_length check (public_notes is null or length(public_notes) <= 500)
+  constraint public_case_map_points_review_requires_approval check ((moderator_approved = false) or (safety_reviewed_at is not null))
 );
 
 create unique index if not exists public_case_map_points_one_active_per_case
@@ -33,9 +31,10 @@ create index if not exists public_case_map_points_public_read_idx
   on public_case_map_points(moderator_approved, hidden_at, precision, updated_at desc);
 
 alter table public_case_map_points enable row level security;
+alter table public_case_map_points force row level security;
 
 revoke all on public_case_map_points from anon, authenticated;
-grant select (case_id, public_label, public_latitude, public_longitude, precision, region_type, public_notes, updated_at) on public_case_map_points to anon, authenticated;
+grant select (case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at) on public_case_map_points to anon, authenticated;
 
 create policy "anon_read_approved_public_map_points" on public_case_map_points
   for select to anon
@@ -68,7 +67,10 @@ create policy "authenticated_read_approved_public_map_points" on public_case_map
 -- Static verification queries:
 -- select tablename, rowsecurity from pg_tables where tablename = 'public_case_map_points';
 -- select grantee, privilege_type, column_name from information_schema.column_privileges where table_name = 'public_case_map_points' order by grantee, privilege_type, column_name;
+-- Expected anon/authenticated columns exactly: case_id, precision, public_label, public_latitude, public_longitude, region_type, updated_at.
+-- Confirm public_notes, approved_by, safety_reviewed_at, moderator_approved, hidden_at, and all private source fields are absent.
 -- select policyname, roles, cmd, qual, with_check from pg_policies where tablename = 'public_case_map_points';
+-- Expected public policy commands: SELECT only. Zero anon/authenticated INSERT, UPDATE, or DELETE policies.
 -- select indexname, indexdef from pg_indexes where tablename = 'public_case_map_points';
 -- Isolated staging plan: use synthetic cases only; verify anon reads only approved visible points connected to approved published cases and cannot read approved_by/safety_reviewed_at.
 -- Rollback/forward-fix: do not disable RLS. Hide unsafe points with hidden_at or add narrower policies in a new reviewed forward migration. To abandon before launch, drop policies and table in isolated staging only.
