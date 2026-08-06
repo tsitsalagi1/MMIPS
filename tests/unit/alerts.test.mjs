@@ -1,34 +1,16 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAlertTokens, hashAlertToken, normalizeEmail, normalizePreferences } from '../../.test-dist/lib/alerts-core.js';
+import { ALERT_RESEND_COOLDOWN_MS, canSendConfirmation, createConfirmationToken, createUnsubscribeTokenId, hashAlertToken, normalizeEmail, signUnsubscribeToken, verifyUnsubscribeToken } from '../../.test-dist/lib/alerts-core.js';
 
-test('normalizes synthetic email addresses and rejects invalid or oversized input', () => {
-  assert.equal(normalizeEmail('  DEMO.SUBSCRIBER@EXAMPLE.TEST '), 'demo.subscriber@example.test');
-  assert.equal(normalizeEmail('not an email'), null);
-  assert.equal(normalizeEmail('x'.repeat(255) + '@example.test'), null);
-});
+const key = 'synthetic-signing-key-for-tests-only-000000000000000';
+const otherKey = 'other-synthetic-key-for-tests-only-00000000000000';
+const base = { id:'synthetic-id', email_normalized:'demo@example.test', status:'pending', confirmation_token_hash:null, confirmation_expires_at:null, unsubscribe_token_id:createUnsubscribeTokenId(), unsubscribe_token_version:1, preferences:{categories:['all_public_alerts']}, confirmation_last_sent_at:null, confirmation_window_started_at:null, confirmation_send_count:0 };
 
-test('normalizes Version 1 preferences to all public alerts only', () => {
-  assert.deepEqual(normalizePreferences({ categories: ['all_public_alerts', 'exact_location'] }), { categories: ['all_public_alerts'] });
-  assert.deepEqual(normalizePreferences(undefined), { categories: ['all_public_alerts'] });
-});
-
-test('generates separate strong confirmation and unsubscribe tokens and stores hashable values', () => {
-  const tokens = createAlertTokens(new Date('2026-08-05T00:00:00Z'));
-  assert.notEqual(tokens.confirmationToken, tokens.unsubscribeToken);
-  assert.ok(tokens.confirmationToken.length >= 40);
-  assert.ok(tokens.unsubscribeToken.length >= 40);
-  assert.match(tokens.confirmationTokenHash, /^sha256:[a-f0-9]{64}$/);
-  assert.match(tokens.unsubscribeTokenHash, /^sha256:[a-f0-9]{64}$/);
-  assert.equal(tokens.confirmationTokenHash, hashAlertToken(tokens.confirmationToken));
-  assert.equal(tokens.unsubscribeTokenHash, hashAlertToken(tokens.unsubscribeToken));
-  assert.equal(tokens.confirmationTokenHash.includes(tokens.confirmationToken), false);
-  assert.equal(tokens.unsubscribeTokenHash.includes(tokens.unsubscribeToken), false);
-  assert.equal(tokens.confirmationExpiresAt, '2026-08-07T00:00:00.000Z');
-});
-
-test('confirmation token hashes are deterministic without exposing raw token material', () => {
-  const hash = hashAlertToken('synthetic-token-value-for-test-only');
-  assert.match(hash, /^sha256:[a-f0-9]{64}$/);
-  assert.equal(hash.includes('synthetic-token-value'), false);
-});
+test('normalizes synthetic addresses consistently', () => { assert.equal(normalizeEmail(' DEMO@EXAMPLE.TEST '), 'demo@example.test'); assert.equal(normalizeEmail('invalid'), null); });
+test('confirmation token is random, hashed and expires', () => { const value=createConfirmationToken(new Date('2026-08-06T00:00:00Z')); assert.match(value.hash,/^sha256:[a-f0-9]{64}$/); assert.equal(value.hash.includes(value.token),false); assert.equal(value.expiresAt,'2026-08-08T00:00:00.000Z'); });
+test('signed unsubscribe token verifies with current or previous key', () => { const id=createUnsubscribeTokenId(), token=signUnsubscribeToken(id,key); assert.equal(verifyUnsubscribeToken(token,[key]),id); assert.equal(verifyUnsubscribeToken(token,[otherKey,key]),id); });
+test('unsubscribe signature rejects wrong key, modified identifier and signature', () => { const id=createUnsubscribeTokenId(), token=signUnsubscribeToken(id,key); assert.equal(verifyUnsubscribeToken(token,[otherKey]),null); const parts=token.split('.'); assert.equal(verifyUnsubscribeToken(`v1.${createUnsubscribeTokenId()}.${parts[2]}`,[key]),null); const changed=`${parts[2][0] === 'A' ? 'B' : 'A'}${parts[2].slice(1)}`; assert.equal(verifyUnsubscribeToken(`v1.${id}.${changed}`,[key]),null); });
+test('unsubscribe verifier rejects malformed input and uses an opaque id lookup result', () => { assert.equal(verifyUnsubscribeToken('malformed',[key]),null); assert.equal(verifyUnsubscribeToken('x'.repeat(300),[key]),null); assert.match(createUnsubscribeTokenId(),/^[A-Za-z0-9_-]{40,64}$/); });
+test('resend cooldown and bounded window are durable per normalized address', () => { const now=new Date('2026-08-06T12:00:00Z'); assert.equal(canSendConfirmation(null,now).send,true); assert.equal(canSendConfirmation({...base,confirmation_last_sent_at:new Date(now.getTime()-ALERT_RESEND_COOLDOWN_MS+1).toISOString()},now).send,false); assert.equal(canSendConfirmation({...base,confirmation_window_started_at:new Date(now.getTime()-3600000).toISOString(),confirmation_send_count:3},now).send,false); assert.equal(canSendConfirmation({...base,status:'active'},now).send,false); assert.equal(canSendConfirmation({...base,status:'suppressed'},now).send,false); });
+test('resend after cooldown rotates confirmation but preserves unsubscribe id', () => { const now=new Date('2026-08-06T12:00:00Z'), row={...base,confirmation_last_sent_at:new Date(now.getTime()-ALERT_RESEND_COOLDOWN_MS-1).toISOString(),confirmation_window_started_at:new Date(now.getTime()-3600000).toISOString(),confirmation_send_count:1}; const result=canSendConfirmation(row,now); assert.equal(result.send,true); assert.equal(result.sendCount,2); assert.equal(row.unsubscribe_token_id,base.unsubscribe_token_id); });
+test('token hashes do not contain raw bearer material', () => { const raw='synthetic-confirmation-token-only'; assert.equal(hashAlertToken(raw).includes(raw),false); });

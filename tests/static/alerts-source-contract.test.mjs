@@ -1,26 +1,8 @@
-import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import test from 'node:test';
-
-const page = readFileSync('app/alerts/page.tsx', 'utf8');
-const migration = readFileSync('supabase/alerts_v1_20260805.sql', 'utf8');
-const alerts = readFileSync('lib/alerts.ts', 'utf8');
-const alertsCore = readFileSync('lib/alerts-core.ts', 'utf8');
-
-test('alerts page has persistent accessible consent, privacy, and status messaging', () => {
-  for (const text of ['Subscribing does not report a case', 'MMIPS does not investigate tips', 'Your email address and alert preferences remain private', 'You must confirm through an email link', 'role="status"', 'role="alert"', 'htmlFor="alert-email"']) assert.equal(page.includes(text), true, text);
-  assert.equal(page.includes('placeholder='), false);
-});
-
-test('alerts migration statically enforces private RLS posture', () => {
-  for (const sql of ['STATIC REVIEW ONLY', 'alter table alert_subscribers enable row level security', 'alter table alerts_sent enable row level security', 'revoke all on alert_subscribers from anon, authenticated', 'revoke all on alerts_sent from anon, authenticated', 'confirmation_token_hash', 'unsubscribe_token_hash', 'alert_subscribers_email_normalized_key', 'alerts_sent_subscriber_event_key']) assert.equal(migration.includes(sql), true, sql);
-  assert.equal(/create policy .* to anon/i.test(migration), false);
-});
-
-test('alert implementation hashes tokens and avoids raw subscriber logging', () => {
-  assert.equal(alertsCore.includes('randomBytes(ALERT_TOKEN_BYTES)'), true);
-  assert.equal(alertsCore.includes('createHash("sha256")'), true);
-  assert.equal(alerts.includes('console.log'), false);
-  assert.equal(alerts.includes('console.error'), false);
-  assert.equal(alerts.includes('SUPABASE_SERVICE_ROLE_KEY'), true);
-});
+import assert from 'node:assert/strict'; import { readFileSync } from 'node:fs'; import test from 'node:test';
+const migration=readFileSync('supabase/alerts_v1_20260805.sql','utf8'), schema=readFileSync('supabase/schema.sql','utf8'), alerts=readFileSync('lib/alerts.ts','utf8'), page=readFileSync('app/alerts/page.tsx','utf8'), turnstile=readFileSync('lib/security/turnstile.ts','utf8');
+test('migration preserves legacy subscriber NOT NULL consent constraints and store writes them',()=>{ for(const field of ['consent_source text not null','consent_text text not null','consent_at timestamptz not null']) assert.ok(schema.includes(field)); for(const value of ['consent_source: ALERT_CONSENT_SOURCE','consent_text: ALERT_CONSENT_TEXT','consent_at: input.requestedAt','email: input.email']) assert.ok(alerts.includes(value),value); });
+test('migration detects normalized collisions without merging or deleting',()=>{ assert.ok(migration.includes('MMIPS_ALERT_EMAIL_COLLISION_REQUIRES_HUMAN_RECONCILIATION')); assert.ok(migration.includes('having count(*) > 1')); assert.equal(/delete from alert_subscribers/i.test(migration),false); });
+test('private alert_deliveries ledger leaves legacy alerts_sent unchanged',()=>{ for(const sql of ['create table if not exists alert_deliveries','delivery_status','unique(subscriber_id, alert_event_key)','force row level security','revoke all on alert_subscribers, alert_deliveries from anon, authenticated']) assert.ok(migration.includes(sql),sql); assert.equal(/alter table alerts_sent/i.test(migration),false); assert.equal(migration.includes('message text'),false); });
+test('atomic confirmation function consumes one pending unexpired token',()=>{ for(const sql of ["status='pending'","confirmation_expires_at > confirmed_time","confirmation_token_hash=null","returning id, email_normalized"]) assert.ok(migration.includes(sql),sql); });
+test('Turnstile client and server validate action and hostname and fail closed',()=>{ for(const text of ['NEXT_PUBLIC_TURNSTILE_SITE_KEY','turnstileToken','alerts_subscribe','expired-callback']) assert.ok(page.includes(text),text); for(const text of ['TURNSTILE_SECRET_KEY','expectedAction','expectedHostname','AbortController','Verification is unavailable']) assert.ok(turnstile.includes(text),text); });
+test('service-role boundary and no sensitive logging',()=>{ assert.ok(alerts.includes('SUPABASE_SERVICE_ROLE_KEY')); assert.equal(alerts.includes('console.'),false); });

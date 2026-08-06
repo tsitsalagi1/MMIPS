@@ -1,57 +1,20 @@
-type TurnstileResponse = {
-  success: boolean;
-  "error-codes"?: string[];
-  hostname?: string;
-  challenge_ts?: string;
-  action?: string;
-};
-
-export function clientIpFromRequest(request: Request) {
-  return (
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
-    null
-  );
-}
-
-export async function verifyTurnstileToken(token: FormDataEntryValue | null, request: Request) {
+type TurnstileResponse = { success: boolean; hostname?: string; action?: string };
+type TurnstileOptions = { expectedAction?: string; expectedHostname?: string; fetcher?: typeof fetch };
+export function clientIpFromRequest(request: Request) { return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || null; }
+export async function verifyTurnstileToken(token: FormDataEntryValue | null, _request: Request, options: TurnstileOptions = {}) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-
-  // Until Turnstile is configured, do not break local/dev testing.
-  // Public launch should set TURNSTILE_SECRET_KEY so submissions require verification.
-  if (!secret) {
-    return { ok: true, skipped: true as const };
-  }
-
-  const response = typeof token === "string" ? token.trim() : "";
-  if (!response) {
-    return { ok: false, message: "Verification is required. Please complete the anti-spam check." };
-  }
-
-  const formData = new FormData();
-  formData.append("secret", secret);
-  formData.append("response", response);
-  const ip = clientIpFromRequest(request);
-  if (ip) formData.append("remoteip", ip);
-
+  const bypass = process.env.NODE_ENV !== "production" && process.env.ALLOW_INSECURE_TURNSTILE_BYPASS === "true";
+  if (!secret) return bypass ? { ok: true, skipped: true as const } : { ok: false, message: "Verification is unavailable." };
+  const responseToken = typeof token === "string" ? token.trim() : "";
+  if (!responseToken || responseToken.length > 2048) return { ok: false, message: "Verification is required." };
+  const formData = new FormData(); formData.append("secret", secret); formData.append("response", responseToken);
+  // The Alerts flow deliberately does not transmit or store the optional remote IP.
+  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const result = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body: formData
-    });
-
-    const json = (await result.json()) as TurnstileResponse;
-    if (!json.success) {
-      console.error("Turnstile verification failed.", { code: "turnstile_rejected" });
-      return {
-        ok: false,
-        message: "Verification failed. Please try again."
-      };
-    }
-
+    const result = await (options.fetcher ?? fetch)("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: formData, signal: controller.signal });
+    const json = await result.json() as TurnstileResponse;
+    if (!result.ok || !json.success || (options.expectedAction && json.action !== options.expectedAction) || (options.expectedHostname && json.hostname !== options.expectedHostname)) return { ok: false, message: "Verification failed." };
     return { ok: true, skipped: false as const };
-  } catch {
-    console.error("Turnstile validation error", { code: "turnstile_validation_exception" });
-    return { ok: false, message: "Verification failed. Please try again." };
-  }
+  } catch { return { ok: false, message: "Verification failed." }; }
+  finally { clearTimeout(timeout); }
 }

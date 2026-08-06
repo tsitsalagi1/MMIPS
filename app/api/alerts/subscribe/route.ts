@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   if (length > MAX_ALERT_REQUEST_BYTES) return NextResponse.json({ ok: false, code: "request_too_large", message: "We could not process that request. Please check the email field and try again." }, { status: 413 });
   let body: { email?: unknown; preferences?: unknown; turnstileToken?: unknown };
   try { body = await request.json(); } catch { return NextResponse.json({ ok: false, code: "invalid_request", message: "We could not process that request. Please check the email field and try again." }, { status: 400 }); }
-  const turnstile = await verifyTurnstileToken(typeof body.turnstileToken === "string" ? body.turnstileToken : null, request);
+  const turnstile = await verifyTurnstileToken(typeof body.turnstileToken === "string" ? body.turnstileToken : null, request, { expectedAction: "alerts_subscribe", expectedHostname: process.env.TURNSTILE_EXPECTED_HOSTNAME });
   if (!turnstile.ok) return NextResponse.json({ ok: false, code: "abuse_check_failed", message: "We could not process that request right now. Please try again later." }, { status: 400 });
   const store = createSupabaseAlertStore();
   if (!store) return NextResponse.json({ ok: false, code: "alerts_unavailable", message: "Email alerts are not available right now. Please try again later." }, { status: 503 });

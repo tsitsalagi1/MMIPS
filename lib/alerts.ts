@@ -1,120 +1,63 @@
 import { createClient } from "@supabase/supabase-js";
-import { paragraphHtml, sendTransactionalEmail, siteUrl } from "@/lib/email";
-import { createAlertTokens, hashAlertToken, normalizeEmail, normalizePreferences, type AlertEventKind, type AlertSubscriberRecord, type AlertStore } from "./alerts-core";
-export { ALERT_CONFIRMATION_TTL_HOURS, ALERT_TOKEN_BYTES, MAX_ALERT_REQUEST_BYTES, createAlertTokens, hashAlertToken, normalizeEmail, normalizePreferences } from "./alerts-core";
+import { paragraphHtml, sendTransactionalEmail, siteUrl, type EmailResult } from "@/lib/email";
+import { canSendConfirmation, createConfirmationToken, createUnsubscribeTokenId, hashAlertToken, normalizeEmail, normalizePreferences, signUnsubscribeToken, verifyUnsubscribeToken, type AlertEventKind, type AlertStore } from "./alerts-core";
+export * from "./alerts-core";
+
+export type AlertMailer = { send(input: Parameters<typeof sendTransactionalEmail>[0]): Promise<EmailResult> };
+const productionMailer: AlertMailer = { send: sendTransactionalEmail };
+export const ALERT_CONSENT_SOURCE = "alerts_v1_web";
+export const ALERT_CONSENT_TEXT = "alerts_v1_disclosure_2026-08";
+const subscriberFields = "id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_id,unsubscribe_token_version,preferences,confirmation_last_sent_at,confirmation_window_started_at,confirmation_send_count";
 
 function supabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return url && key ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
 }
+export function unsubscribeSigningKeys() { return [process.env.ALERT_UNSUBSCRIBE_SIGNING_KEY, process.env.ALERT_UNSUBSCRIBE_PREVIOUS_SIGNING_KEY].filter((v): v is string => Boolean(v)); }
 
 export function createSupabaseAlertStore(): AlertStore | null {
-  const client = supabaseAdmin();
-  if (!client) return null;
+  const client = supabaseAdmin(); if (!client) return null;
   return {
-    async findSubscriberByEmail(email) {
-      const { data, error } = await client.from("alert_subscribers").select("id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_hash,preferences").eq("email_normalized", email).maybeSingle();
-      if (error) throw new Error("alerts_db_lookup_failed");
-      return data as AlertSubscriberRecord | null;
+    async findSubscriberByEmail(email) { const { data, error } = await client.from("alert_subscribers").select(subscriberFields).eq("email_normalized", email).maybeSingle(); if (error) throw new Error("alerts_db_lookup_failed"); return data; },
+    async savePending(input) {
+      const current = await this.findSubscriberByEmail(input.email);
+      const values = { email: input.email, email_normalized: input.email, status: "pending", consent_source: ALERT_CONSENT_SOURCE, consent_text: ALERT_CONSENT_TEXT, consent_at: input.requestedAt, subscription_requested_at: input.requestedAt, confirmation_token_hash: input.confirmationTokenHash, confirmation_expires_at: input.confirmationExpiresAt, unsubscribe_token_id: current?.unsubscribe_token_id ?? input.unsubscribeTokenId, unsubscribe_token_version: 1, preferences: input.preferences, confirmation_window_started_at: input.windowStartedAt, confirmation_send_count: input.sendCount, confirmed_at: null, unsubscribed_at: null, updated_at: input.requestedAt };
+      const { data, error } = await client.from("alert_subscribers").upsert(values, { onConflict: "email_normalized" }).select(subscriberFields).single(); if (error) throw new Error("alerts_db_upsert_failed"); return data;
     },
-    async upsertPendingSubscription(input) {
-      const { data, error } = await client.from("alert_subscribers").upsert({
-        email_normalized: input.email,
-        status: "pending",
-        confirmation_token_hash: input.confirmationTokenHash,
-        confirmation_expires_at: input.confirmationExpiresAt,
-        unsubscribe_token_hash: input.unsubscribeTokenHash,
-        preferences: input.preferences,
-        confirmed_at: null,
-        unsubscribed_at: null,
-        updated_at: new Date().toISOString()
-      }, { onConflict: "email_normalized" }).select("id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_hash,preferences").single();
-      if (error) throw new Error("alerts_db_upsert_failed");
-      return data as AlertSubscriberRecord;
-    },
+    async markConfirmationSent(id, sentAt) { const { error } = await client.from("alert_subscribers").update({ confirmation_last_sent_at: sentAt, updated_at: sentAt }).eq("id", id).eq("status", "pending"); if (error) throw new Error("alerts_db_sent_marker_failed"); },
     async activateByConfirmationHash(hash, now) {
-      const { data: row, error } = await client.from("alert_subscribers").select("id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_hash,preferences").eq("confirmation_token_hash", hash).eq("status", "pending").gt("confirmation_expires_at", now.toISOString()).maybeSingle();
-      if (error) throw new Error("alerts_db_confirm_lookup_failed");
-      if (!row) return null;
-      const { data, error: updateError } = await client.from("alert_subscribers").update({ status: "active", confirmation_token_hash: null, confirmation_expires_at: null, confirmed_at: now.toISOString(), updated_at: now.toISOString() }).eq("id", row.id).eq("status", "pending").select("id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_hash,preferences").single();
-      if (updateError) throw new Error("alerts_db_confirm_failed");
-      return data as AlertSubscriberRecord;
+      const { data, error } = await client.rpc("confirm_alert_subscription", { token_hash: hash, confirmed_time: now.toISOString() });
+      if (error) throw new Error("alerts_db_confirm_failed"); return Array.isArray(data) && data[0] ? data[0] : null;
     },
-    async unsubscribeByHash(hash, now) {
-      const { error } = await client.from("alert_subscribers").update({ status: "unsubscribed", unsubscribed_at: now.toISOString(), updated_at: now.toISOString(), confirmation_token_hash: null, confirmation_expires_at: null }).eq("unsubscribe_token_hash", hash).in("status", ["pending", "active"]);
-      if (error) throw new Error("alerts_db_unsubscribe_failed");
-      return true;
-    },
-    async activeSubscribers() {
-      const { data, error } = await client.from("alert_subscribers").select("id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_hash,preferences").eq("status", "active");
-      if (error) throw new Error("alerts_db_active_lookup_failed");
-      return data as AlertSubscriberRecord[];
-    },
-    async hasDelivery(subscriberId, alertEventKey) {
-      const { data, error } = await client.from("alerts_sent").select("id").eq("subscriber_id", subscriberId).eq("alert_event_key", alertEventKey).maybeSingle();
-      if (error) throw new Error("alerts_db_delivery_lookup_failed");
-      return Boolean(data);
-    },
-    async recordDelivery(input) {
-      const { error } = await client.from("alerts_sent").insert({ subscriber_id: input.subscriberId, alert_event_key: input.alertEventKey, status: input.status, provider_message_id: input.providerMessageId ?? null, failure_code: input.failureCode ?? null });
-      if (error) throw new Error("alerts_db_delivery_insert_failed");
-    }
+    async unsubscribeByTokenId(id, now) { const { error } = await client.from("alert_subscribers").update({ status: "unsubscribed", unsubscribed_at: now.toISOString(), opt_out_at: now.toISOString(), email_enabled: false, confirmation_token_hash: null, confirmation_expires_at: null, updated_at: now.toISOString() }).eq("unsubscribe_token_id", id).in("status", ["pending", "active"]); if (error) throw new Error("alerts_db_unsubscribe_failed"); return true; },
+    async activeSubscribers() { const { data, error } = await client.from("alert_subscribers").select(subscriberFields).eq("status", "active").eq("email_enabled", true); if (error) throw new Error("alerts_db_active_lookup_failed"); return data ?? []; },
+    async claimDelivery(input) { const { data, error } = await client.from("alert_deliveries").upsert({ subscriber_id: input.subscriberId, alert_event_key: input.alertEventKey, delivery_status: "queued", updated_at: new Date().toISOString() }, { onConflict: "subscriber_id,alert_event_key", ignoreDuplicates: true }).select("id,delivery_status").maybeSingle(); if (error) throw new Error("alerts_db_delivery_claim_failed"); return data; },
+    async updateDelivery(id, status, details = {}) { const { error } = await client.from("alert_deliveries").update({ delivery_status: status, provider_message_id: details.providerMessageId ?? null, failure_code: details.failureCode ?? null, updated_at: new Date().toISOString() }).eq("id", id).neq("delivery_status", "sent"); if (error) throw new Error("alerts_db_delivery_update_failed"); }
   };
 }
 
-export async function requestAlertSubscription(store: AlertStore, emailInput: unknown, prefsInput?: unknown) {
-  const email = normalizeEmail(emailInput);
-  if (!email) return { ok: false as const, code: "invalid_email" };
-  const existing = await store.findSubscriberByEmail(email);
-  if (existing?.status === "active" || existing?.status === "suppressed") return { ok: true as const, code: "accepted" };
-  const tokens = createAlertTokens();
-  await store.upsertPendingSubscription({ email, confirmationTokenHash: tokens.confirmationTokenHash, confirmationExpiresAt: tokens.confirmationExpiresAt, unsubscribeTokenHash: tokens.unsubscribeTokenHash, preferences: normalizePreferences(prefsInput) });
-  const confirmUrl = `${siteUrl()}/api/alerts/confirm?token=${encodeURIComponent(tokens.confirmationToken)}`;
-  await sendAlertConfirmationEmail(email, confirmUrl);
+export async function requestAlertSubscription(store: AlertStore, emailInput: unknown, prefsInput?: unknown, dependencies: { now?: Date; mailer?: AlertMailer } = {}) {
+  const email = normalizeEmail(emailInput); if (!email) return { ok: false as const, code: "invalid_email" };
+  const now = dependencies.now ?? new Date(), existing = await store.findSubscriberByEmail(email), eligibility = canSendConfirmation(existing, now);
+  if (!eligibility.send) return { ok: true as const, code: "accepted" };
+  const confirmation = createConfirmationToken(now);
+  const subscriber = await store.savePending({ email, confirmationTokenHash: confirmation.hash, confirmationExpiresAt: confirmation.expiresAt, unsubscribeTokenId: existing?.unsubscribe_token_id ?? createUnsubscribeTokenId(), preferences: normalizePreferences(prefsInput), requestedAt: now.toISOString(), windowStartedAt: eligibility.windowStartedAt!, sendCount: eligibility.sendCount! });
+  const result = await sendAlertConfirmationEmail(email, `${siteUrl()}/alerts/confirm?token=${encodeURIComponent(confirmation.token)}`, dependencies.mailer);
+  if (result.ok) await store.markConfirmationSent(subscriber.id, now.toISOString());
   return { ok: true as const, code: "accepted" };
 }
-
-export async function confirmAlertSubscription(store: AlertStore, token: unknown, now = new Date()) {
-  if (typeof token !== "string" || token.length < 32 || token.length > 256) return { ok: true as const, code: "confirmation_processed" };
-  const subscriber = await store.activateByConfirmationHash(hashAlertToken(token), now);
-  if (subscriber) await sendAlertConfirmationSuccessEmail(subscriber.email_normalized);
+export async function confirmAlertSubscription(store: AlertStore, token: unknown, now = new Date(), mailer: AlertMailer = productionMailer) {
+  if (typeof token === "string" && token.length >= 32 && token.length <= 256) { const subscriber = await store.activateByConfirmationHash(hashAlertToken(token), now); if (subscriber) await sendAlertConfirmationSuccessEmail(subscriber.email_normalized, mailer); }
   return { ok: true as const, code: "confirmation_processed" };
 }
+export async function unsubscribeFromAlerts(store: AlertStore, token: unknown, now = new Date(), keys = unsubscribeSigningKeys()) { const id = verifyUnsubscribeToken(token, keys); if (id) await store.unsubscribeByTokenId(id, now); return { ok: true as const, code: "unsubscribe_processed" }; }
 
-export async function unsubscribeFromAlerts(store: AlertStore, token: unknown, now = new Date()) {
-  if (typeof token === "string" && token.length >= 32 && token.length <= 256) await store.unsubscribeByHash(hashAlertToken(token), now);
-  return { ok: true as const, code: "unsubscribe_processed" };
+export function sendAlertConfirmationEmail(to: string, confirmationUrl: string, mailer: AlertMailer = productionMailer) { const text = `Please confirm your MMIPS email alerts subscription: ${confirmationUrl}\n\nSubscribing does not report a case or ask MMIPS to investigate. If you did not request this, ignore this message.`; return mailer.send({ to, subject: "Confirm MMIPS email alerts", text, html: paragraphHtml(text) }); }
+export function sendAlertConfirmationSuccessEmail(to: string, mailer: AlertMailer = productionMailer) { const text = "Your MMIPS public email alerts subscription is confirmed. Every alert includes an unsubscribe link."; return mailer.send({ to, subject: "MMIPS email alerts confirmed", text, html: paragraphHtml(text) }); }
+function safePublicUrl(value: string) { const url = new URL(value); const allowed = new URL(siteUrl()); if (url.protocol !== "https:" || url.origin !== allowed.origin || !url.pathname.startsWith("/cases/")) throw new Error("alerts_public_url_invalid"); return url.toString(); }
+export function buildPublicAlertEmail(input: { title: string; publicUrl: string; unsubscribeTokenId: string; signingKey: string; deliveryKey: string }) {
+  const token = signUnsubscribeToken(input.unsubscribeTokenId, input.signingKey), unsubscribeUrl = `${siteUrl()}/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`, publicUrl = safePublicUrl(input.publicUrl), safeTitle = input.title.slice(0, 160);
+  const text = `MMIPS public alert: ${safeTitle}\n\nView the approved public profile or update: ${publicUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
+  return { subject: "MMIPS public alert", text, html: paragraphHtml(text), unsubscribeUrl, headers: { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }, idempotencyKey: `alert-${hashAlertToken(input.deliveryKey).slice(7, 39)}` };
 }
-
-export async function sendAlertConfirmationEmail(to: string, confirmationUrl: string) {
-  const text = `Please confirm your MMIPS email alerts subscription by opening this link: ${confirmationUrl}\n\nSubscribing does not report a case, send a tip, or ask MMIPS to investigate. Your email is kept private. If you did not request this, you can ignore this message.`;
-  return sendTransactionalEmail({ to, subject: "Confirm MMIPS email alerts", text, html: paragraphHtml(text) });
-}
-
-export async function sendAlertConfirmationSuccessEmail(to: string) {
-  const text = "Your MMIPS public email alerts subscription is confirmed. You can unsubscribe from any alert email. MMIPS does not investigate tips; send urgent or official information to the listed agency or official contact.";
-  return sendTransactionalEmail({ to, subject: "MMIPS email alerts confirmed", text, html: paragraphHtml(text) });
-}
-
-export function buildPublicAlertEmail(input: { title: string; publicUrl: string; unsubscribeToken: string }) {
-  const unsubscribeUrl = `${siteUrl()}/api/alerts/unsubscribe?token=${encodeURIComponent(input.unsubscribeToken)}`;
-  const safeTitle = input.title.slice(0, 160);
-  const text = `MMIPS public alert: ${safeTitle}\n\nView the approved public profile or update: ${input.publicUrl}\n\nThis alert contains only moderator-approved public information. MMIPS does not investigate tips.\n\nUnsubscribe: ${unsubscribeUrl}`;
-  return { subject: "MMIPS public alert", text, html: paragraphHtml(text), unsubscribeUrl };
-}
-
-export async function prepareApprovedPublicAlertDelivery(store: AlertStore, event: { key: string; kind: AlertEventKind; title: string; publicUrl: string; approved: boolean; published: boolean; hidden?: boolean; removed?: boolean }) {
-  if (!event.approved || !event.published || event.hidden || event.removed) return { queued: 0, skipped: "not_public_safe" as const };
-  const subscribers = await store.activeSubscribers();
-  let queued = 0;
-  for (const subscriber of subscribers) {
-    if (!subscriber.unsubscribe_token_hash) continue;
-    if (subscriber.status !== "active") continue;
-    if (await store.hasDelivery(subscriber.id, event.key)) continue;
-    await store.recordDelivery({ subscriberId: subscriber.id, alertEventKey: event.key, status: "queued" });
-    queued += 1;
-  }
-  return { queued, skipped: null };
-}
+export async function prepareApprovedPublicAlertDelivery(store: AlertStore, event: { key: string; kind: AlertEventKind; title: string; publicUrl: string; approved: boolean; published: boolean; hidden?: boolean; removed?: boolean }) { if (!event.approved || !event.published || event.hidden || event.removed) return { queued: 0, skipped: "not_public_safe" as const }; let queued = 0; for (const subscriber of await store.activeSubscribers()) { if (subscriber.status !== "active") continue; if (await store.claimDelivery({ subscriberId: subscriber.id, alertEventKey: event.key })) queued++; } return { queued, skipped: null }; }

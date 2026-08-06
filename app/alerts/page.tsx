@@ -1,6 +1,9 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import Script from "next/script";
+import { FormEvent, useEffect, useRef, useState } from "react";
+
+declare global { interface Window { turnstile?: { render(element: HTMLElement, options: Record<string, unknown>): string; reset(id: string): void } } }
 
 const genericPending = "If this email can receive MMIPS alerts, a confirmation message will be sent. Please check your email and confirm before alerts are active.";
 
@@ -9,6 +12,12 @@ export default function AlertsPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "pending" | "error">("idle");
   const [message, setMessage] = useState("");
   const statusRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  function renderTurnstile() { if (!siteKey || !window.turnstile || !widgetRef.current || widgetId.current) return; widgetId.current = window.turnstile.render(widgetRef.current, { sitekey: siteKey, action: "alerts_subscribe", callback: (token: string) => setTurnstileToken(token), "expired-callback": () => setTurnstileToken(""), "error-callback": () => { setTurnstileToken(""); setMessage("The anti-spam check could not load. Please retry it."); } }); }
+  useEffect(() => { renderTurnstile(); });
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -18,7 +27,7 @@ export default function AlertsPage() {
       const response = await fetch("/api/alerts/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, preferences: { categories: ["all_public_alerts"] } })
+        body: JSON.stringify({ email, preferences: { categories: ["all_public_alerts"] }, turnstileToken })
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -33,12 +42,14 @@ export default function AlertsPage() {
       setStatus("error");
       setMessage("We could not process that request right now. Please try again later.");
     } finally {
+      setTurnstileToken(""); if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
       window.setTimeout(() => statusRef.current?.focus(), 0);
     }
   }
 
   return (
     <main className="stack page-narrow" id="main-content">
+      {siteKey && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onLoad={renderTurnstile} />}
       <section className="hero-card stack">
         <p className="eyebrow">Private email alerts</p>
         <h1>Get approved public MMIPS updates by email</h1>
@@ -70,9 +81,10 @@ export default function AlertsPage() {
           <p className="field-help">This broad preference avoids exact-location or sensitive targeting in Version 1.</p>
         </fieldset>
         <p id="alerts-privacy" className="notice">MMIPS stores subscriber information privately. Public responses are intentionally general and will not reveal whether an email was already subscribed.</p>
+        {siteKey ? <div className="field-group"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, retry the check before submitting.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable. Subscription requests will remain disabled.</p>}
         {status === "error" && <div className="error-summary" role="alert"><strong>Request not completed.</strong><p>{message}</p></div>}
         <div id="alerts-status" ref={statusRef} tabIndex={-1} role="status" aria-live="polite" className="status-message">{status === "loading" ? "Sending the request…" : message}</div>
-        <button type="submit" disabled={status === "loading"}>{status === "loading" ? "Sending request…" : "Send confirmation email"}</button>
+        <button type="submit" disabled={status === "loading" || !siteKey || !turnstileToken}>{status === "loading" ? "Sending request…" : "Send confirmation email"}</button>
       </form>
     </main>
   );

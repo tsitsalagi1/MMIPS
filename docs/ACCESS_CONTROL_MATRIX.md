@@ -51,3 +51,5 @@ Version 1 upload acceptance is restricted to JPEG/JPG, PNG, and WebP. GIF is exc
 The SQL hardening migration no longer mutates `storage.buckets`; bucket configuration is documented in `docs/STORAGE_CONFIGURATION_RUNBOOK.md` and requires separate synthetic staging verification. Storage objects policies remain static-review-only in this task.
 
 All current `app/api/**` 500 response catch blocks were reviewed for raw `error.message` exposure. Current identified 500 responses now use generic user-safe messages with bounded internal error codes through `safeApiError` or generic redirects; validation/404/403 messages remain explicit but do not contain raw provider/database errors.
+
+Alerts V1 correction: `alert_subscribers` and new `alert_deliveries` are service-role-only in the static migration; anon/authenticated grants are revoked and RLS is enabled/forced. Public access is only through generic bounded routes. Live isolated RLS verification is still required. Legacy `alerts_sent` is not used or altered by V1.

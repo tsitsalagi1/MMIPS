@@ -61,3 +61,6 @@ Real family, victim, witness, subscriber, requester, or investigative data must 
 
 - Added private email-alert subscription UI, server routes, token hashing, static migration, synthetic tests, and documentation.
 - Alerts remain not production-ready until the static migration is reviewed/applied in isolated synthetic staging, live RLS is verified, live email delivery is tested with non-production provider credentials, distributed rate limiting is implemented, and browser/manual accessibility review is completed.
+
+## Alerts V1 correction (2026-08-06)
+Source now preserves legacy consent constraints, uses a separate private `alert_deliveries` ledger, signed reconstructible unsubscribe links, read-only GET pages, explicit/RFC 8058 POST, client/server Turnstile validation, durable resend controls, atomic confirmation, and allowlisted email headers/idempotency. Migration and tests remain static/mocked only. Live RLS, live provider delivery, distributed rate limiting, browser accessibility, and independent review remain incomplete.

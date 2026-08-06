@@ -1,74 +1,73 @@
 import crypto from "node:crypto";
 
 export const ALERT_CONFIRMATION_TTL_HOURS = 48;
+export const ALERT_RESEND_COOLDOWN_MS = 10 * 60 * 1000;
+export const ALERT_RESEND_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const ALERT_RESEND_WINDOW_LIMIT = 3;
 export const ALERT_TOKEN_BYTES = 32;
 export const MAX_ALERT_REQUEST_BYTES = 4096;
 const TOKEN_HASH_PREFIX = "sha256:";
 
 export type AlertPreference = "all_public_alerts";
 export type SubscriberStatus = "pending" | "active" | "unsubscribed" | "suppressed";
+export type DeliveryStatus = "queued" | "sent" | "failed_retryable" | "failed_final";
 export type AlertEventKind = "new_public_profile" | "material_public_status_update";
 
 export type AlertSubscriberRecord = {
-  id: string;
-  email_normalized: string;
-  status: SubscriberStatus;
-  confirmation_token_hash: string | null;
-  confirmation_expires_at: string | null;
-  unsubscribe_token_hash: string | null;
+  id: string; email_normalized: string; status: SubscriberStatus;
+  confirmation_token_hash: string | null; confirmation_expires_at: string | null;
+  unsubscribe_token_id: string; unsubscribe_token_version: number;
   preferences: { categories: AlertPreference[] };
+  confirmation_last_sent_at: string | null; confirmation_window_started_at: string | null;
+  confirmation_send_count: number;
 };
 
 export type AlertStore = {
   findSubscriberByEmail(email: string): Promise<AlertSubscriberRecord | null>;
-  upsertPendingSubscription(input: {
-    email: string;
-    confirmationTokenHash: string;
-    confirmationExpiresAt: string;
-    unsubscribeTokenHash: string;
-    preferences: { categories: AlertPreference[] };
-  }): Promise<AlertSubscriberRecord>;
-  activateByConfirmationHash(hash: string, now: Date): Promise<AlertSubscriberRecord | null>;
-  unsubscribeByHash(hash: string, now: Date): Promise<boolean>;
+  savePending(input: { email: string; confirmationTokenHash: string; confirmationExpiresAt: string; unsubscribeTokenId?: string; preferences: { categories: AlertPreference[] }; requestedAt: string; windowStartedAt: string; sendCount: number }): Promise<AlertSubscriberRecord>;
+  markConfirmationSent(id: string, sentAt: string): Promise<void>;
+  activateByConfirmationHash(hash: string, now: Date): Promise<Pick<AlertSubscriberRecord, "id" | "email_normalized"> | null>;
+  unsubscribeByTokenId(id: string, now: Date): Promise<boolean>;
   activeSubscribers(): Promise<AlertSubscriberRecord[]>;
-  hasDelivery(subscriberId: string, alertEventKey: string): Promise<boolean>;
-  recordDelivery(input: { subscriberId: string; alertEventKey: string; status: string; providerMessageId?: string | null; failureCode?: string | null }): Promise<void>;
+  claimDelivery(input: { subscriberId: string; alertEventKey: string }): Promise<{ id: string; delivery_status: DeliveryStatus } | null>;
+  updateDelivery(id: string, status: DeliveryStatus, details?: { providerMessageId?: string; failureCode?: string }): Promise<void>;
 };
 
 export function normalizeEmail(input: unknown) {
   if (typeof input !== "string") return null;
   const email = input.trim().toLowerCase();
-  if (email.length < 3 || email.length > 254) return null;
-  if (/\s/.test(email)) return null;
-  if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) return null;
+  if (email.length < 3 || email.length > 254 || /\s/.test(email) || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) return null;
   return email;
 }
+export function normalizePreferences(input: unknown): { categories: AlertPreference[] } { void input; return { categories: ["all_public_alerts"] }; }
+export function createOpaqueToken() { return crypto.randomBytes(ALERT_TOKEN_BYTES).toString("base64url"); }
+export function hashAlertToken(token: string) { return `${TOKEN_HASH_PREFIX}${crypto.createHash("sha256").update(token, "utf8").digest("hex")}`; }
+export function createConfirmationToken(now = new Date()) { const token = createOpaqueToken(); return { token, hash: hashAlertToken(token), expiresAt: new Date(now.getTime() + ALERT_CONFIRMATION_TTL_HOURS * 3600000).toISOString() }; }
+export function createUnsubscribeTokenId() { return createOpaqueToken(); }
 
-export function normalizePreferences(input: unknown): { categories: AlertPreference[] } {
-  if (input && typeof input === "object" && "categories" in input && Array.isArray((input as { categories?: unknown }).categories)) {
-    const safe = (input as { categories: unknown[] }).categories.filter((item): item is AlertPreference => item === "all_public_alerts");
-    return { categories: safe.length ? ["all_public_alerts"] : ["all_public_alerts"] };
+function signature(id: string, key: string) { return crypto.createHmac("sha256", key).update(`v1.${id}`, "utf8").digest(); }
+export function signUnsubscribeToken(id: string, key: string) {
+  if (!/^[A-Za-z0-9_-]{40,64}$/.test(id) || key.length < 32) throw new Error("alerts_signing_configuration_invalid");
+  return `v1.${id}.${signature(id, key).toString("base64url")}`;
+}
+export function verifyUnsubscribeToken(token: unknown, keys: readonly string[]) {
+  if (typeof token !== "string" || token.length > 256) return null;
+  const match = /^v1\.([A-Za-z0-9_-]{40,64})\.([A-Za-z0-9_-]{43})$/.exec(token);
+  if (!match) return null;
+  const supplied = Buffer.from(match[2], "base64url");
+  for (const key of keys.filter((item) => item.length >= 32)) {
+    const expected = signature(match[1], key);
+    if (supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected)) return match[1];
   }
-  return { categories: ["all_public_alerts"] };
+  return null;
 }
-
-export function createOpaqueToken() {
-  return crypto.randomBytes(ALERT_TOKEN_BYTES).toString("base64url");
+export function canSendConfirmation(row: AlertSubscriberRecord | null, now: Date) {
+  if (!row) return { send: true, windowStartedAt: now.toISOString(), sendCount: 1 };
+  if (row.status === "active" || row.status === "suppressed") return { send: false };
+  const last = row.confirmation_last_sent_at ? Date.parse(row.confirmation_last_sent_at) : 0;
+  if (last && now.getTime() - last < ALERT_RESEND_COOLDOWN_MS) return { send: false };
+  const windowStart = row.confirmation_window_started_at ? Date.parse(row.confirmation_window_started_at) : 0;
+  if (!windowStart || now.getTime() - windowStart >= ALERT_RESEND_WINDOW_MS) return { send: true, windowStartedAt: now.toISOString(), sendCount: 1 };
+  if (row.confirmation_send_count >= ALERT_RESEND_WINDOW_LIMIT) return { send: false };
+  return { send: true, windowStartedAt: row.confirmation_window_started_at!, sendCount: row.confirmation_send_count + 1 };
 }
-
-export function hashAlertToken(token: string) {
-  return `${TOKEN_HASH_PREFIX}${crypto.createHash("sha256").update(token, "utf8").digest("hex")}`;
-}
-
-export function createAlertTokens(now = new Date()) {
-  const confirmationToken = createOpaqueToken();
-  const unsubscribeToken = createOpaqueToken();
-  return {
-    confirmationToken,
-    confirmationTokenHash: hashAlertToken(confirmationToken),
-    confirmationExpiresAt: new Date(now.getTime() + ALERT_CONFIRMATION_TTL_HOURS * 60 * 60 * 1000).toISOString(),
-    unsubscribeToken,
-    unsubscribeTokenHash: hashAlertToken(unsubscribeToken)
-  };
-}
-

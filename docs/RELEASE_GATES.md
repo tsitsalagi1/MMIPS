@@ -122,3 +122,6 @@ Each gate is binary: complete every item or do not enable real submissions.
 - [ ] Independent family-support/victim-services review is complete.
 - [ ] Remaining risks are documented.
 - [ ] Named human decision-maker records go/no-go before enabling real submissions.
+
+### Alerts V1 correction evidence (2026-08-06)
+Source/static gates cover legacy schema compatibility, private delivery-ledger contracts, signed unsubscribe, GET/POST semantics, RFC 8058 headers, Turnstile action/hostname checks, resend controls, and atomic confirmation. This does not complete live migration/RLS, provider delivery, distributed rate limiting, manual/browser accessibility, or independent review gates.

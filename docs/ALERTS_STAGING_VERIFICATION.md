@@ -1,23 +1,9 @@
-# Alerts V1 Staging Verification
+# Alerts V1 staging verification
 
-Use an isolated synthetic Supabase project only. Do not use real subscriber, family, victim, witness, requester, moderator, investigative, exact-location, production, or staging-live data.
+**Migration is STATIC REVIEW ONLY — NOT EXECUTED.** Order: baseline `supabase/schema.sql`, reviewed security hardening, then `supabase/alerts_v1_20260805.sql` in a disposable synthetic Supabase project. Run the collision preflight; any normalized duplicate must stop work for human reconciliation. Never merge/delete it automatically. Verify legacy phone-only rows survive and new email rows satisfy all legacy consent NOT NULL fields.
 
-## Migration order
+With synthetic addresses and Cloudflare test keys, verify anon/auth cannot read/write subscriber or delivery tables; service-role routes can; confirmation is atomic under concurrent POSTs; GET pages perform no writes; cooldown/window limits persist; RFC 8058 POST is generic/idempotent; and delivery uniqueness/retry states hold. Confirm missing production Turnstile, email, signing, or Supabase configuration fails closed. No remote IP is sent to Siteverify.
 
-1. Apply baseline schema.
-2. Apply `supabase/security_hardening_20260805.sql` if not already present.
-3. Apply `supabase/alerts_v1_20260805.sql`.
+Mocked tests are not live RLS or live email evidence. Before release, perform isolated migration/RLS verification, mocked-to-sandbox provider acceptance and retry monitoring, browser/keyboard/screen-reader/contrast/zoom testing, and independent review. Distributed network rate limiting remains required.
 
-The Alerts V1 migration is marked `STATIC REVIEW ONLY — NOT EXECUTED` in this repository and was not applied by Codex.
-
-## Verification
-
-Run the verification queries embedded in the migration, then use synthetic addresses from reserved example domains through the public routes. Verify anon and ordinary authenticated roles cannot select, insert, update, or delete `alert_subscribers` or `alerts_sent`; service-role server routes can perform pending, confirm, unsubscribe, and ledger writes.
-
-## Rollback / forward fix
-
-If the migration has not been applied, rollback is to revert the code and migration file. If applied in synthetic staging, disable alert routes, preserve a database snapshot, and use a reviewed forward migration to drop or repair policies/indexes/columns. Do not run destructive subscriber changes in production without human approval.
-
-## Accessibility verification still required
-
-Source checks do not prove WCAG 2.2 AA conformance. Browser, keyboard, screen-reader, 200% zoom/reflow, contrast, Turnstile, and independent trauma-informed human review remain required.
+Rollback/forward-fix: disable alert routes and dispatch first; snapshot synthetic evidence; apply a reviewed forward migration to repair function/policies/table. Drop `alert_deliveries` only if unused. Never drop, merge, or rewrite subscriber/consent history automatically.

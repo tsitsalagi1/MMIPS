@@ -1,19 +1,7 @@
-# Alerts Privacy and Token Model
+# Alerts privacy and token model
 
-Subscriber email addresses, preferences, confirmation token hashes, unsubscribe token hashes, delivery history, and bounded provider metadata are private.
+Confirmation credentials are 32 random bytes encoded as base64url; only a SHA-256-prefixed hash is stored, expiration is 48 hours, and the atomic confirmation function clears the hash on success.
 
-## Email normalization
+Unsubscribe uses a random, private `unsubscribe_token_id` plus HMAC-SHA-256. The public `v1.<id>.<signature>` bearer token is reconstructible server-side but is never stored. Verification parses bounded input and compares signatures with `timingSafeEqual`. `ALERT_UNSUBSCRIBE_SIGNING_KEY` is server-only. During controlled rotation, configure `ALERT_UNSUBSCRIBE_PREVIOUS_SIGNING_KEY`, deploy the new current key, retain the previous key through the longest email-link retention period, then remove it. Emergency compromise response disables alert delivery/unsubscribe routes, rotates keys, and communicates a safe forward fix; old links necessarily stop after emergency revocation. Ordinary resubscription preserves the identifier, so old links continue to unsubscribe.
 
-Email input is trimmed, lowercased, length-bounded, checked for whitespace, and validated with a simple email shape before storage. Public responses never reveal whether a normalized email is new, pending, active, unsubscribed, or suppressed.
-
-## Tokens
-
-Confirmation and unsubscribe tokens are separate 32-byte cryptographically random base64url values. Raw tokens are sent only in email links and are never stored. The database stores `sha256:`-prefixed SHA-256 hashes. Confirmation tokens expire after 48 hours and are single-use because activation clears the stored confirmation hash and expiration. Unsubscribe tokens are separate from confirmation tokens and remain usable for low-friction unsubscribe until rotated by a future confirmed subscription request.
-
-## Provider failure behavior
-
-Routes return bounded public error codes and do not expose Supabase or email-provider bodies. Provider response bodies are discarded and not logged. Tests use mocked/synthetic delivery only; live email delivery is not verified.
-
-## Remaining limitations
-
-Distributed rate limiting is not implemented. Live RLS verification remains static-only until run in an isolated synthetic Supabase project. Alert dispatch triggering is intentionally not automatic yet.
+Normalized email, bounded consent evidence, preferences, token hashes/IDs, resend counters, and delivery metadata are private. Public responses remain generic. Provider bodies are discarded; only a validated bounded provider message ID and bounded failure code may be retained. No email, token, request body, or provider body is logged.
