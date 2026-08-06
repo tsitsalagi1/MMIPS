@@ -1,0 +1,16 @@
+.shell { display: grid; gap: 18px; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: end; }
+.live { position: relative; padding: 10px 0; color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: 18px; align-items: start; }
+.mapPanel { min-height: 460px; position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, #1b1a16, #31291f); }
+.unavailable, .visual { min-height: 460px; display: grid; place-content: center; text-align: center; padding: 24px; }
+.markerLayer { position: absolute; inset: 58px 24px 24px; pointer-events: none; }
+.marker { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--text); background: var(--red); color: var(--text); box-shadow: 0 0 0 4px rgba(0,0,0,.35); pointer-events: auto; }
+.zoomControls { position: absolute; top: 16px; right: 16px; display: grid; gap: 8px; }
+.zoomControls button { min-width: 44px; padding: 0; }
+.list { display: grid; gap: 14px; }
+.item { background: linear-gradient(180deg, rgba(33,30,25,.96), rgba(25,23,19,.96)); border: 1px solid var(--line); border-left: 8px solid var(--gold); border-radius: 18px; padding: 18px; }
+.selected { outline: 3px solid var(--gold); outline-offset: 3px; }
+.item h3 { margin-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) { .marker, .mapPanel { transition: none; animation: none; } }
+@media (max-width: 900px) { .filters, .grid { grid-template-columns: 1fr; } }

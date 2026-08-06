@@ -11,8 +11,10 @@
     "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
   },
   "include": [
+    "next-env.d.ts",
     "lib/status.ts",
     "lib/types.ts",
-    "lib/security/uploads.ts"
+    "lib/security/uploads.ts",
+    "lib/public-map.ts"
   ]
 }
