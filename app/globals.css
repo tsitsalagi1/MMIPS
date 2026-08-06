@@ -904,3 +904,9 @@ button:disabled {
   .admin-search-controls button,
   .profile-lookup-grid button { width: 100%; }
 }
+.page-narrow { max-width: 880px; }
+.field-group { display: grid; gap: 0.4rem; }
+.field-help { color: #374151; margin: 0; }
+.notice, .status-message { border: 1px solid #c7d2fe; background: #eef2ff; padding: 0.9rem; border-radius: 0.75rem; }
+.error-summary { border: 2px solid #991b1b; background: #fef2f2; color: #7f1d1d; padding: 1rem; border-radius: 0.75rem; }
+.checklist { display: grid; gap: 0.5rem; }

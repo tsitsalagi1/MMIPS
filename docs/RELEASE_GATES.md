@@ -71,10 +71,10 @@ Each gate is binary: complete every item or do not enable real submissions.
 
 ## Alerts
 
-- [ ] Double opt-in works.
-- [ ] Unsubscribe works.
-- [ ] Alert sends are logged without leaking unnecessary personal information.
-- [ ] Alert scope respects family approval and map/location privacy.
+- [ ] Double opt-in works. Source implementation and synthetic tests added; live email/RLS verification remains incomplete.
+- [ ] Unsubscribe works. Source implementation and synthetic tests added; live verification remains incomplete.
+- [ ] Alert sends are logged without leaking unnecessary personal information. Static ledger migration and delivery boundary added; automated dispatch/live provider delivery remain incomplete.
+- [ ] Alert scope respects family approval and map/location privacy. Delivery boundary requires approved/published events and excludes hidden/removed records; live integration is not wired.
 
 ## Map privacy
 
