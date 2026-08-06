@@ -7,3 +7,8 @@ With synthetic addresses and Cloudflare test keys, verify anon/auth cannot read/
 Mocked tests are not live RLS or live email evidence. Before release, perform isolated migration/RLS verification, mocked-to-sandbox provider acceptance and retry monitoring, browser/keyboard/screen-reader/contrast/zoom testing, and independent review. Distributed network rate limiting remains required.
 
 Rollback/forward-fix: disable alert routes and dispatch first; snapshot synthetic evidence; apply a reviewed forward migration to repair function/policies/table. Drop `alert_deliveries` only if unused. Never drop, merge, or rewrite subscriber/consent history automatically.
+
+## Synthetic behavioral evidence (2026-08-06)
+The unit suite now runs the production workflow functions against an atomic in-memory synthetic store, fixed clock, deterministic token factories/signing keys, and controlled mailer responses. It covers subscription lifecycle/cooldown/window behavior, provider outcomes, concurrent confirmation, signed unsubscribe and key rotation, event/status filtering, ledger deduplication and delivery transitions, URL/header/content contracts, and Turnstile fail-closed behavior. Route and migration contracts remain source/static tests. These are mocked behavioral tests—not live Supabase concurrency/RLS or live Resend evidence.
+
+Resend's provider idempotency retention is only a temporary secondary safeguard; MMIPS's durable unique subscriber/event ledger remains responsible for long-term duplicate suppression. Distributed network rate limiting, live isolated RLS, live provider verification/monitoring, browser/manual accessibility, and independent review remain unresolved release gates.

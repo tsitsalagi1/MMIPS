@@ -6,9 +6,10 @@ export async function POST(request: NextRequest) {
   if (Number(request.headers.get("content-length") || 0) > MAX_ALERT_REQUEST_BYTES) return NextResponse.json({ ok: true, code: "unsubscribe_processed" });
   const token = request.nextUrl.searchParams.get("token");
   const contentType = request.headers.get("content-type") || "";
-  if (contentType.includes("application/x-www-form-urlencoded")) await request.text();
+  let shouldProcess = true;
+  if (contentType.includes("application/x-www-form-urlencoded")) shouldProcess = (await request.text()).trim() === "List-Unsubscribe=One-Click";
   else { const body = await request.json().catch(() => ({})) as { token?: unknown }; if (!token && typeof body.token === "string") request.nextUrl.searchParams.set("token", body.token); }
   const store = createSupabaseAlertStore();
-  if (store) try { await unsubscribeFromAlerts(store, request.nextUrl.searchParams.get("token")); } catch {}
+  if (store && shouldProcess) try { await unsubscribeFromAlerts(store, request.nextUrl.searchParams.get("token")); } catch {}
   return NextResponse.json({ ok: true, code: "unsubscribe_processed", message: "Your unsubscribe request was processed." }, { status: 200 });
 }

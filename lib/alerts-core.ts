@@ -24,7 +24,7 @@ export type AlertSubscriberRecord = {
 
 export type AlertStore = {
   findSubscriberByEmail(email: string): Promise<AlertSubscriberRecord | null>;
-  savePending(input: { email: string; confirmationTokenHash: string; confirmationExpiresAt: string; unsubscribeTokenId?: string; preferences: { categories: AlertPreference[] }; requestedAt: string; windowStartedAt: string; sendCount: number }): Promise<AlertSubscriberRecord>;
+  savePending(input: { email: string; consentSource: string; consentText: string; confirmationTokenHash: string; confirmationExpiresAt: string; unsubscribeTokenId?: string; preferences: { categories: AlertPreference[] }; requestedAt: string; windowStartedAt: string; sendCount: number }): Promise<AlertSubscriberRecord>;
   markConfirmationSent(id: string, sentAt: string): Promise<void>;
   activateByConfirmationHash(hash: string, now: Date): Promise<Pick<AlertSubscriberRecord, "id" | "email_normalized"> | null>;
   unsubscribeByTokenId(id: string, now: Date): Promise<boolean>;
