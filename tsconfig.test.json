@@ -8,11 +8,14 @@
     "declarationMap": false,
     "sourceMap": false,
     "incremental": false,
-    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
+    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo",
+    "types": ["node"]
   },
   "include": [
     "lib/status.ts",
     "lib/types.ts",
-    "lib/security/uploads.ts"
+    "lib/security/uploads.ts",
+    "lib/public-map.ts",
+    "lib/public-map-config.ts"
   ]
 }

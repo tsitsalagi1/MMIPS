@@ -1,0 +1,3 @@
+.skipLink { display: inline-block; margin-bottom: 1rem; color: var(--gold); font-weight: 800; }
+.announcement { min-height: 3rem; margin: 1rem 0; }
+.list { display: grid; gap: 1rem; }

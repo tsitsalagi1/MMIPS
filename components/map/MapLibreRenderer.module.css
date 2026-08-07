@@ -1,0 +1,4 @@
+.region { border: 1px solid var(--line); border-radius: 1rem; overflow: hidden; background: var(--panel); }
+.map { min-height: 28rem; }
+.message { padding: 1rem; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .region, .map { scroll-behavior: auto; } }
