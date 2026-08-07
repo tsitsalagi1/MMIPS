@@ -44,7 +44,6 @@ export function sanitizePublicMapRows(rows: unknown[] | null | undefined): Publi
     const caseRow = Array.isArray(row.cases) ? row.cases[0] : row.cases;
     const person = Array.isArray(caseRow?.persons) ? caseRow.persons[0] : caseRow?.persons;
     if (!caseRow || caseRow.review_status !== "approved" || !caseRow.published_at) return [];
-    if (row.moderator_approved !== true || row.hidden_at) return [];
     if (!isPublicMapPrecision(row.precision)) return [];
     const lat = Number(row.public_latitude);
     const lon = Number(row.public_longitude);
@@ -70,9 +69,7 @@ type PublicMapClient = Pick<SupabaseClient, "from">;
 export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
   const { data, error } = await client
     .from("public_case_map_points")
-    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, moderator_approved, hidden_at, cases!inner(id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name))")
-    .eq("moderator_approved", true)
-    .is("hidden_at", null)
+    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, cases!inner(id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name))")
     .order("updated_at", { ascending: false })
     .limit(250);
   if (error) {
