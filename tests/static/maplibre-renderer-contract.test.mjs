@@ -7,6 +7,7 @@ const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
 const experience = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
 const renderer = fs.readFileSync("components/map/MapLibreRenderer.tsx", "utf8");
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
+const page = fs.readFileSync("app/map/page.tsx", "utf8");
 const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
 
 test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server boundaries", () => {
@@ -46,9 +47,13 @@ test("configuration, request, WebGL2, and bounded failures fail to the list", ()
   assert.doesNotMatch(renderer, /console\.(log|warn|error)\([^\n]*(url|points|geoJson|provider)/i);
 });
 
-test("map and authoritative list share filtered points with accessible selection", () => {
+test("map uses filtered points while the complete list uses published profiles", () => {
   assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
-  assert.match(experience, /filtered\.map\(\(point\)/);
+  assert.match(experience, /profiles\.map\(\(profile\)/);
+  assert.doesNotMatch(experience, /filtered\.map\(\(point\)/);
+  assert.match(page, /getPublishedCases\(\)/);
+  assert.match(page, /getPublicMapPoints\(\)/);
+  assert.match(page, /profiles=\{profiles\}/);
   assert.match(experience, /Skip visual map and go to the complete accessible list/);
   assert.match(experience, /id="accessible-map-list"/);
   assert.match(experience, /aria-live="polite" aria-atomic="true"/);

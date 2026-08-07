@@ -40,7 +40,7 @@ test("renderer entry does not simulate geography or expose inert controls", () =
   assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|geocod/i);
 });
 
-test("configuration failures preserve a labelled accessible empty list", () => {
+test("configuration failures preserve the complete labelled accessible profile list", () => {
   assert.match(component, /Accessible public profile list/);
   assert.match(component, /Public map data is not configured/);
   assert.match(component, /temporarily unavailable/);
@@ -49,6 +49,11 @@ test("configuration failures preserve a labelled accessible empty list", () => {
   assert.match(component, /Public status<select/);
   assert.match(component, /Approved area<select/);
   assert.match(component, /Open public profile/);
+  assert.match(component, /profiles\.length === 0/);
+  assert.match(component, /profiles\.map\(\(profile\)/);
+  assert.doesNotMatch(component, /filtered\.map\(\(point\)/);
+  assert.match(page, /getPublishedCases/);
+  assert.match(page, /profiles=\{profiles\}/);
 });
 
 test("migration grants exactly the public map columns and keeps moderation state private", () => {
