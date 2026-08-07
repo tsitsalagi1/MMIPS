@@ -11,7 +11,7 @@ Legend: Allow = intended through RLS/policy; Deny = intended denied; Server = se
 | submissions | Private pending intake | Deny all | Deny all | Server API read/update via service role | CRUD | CRUD | Contains requester contact, exact/private locations, notes, IPs, private photo refs. |
 | submission_photos | Private pending photo metadata | Deny all | Deny all | Server API read/write via service role | CRUD | CRUD | New migration revokes anon/auth grants; pending bucket private. |
 | correction_requests | Private requester/removal data | Deny all | Deny all | Server API read/update via service role | CRUD | CRUD | Public insert only through service route; non-enumerating public responses needed. |
-| alert_subscribers | Private subscriber data | Deny all | Deny all | Server API only when Alerts implemented | CRUD | CRUD | Alerts not implemented; release blocker. |
+| alert_subscribers | Private subscriber data | Deny all | Deny all | Server API only when Alerts implemented | CRUD | CRUD | Alerts V1 source routes and static migration added; live RLS verification remains a release blocker. |
 | alerts_sent | Private alert delivery evidence | Deny all | Deny all | Server API only when Alerts implemented | CRUD | CRUD | Recipient hash only; message content still sensitive. |
 | audit_log | Private moderation/security evidence | Deny all | Deny all | Server insert/read via service role | CRUD | CRUD | Append-only trigger not yet implemented/live-verified. |
 | cases | Mixed public/private profile table | SELECT approved/published rows only | SELECT approved/published rows only | Server API read/update via service role | CRUD | CRUD | Mixed table can expose sensitive fields if direct anon select; public view recommended. |
@@ -51,3 +51,5 @@ Version 1 upload acceptance is restricted to JPEG/JPG, PNG, and WebP. GIF is exc
 The SQL hardening migration no longer mutates `storage.buckets`; bucket configuration is documented in `docs/STORAGE_CONFIGURATION_RUNBOOK.md` and requires separate synthetic staging verification. Storage objects policies remain static-review-only in this task.
 
 All current `app/api/**` 500 response catch blocks were reviewed for raw `error.message` exposure. Current identified 500 responses now use generic user-safe messages with bounded internal error codes through `safeApiError` or generic redirects; validation/404/403 messages remain explicit but do not contain raw provider/database errors.
+
+Alerts V1 correction: `alert_subscribers` and new `alert_deliveries` are service-role-only in the static migration; anon/authenticated grants are revoked and RLS is enabled/forced. Public access is only through generic bounded routes. Live isolated RLS verification is still required. Legacy `alerts_sent` is not used or altered by V1.

@@ -55,3 +55,15 @@ Real family, victim, witness, subscriber, requester, or investigative data must 
 - Added safer API error handling for current identified `app/api/**` 500 responses and privacy-minimized operational error codes.
 - Added regression tests for GIF/SVG rejection, empty/oversized/spoofed/mismatched images, storage migration bucket-mutation prohibition, raw-error response prevention, public coordinate exclusion, and service-role browser-import boundaries.
 - The SQL migration remains static review only and was not executed. Live RLS/storage verification remains incomplete.
+
+
+## Alerts V1 implementation update (codex/alerts-v1, 2026-08-05)
+
+- Added private email-alert subscription UI, server routes, token hashing, static migration, synthetic tests, and documentation.
+- Alerts remain not production-ready until the static migration is reviewed/applied in isolated synthetic staging, live RLS is verified, live email delivery is tested with non-production provider credentials, distributed rate limiting is implemented, and browser/manual accessibility review is completed.
+
+## Alerts V1 correction (2026-08-06)
+Source now preserves legacy consent constraints, uses a separate private `alert_deliveries` ledger, signed reconstructible unsubscribe links, read-only GET pages, explicit/RFC 8058 POST, client/server Turnstile validation, durable resend controls, atomic confirmation, and allowlisted email headers/idempotency. Migration and tests remain static/mocked only. Live RLS, live provider delivery, distributed rate limiting, browser accessibility, and independent review remain incomplete.
+
+### Alerts synthetic behavioral pass (2026-08-06)
+Production workflow functions now have synthetic in-memory store/mailer/clock/token tests covering lifecycle, atomic confirmation behavior, unsubscribe rotation/idempotency, delivery deduplication/transitions, email output, and Turnstile production failure. Evidence remains mocked/static, not live RLS, live provider, browser accessibility, distributed rate limiting, or independent review.

@@ -8,7 +8,10 @@
     "declarationMap": false,
     "sourceMap": false,
     "incremental": false,
-    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
+    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo",
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "next-env.d.ts",

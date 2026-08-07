@@ -1,0 +1,2 @@
+import AlertActionForm from "../shared/AlertActionForm";
+export default async function ConfirmPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) { const { token = "" } = await searchParams; return <AlertActionForm action="confirm" token={token} title="Confirm email alerts" button="Confirm email alerts" description="Choose Confirm to finish subscribing. Simply opening this page does not activate alerts." />; }

@@ -20,3 +20,11 @@ Static audit date: 2026-08-05. Correction pass date: 2026-08-05. Severity counts
 | SEC-014 | Informational | No production secrets found by pattern scan | Repository | `npm run security:secrets` | N/A | Secret scan script | No code fix | GitHub secret scanning still needed | Local scan | No |
 | SEC-015 | Informational | Branch/workspace named `work` | Git | Current branch `work` | Not a release risk per AGENTS | N/A | N/A | N/A | Git status | No |
 | SEC-016 | Informational | CSP needs staged rollout | Next config | Full CSP not enabled | Strict CSP could break Supabase/Turnstile/email/image/future map domains | Baseline headers | Documented | Report-only CSP plan required | Static | Yes for full launch |
+
+
+## Alerts V1 update (2026-08-05)
+
+SEC-010 is partially remediated in source: Alerts V1 now includes non-enumerating routes, hashed double opt-in/unsubscribe tokens, private static RLS migration, synthetic tests, and server-only delivery preparation. Residual release blockers remain: live isolated RLS verification, live non-production email verification, distributed rate limiting, browser accessibility review, and reviewed alert-trigger integration.
+
+### Alerts V1 correction status (2026-08-06)
+Source mitigations now include legacy consent compatibility, collision-stop migration behavior, a no-body/no-address delivery ledger, signed unsubscribe credentials with previous-key rotation, read-only GET pages, Turnstile action/hostname validation, resend limits, and atomic confirmation. Residual blockers are live RLS/provider verification, distributed rate limiting, operational retry monitoring, browser accessibility, and independent review.

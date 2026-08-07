@@ -71,10 +71,10 @@ Each gate is binary: complete every item or do not enable real submissions.
 
 ## Alerts
 
-- [ ] Double opt-in works.
-- [ ] Unsubscribe works.
-- [ ] Alert sends are logged without leaking unnecessary personal information.
-- [ ] Alert scope respects family approval and map/location privacy.
+- [ ] Double opt-in works. Source implementation and synthetic tests added; live email/RLS verification remains incomplete.
+- [ ] Unsubscribe works. Source implementation and synthetic tests added; live verification remains incomplete.
+- [ ] Alert sends are logged without leaking unnecessary personal information. Static ledger migration and delivery boundary added; automated dispatch/live provider delivery remain incomplete.
+- [ ] Alert scope respects family approval and map/location privacy. Delivery boundary requires approved/published events and excludes hidden/removed records; live integration is not wired.
 
 ## Map privacy
 
@@ -122,3 +122,6 @@ Each gate is binary: complete every item or do not enable real submissions.
 - [ ] Independent family-support/victim-services review is complete.
 - [ ] Remaining risks are documented.
 - [ ] Named human decision-maker records go/no-go before enabling real submissions.
+
+### Alerts V1 correction evidence (2026-08-06)
+Source/static gates cover legacy schema compatibility, private delivery-ledger contracts, signed unsubscribe, GET/POST semantics, RFC 8058 headers, Turnstile action/hostname checks, resend controls, and atomic confirmation. This does not complete live migration/RLS, provider delivery, distributed rate limiting, manual/browser accessibility, or independent review gates.
