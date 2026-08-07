@@ -1,7 +1,9 @@
 # Map accessibility plan
 
-The semantic, filterable public list is permanent equal-access functionality and currently the authoritative public interface. Persistent labels, a reset button, a polite result-count live region, semantic articles/headings, text status, approximate area text, empty/error states, and profile links do not depend on a map.
+The filterable public list is permanent, complete, and authoritative. The same filtered collection feeds list and map. Each feature has a corresponding list article and usable profile link; each valid visible list point becomes a feature when the renderer is available. The map cannot block filtering, list navigation, or profiles.
 
-The placeholder is labelled as preparation status, not an interactive map. It has no fake markers or inert controls. A future renderer must preserve list/filter parity, visible focus, keyboard zoom and marker operation without traps or focus theft, text/shape distinctions beyond color, reduced motion, bounded zoom/reflow, and safe synchronization.
+The optional map has an accessible label, approximate-location instructions, a skip link to the list, functional 44-by-44-pixel keyboard zoom buttons, no focus stealing, and no forced scrolling. Selection updates a polite React live region outside the canvas using text fields also available in the list. Category/status and precision are conveyed in text, never color alone. Scroll zoom, rotation, and pitch are disabled to prevent page-scroll capture and disorientation.
 
-Source/static baseline checks are not browser, manual keyboard, screen-reader, zoom/reflow, or WCAG conformance evidence. Those human and browser checks remain incomplete release gates. The WCAG 2.2 AA target is not yet claimed.
+Camera changes use zero duration. CSS honors `prefers-reduced-motion`; there are no initial animations, fly-to transitions, pulses, or continuous animations. Generic inline fallbacks preserve the list when configuration, JavaScript/WebGL2, initialization, style, provider, or context fails.
+
+Static checks verify source contracts only. Manual browser keyboard, screen-reader, 200%/400% zoom and reflow, high-contrast, reduced-motion, WebGL2 failure, and WCAG 2.2 AA testing remain incomplete release gates. No conformance claim is made.

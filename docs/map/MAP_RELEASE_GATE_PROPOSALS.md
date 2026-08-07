@@ -1,11 +1,7 @@
 # Map release gate proposals
 
-For later reconciliation into shared release documents after parallel work is reviewed:
+Implemented and statically/build verified: exact MapLibre GL JS 6.0.0 dependency, ESM browser-only dynamic loading, strict public GeoJSON, exact-origin request enforcement, WebGL2 and bounded failure paths, conservative non-animated camera, map/list/filter parity, selected-profile live region, and permanent accessible-list authority. The production build passes without a Version 5 fallback.
 
-- Mark the accessible list foundation implemented, but the interactive visual map incomplete: no engine is installed and the placeholder has no simulated geography.
-- Keep MapLibre version selection open between exactly pinned `6.0.0` and `5.24.0` until Node 22.23.1 / Next.js 16.3 / React 19.2 / TypeScript 6 and browser compatibility testing completes.
-- Keep provider privacy, attribution, external-host inventory, CSP enforcement, browser, keyboard, screen-reader, zoom/reflow, and reduced-motion verification incomplete.
-- Record that production missing-configuration and query-error paths return no profiles; synthetic records exist only in test fixtures.
-- Keep photo support incomplete because Map V1 omits thumbnails until an unambiguous public-photo authorization contract exists.
-- Record `supabase/public_case_map_points_20260805.sql` as STATIC REVIEW ONLY — NOT EXECUTED. Live RLS and exact column-privilege verification remain incomplete.
-- Public precisions are state, broad region, tribal region, county, and conditionally approved city centroid. Exact/address/street/building/shelter/home/GPS/raw-last-known precision remains prohibited.
+Release remains blocked pending: approved provider/privacy/retention/attribution review; complete request-host inventory; narrow enforced CSP and worker verification; supported-browser WebGL2 tests; manual keyboard, screen-reader, reduced-motion, zoom/reflow and WCAG 2.2 AA evaluation; independent trauma-informed review; isolated synthetic live RLS tests; and reviewed moderator workflows. No geolocation, geocoding, routing, tracking, photos, provider token, or real data may be introduced.
+
+`supabase/public_case_map_points_20260805.sql` remains **STATIC REVIEW ONLY — NOT EXECUTED**. Live RLS and column-privilege verification remain incomplete. Approximate public precisions only are allowed; exact/address/street/building/shelter/home/GPS/raw coordinates remain prohibited.

@@ -1,9 +1,9 @@
 # Map staging verification plan
 
-Status: static plan only. Do not run against production or staging containing real data.
+Status: static plan only. Do not use production/staging credentials or real data. The migration is **STATIC REVIEW ONLY — NOT EXECUTED**.
 
-After applying the reviewed migration order in an isolated synthetic Supabase project, verify: anon reads only approved visible points linked to approved published cases; rejected, hidden, unpublished, and unapproved records return no point; anon and ordinary authenticated roles cannot select `public_notes`, `approved_by`, `safety_reviewed_at`, `moderator_approved`, or `hidden_at`; exact public column privileges match the migration; no public INSERT/UPDATE/DELETE policy or privilege exists; FORCE RLS cannot be bypassed by table/view access; and a reviewed service-role workflow can insert, approve, hide, and supersede synthetic coarse centroids.
+In an isolated synthetic Supabase project, later verify RLS exposes only approved non-hidden approximate points linked to approved published cases; public roles cannot read moderation fields or write map points. Inspect responses for absence of raw coordinates, addresses, contacts, notes, evidence, and photos. Never weaken RLS.
 
-Inspect the API response to confirm no raw coordinates, exact address, moderator evidence, contacts, or photo fields. Verify missing configuration and query failure return an empty usable list. Future renderer staging must separately test JavaScript disabled, WebGL unavailable, style/tile failures, provider attribution, CSP reports, keyboard, screen reader, zoom/reflow, reduced motion, and map/list parity.
+After a provider is formally approved, configure only its reviewed HTTPS style and exact request origins plus required attribution. With browser developer tools and CSP reporting, inventory style/source/tile/glyph/sprite/image/worker requests, confirm lookalike and unlisted origins fail, ensure URLs/bodies are not logged, and derive narrow CSP directives without wildcards or `unsafe-eval`.
 
-Rollback before launch in isolated staging may drop the new policies/table/type. After any deployment, prefer hiding unsafe points and a narrower forward fix; never disable RLS or destructively alter production records.
+Using synthetic points, test MapLibre creation, feature/list/filter parity, keyboard tab order and zoom, no scroll capture, selected-summary announcement, reduced motion, WebGL2 disabled/context loss, constructor and initial-style failure, JavaScript disabled, provider outage, zoom/reflow, and supported browsers/screen readers. Browser/provider/CSP and live RLS verification are not complete in this implementation environment.

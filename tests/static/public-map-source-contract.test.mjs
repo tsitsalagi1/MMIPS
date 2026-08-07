@@ -33,10 +33,10 @@ test("Map V1 omits photos until public authorization can be established unambigu
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
 });
 
-test("placeholder does not simulate geography or expose inert controls", () => {
-  assert.match(component, /Interactive visual map is being prepared/);
-  assert.match(component, /accessible list below is the authoritative public interface/);
-  assert.doesNotMatch(component, /markerLayer|zoomControls|left:|top:|Interactive MapLibre layer loads/);
+test("renderer entry does not simulate geography or expose inert controls", () => {
+  assert.match(component, /Optional visual map/);
+  assert.match(component, /complete accessible list/);
+  assert.doesNotMatch(component, /markerLayer|zoomControls|left:|top:/);
   assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|geocod/i);
 });
 

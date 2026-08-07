@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import test from "node:test";
+
+const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+const experience = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
+const renderer = fs.readFileSync("components/map/MapLibreRenderer.tsx", "utf8");
+const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
+const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
+
+test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server boundaries", () => {
+  assert.equal(packageJson.dependencies["maplibre-gl"], "6.0.0");
+  assert.equal(lock.packages["node_modules/maplibre-gl"].version, "6.0.0");
+  assert.doesNotMatch(JSON.stringify(packageJson.dependencies), /maplibre-gl[^\n]*(\^|~|latest|cdn)/i);
+  assert.match(renderer, /import \* as maplibregl from "maplibre-gl"/);
+  assert.doesNotMatch(serverSources, /maplibre-gl|\bwindow\b|\bdocument\b/);
+});
+
+test("renderer is client-only and uses a real source/layer with bounded cleanup", () => {
+  assert.match(renderer, /^"use client"/);
+  assert.match(experience, /dynamic\(\(\) => import\("\.\/MapLibreRenderer"\), \{ ssr: false \}\)/);
+  assert.match(renderer, /addSource\(SOURCE_ID, \{ type: "geojson"/);
+  assert.match(renderer, /addLayer\(/);
+  assert.match(renderer, /map\.remove\(\)/);
+  assert.match(renderer, /removeEventListener\("webglcontextlost"/);
+  assert.doesNotMatch(renderer + experience, /dangerouslySetInnerHTML|new maplibregl\.Marker|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|flyTo|localStorage|sessionStorage/);
+  assert.doesNotMatch(renderer, /left:\s*[^;]+%|top:\s*[^;]+%/);
+});
+
+test("camera and interaction defaults preserve approximate context and page scrolling", () => {
+  assert.match(renderer, /MAX_FIT_ZOOM = 7/);
+  assert.match(renderer, /SINGLE_POINT_ZOOM = 5/);
+  assert.match(renderer, /fitBounds\(bounds, \{ padding: 56, duration: 0, maxZoom: MAX_FIT_ZOOM \}\)/);
+  for (const setting of ["dragRotate: false", "pitchWithRotate: false", "scrollZoom: false", "touchPitch: false", "maxPitch: 0"]) assert.match(renderer, new RegExp(setting));
+  assert.match(renderer, /showCompass: false/);
+});
+
+test("configuration, request, WebGL2, and bounded failures fail to the list", () => {
+  assert.match(boundary, /styleUrl\.protocol !== "https:"/);
+  assert.match(boundary, /origin\.includes\("\*"\)/);
+  assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
+  assert.match(boundary, /getContext\("webgl2"/);
+  for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL2_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
+  assert.match(renderer, /Visual map unavailable\. The complete accessible list remains available below\./);
+  assert.doesNotMatch(renderer, /console\.(log|warn|error)\([^\n]*(url|points|geoJson|provider)/i);
+});
+
+test("map and authoritative list share filtered points with accessible selection", () => {
+  assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
+  assert.match(experience, /filtered\.map\(\(point\)/);
+  assert.match(experience, /Skip visual map and go to the complete accessible list/);
+  assert.match(experience, /id="accessible-map-list"/);
+  assert.match(experience, /aria-live="polite" aria-atomic="true"/);
+  assert.match(experience, /Open public profile/);
+  assert.match(experience, /complete accessible list/);
+  assert.match(experience, /not an exact location/);
+});

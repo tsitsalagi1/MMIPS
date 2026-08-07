@@ -1,19 +1,11 @@
-# Map V1 foundation architecture
+# Map V1 architecture
 
-Status: foundation only; no visual map renderer is installed. The accessible list is the authoritative public interface.
+The semantic accessible list is the complete authoritative interface. Filters run once, and the same filtered `PublicMapPoint[]` feeds both the list and optional browser renderer. Missing data configuration and query errors return no profiles and never substitute synthetic or private data.
 
-## Data flow and failure states
+`PublicMapExperience` is a Client Component and dynamically imports `MapLibreRenderer` with `ssr: false`. Only that renderer imports MapLibre 6.0.0 and its CSS. It creates one map, updates its GeoJSON source on filtering, removes listeners and the map on unmount, and renders selection as a React summary outside the canvas. Server Components, API/database modules, and `lib/public-map.ts` never import MapLibre or use browser globals.
 
-`getPublicMapPoints` checks public Supabase configuration, reads only the dedicated `public_case_map_points` boundary, sanitizes rows into an explicit public response, and returns `{ points, availability }`. Missing configuration returns no points with `unconfigured`; a query failure returns no points with `error`; neither path substitutes demo data or private case coordinates. Public messaging is generic.
+GeoJSON revalidates coordinate bounds, uses `[publicLongitude, publicLatitude]`, and allowlists only public-safe identity, label, category/status, and approved precision properties. No photo, exact/private coordinate, address, contact, moderator state/evidence, note, storage path, or filename crosses the renderer boundary.
 
-Filters operate once over the allowlisted points used by the list. The placeholder has no markers, geographic positioning, map role, or inert zoom controls. A real browser-only renderer may be added only after the compatibility, provider, CSP, privacy, and accessibility gates in `MAP_PROVIDER_AND_CSP.md` pass.
+Exact HTTPS provider origins and attribution are required. Invalid configuration or WebGL2/fetch/style/context failures leave the list usable. Rotation, pitch, touch pitch, and scroll zoom are disabled; conservative, zero-duration camera fits avoid implying street/building precision. There is no geolocation, geocoding, routing, tracking, or automatic popup.
 
-## Public boundary
-
-Allowed precision is `state`, `broad_region`, `tribal_region`, `county`, or conditionally approved `city_centroid`. Exact, address, street, building, shelter, home, device/GPS, raw last-known, geocoded, narrative-derived, and private coordinates are prohibited. Family authorization and moderator safety review are prerequisites outside this public loader.
-
-Map V1 returns no photos. The current photo schema does not expose enough independent publication/moderation, public-bucket, and hidden/removed evidence for this loader to prove authorization unambiguously. Photo support remains an incomplete release gate.
-
-## Migration and rollback
-
-Apply existing schema and photo/security migrations first, then statically review `supabase/public_case_map_points_20260805.sql` in an isolated synthetic project. It has not been executed. Unsafe points must be hidden through a reviewed server workflow; policy defects require a narrower forward migration, never disabling RLS.
+`supabase/public_case_map_points_20260805.sql` remains **STATIC REVIEW ONLY — NOT EXECUTED**. RLS continues to enforce approved, visible points linked to approved published cases. Live RLS, approved provider, CSP, browser, keyboard, screen-reader, zoom/reflow, and trauma-informed review remain release gates.
