@@ -15,6 +15,20 @@ test("production map uses a dedicated allowlist and no synthetic runtime fixture
   assert.doesNotMatch(loader, /last_seen_location|requester|moderator_notes|approved_by|source_ip|photo_original_name/);
 });
 
+test("anonymous loader requests only the public projection and leaves moderation enforcement to RLS", () => {
+  const selectCall = loader.match(/\.select\("([^"]+)"\)/)?.[1] ?? "";
+  assert.match(selectCall, /case_id/);
+  assert.match(selectCall, /public_label/);
+  assert.match(selectCall, /public_latitude/);
+  assert.match(selectCall, /public_longitude/);
+  assert.match(selectCall, /precision/);
+  assert.match(selectCall, /region_type/);
+  assert.doesNotMatch(selectCall, /moderator_approved|hidden_at|approved_by|safety_reviewed_at|public_notes/);
+  assert.doesNotMatch(loader, /\.eq\("moderator_approved"/);
+  assert.doesNotMatch(loader, /\.is\("hidden_at"/);
+  assert.doesNotMatch(loader, /row\.moderator_approved|row\.hidden_at/);
+});
+
 test("Map V1 omits photos until public authorization can be established unambiguously", () => {
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
 });
@@ -37,12 +51,19 @@ test("configuration failures preserve a labelled accessible empty list", () => {
   assert.match(component, /Open public profile/);
 });
 
-test("migration minimizes public columns and has no public write policy", () => {
+test("migration grants exactly the public map columns and keeps moderation state private", () => {
   assert.match(migration, /STATIC REVIEW ONLY — NOT EXECUTED/);
   assert.match(migration, /enable row level security/);
   assert.match(migration, /force row level security/);
-  assert.match(migration, /grant select \(case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at\)/);
+  assert.match(migration, /grant select \(case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at\) on public_case_map_points to anon, authenticated;/);
   assert.doesNotMatch(migration, /grant select \([^)]*(public_notes|approved_by|safety_reviewed_at|moderator_approved|hidden_at)/);
-  assert.doesNotMatch(migration, /create policy[\s\S]{0,120}for (insert|update|delete)/i);
+  for (const privateField of ["public_notes", "approved_by", "safety_reviewed_at", "moderator_approved", "hidden_at"]) {
+    assert.match(migration, new RegExp(`Confirm[^\\n]*${privateField}`));
+  }
+});
+
+test("RLS owns public visibility decisions and public roles receive no write policy", () => {
   for (const contract of [/review_status = 'approved'/, /published_at is not null/, /moderator_approved = true/, /hidden_at is null/]) assert.match(migration, contract);
+  assert.doesNotMatch(migration, /create policy[\s\S]{0,160}for (insert|update|delete) to (anon|authenticated)/i);
+  assert.match(migration, /No anon\/authenticated INSERT, UPDATE, or DELETE policies are defined/);
 });
