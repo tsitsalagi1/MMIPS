@@ -21,6 +21,7 @@ export default function PublicMapExperience({ profiles, points, availability }: 
   const profileTypes = [...new Set(points.map((point) => point.profileType))];
   const statuses = [...new Set(points.map((point) => point.publicStatus))];
   const regions = [...new Set(points.map((point) => point.publicMapLabel))];
+  const hasMapPoints = points.length > 0;
 
   return <section className={styles.shell} aria-labelledby="map-results-heading">
     <div className="notice warning">
@@ -40,10 +41,11 @@ export default function PublicMapExperience({ profiles, points, availability }: 
       <p><a href="#accessible-map-list">Skip visual map and go to the complete accessible list</a></p>
       {availability === "unconfigured" ? <p className="muted">Public map data is not configured. No profiles are displayed on the visual map.</p> : null}
       {availability === "error" ? <p className="muted">Public map information is temporarily unavailable. Please try again later.</p> : null}
-      {availability === "available" ? <MapLibreRenderer points={filtered} onSelect={setSelectedId} /> : null}
-      <div className={styles.selection} aria-live="polite" aria-atomic="true">
+      {availability === "available" && !hasMapPoints ? <p className="card">No approved public map points are available yet.</p> : null}
+      {availability === "available" && hasMapPoints ? <MapLibreRenderer points={filtered} onSelect={setSelectedId} /> : null}
+      {availability === "available" && hasMapPoints ? <div className={styles.selection} aria-live="polite" aria-atomic="true">
         {selected ? <><h3>Selected public profile</h3><p><strong>{selected.publicName}</strong> · {mapCategoryLabel(selected.profileType, selected.publicStatus)}</p><p>{selected.publicMapLabel}. Approximate public-awareness area; not an exact location.</p><Link href={`/profiles/${selected.slug}`}>Open selected public profile</Link></> : <p>Selecting an area on the optional map will show its public profile summary here.</p>}
-      </div>
+      </div> : null}
     </aside>
     <section id="accessible-map-list" aria-labelledby="map-results-heading" tabIndex={-1}>
       <h2 id="map-results-heading">Accessible public profile list</h2>
