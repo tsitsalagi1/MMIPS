@@ -3,6 +3,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com"),
   title: "MMIPS — Missing & Murdered Indigenous People Search",
   description: "A moderated public-awareness resource for missing and murdered Indigenous people public profiles.",
   icons: {
@@ -38,7 +39,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/resources">Resources</Link>
               <Link href="/how-it-works">How it works</Link>
               <Link href="/corrections">Corrections</Link>
-              <Link href="/admin">Admin</Link>
             </div>
           </nav>
         </header>
