@@ -1,0 +1,6 @@
+.frame{position:relative;min-height:24rem;border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.canvas{height:24rem;width:100%}
+.hiddenCanvas{display:none}
+.fallback{margin:0;padding:2rem}
+.frame :global(.maplibregl-ctrl button){min-width:44px;min-height:44px}
+@media(prefers-reduced-motion:reduce){.frame *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
