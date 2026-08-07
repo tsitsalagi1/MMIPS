@@ -22,7 +22,7 @@
     "lib/alerts-core.ts",
     "lib/alerts-workflow.ts",
     "lib/email.ts",
-    "lib/security/turnstile.ts"
+    "lib/security/turnstile.ts",
     "lib/public-map.ts",
     "components/map/public-map-renderer.ts"
   ]
