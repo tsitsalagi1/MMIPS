@@ -231,17 +231,19 @@ function safePublicUrl(value: string, site: string) {
   return url.toString();
 }
 
-function safeContact(value: string) {
-  const contact = value.trim().replace(/[\r\n]+/g, " ").slice(0, 500);
-  if (!contact) throw new Error("alerts_tip_contact_required");
-  return contact;
+function safeContact(value?: string) {
+  const contact = (value ?? "See the approved MMIPS profile for the official case contact.")
+    .trim()
+    .replace(/[\r\n]+/g, " ")
+    .slice(0, 500);
+  return contact || "See the approved MMIPS profile for the official case contact.";
 }
 
 export function buildPublicAlertEmail(input: {
   title: string;
   publicUrl: string;
-  publicMapLabel: string;
-  tipContact: string;
+  publicMapLabel?: string;
+  tipContact?: string;
   leadAgency?: string | null;
   unsubscribeTokenId: string;
   signingKey: string;
@@ -253,9 +255,11 @@ export function buildPublicAlertEmail(input: {
   const unsubscribeUrl = `${origin}/api/alerts/unsubscribe?token=${encodeURIComponent(token)}`;
   const publicUrl = safePublicUrl(input.publicUrl, origin);
   const safeTitle = input.title.trim().slice(0, 160) || "Approved public profile";
-  const safeArea = input.publicMapLabel.trim().replace(/[\r\n]+/g, " ").slice(0, 200) || "See approved profile";
+  const safeArea =
+    input.publicMapLabel?.trim().replace(/[\r\n]+/g, " ").slice(0, 200) || "See approved profile";
   const tipContact = safeContact(input.tipContact);
-  const leadAgency = input.leadAgency?.trim().replace(/[\r\n]+/g, " ").slice(0, 160) || "Official case contact";
+  const leadAgency =
+    input.leadAgency?.trim().replace(/[\r\n]+/g, " ").slice(0, 160) || "Official case contact";
   const alertsUrl = `${origin}/alerts`;
 
   const text = [
