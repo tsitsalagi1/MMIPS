@@ -34,9 +34,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </Link>
             <div className="nav-links">
               <Link href="/profiles">Search Profiles</Link>
-              <Link href="/submit">Submit Information</Link>
-              <Link href="/map">Map</Link>
               <Link href="/alerts">Alerts</Link>
+              <Link href="/map">Map</Link>
+              <Link href="/submit">Submit Information</Link>
               <Link href="/resources">Resources</Link>
               <Link href="/how-it-works">How it works</Link>
               <Link href="/corrections">Corrections</Link>
