@@ -5,6 +5,7 @@ import test from "node:test";
 const sql = fs.readFileSync("supabase/private_distributed_rate_limits_20260808.sql", "utf8");
 const limiter = fs.readFileSync("lib/security/rate-limit.ts", "utf8");
 const turnstile = fs.readFileSync("lib/security/turnstile.ts", "utf8");
+const submissionRoute = fs.readFileSync("app/api/submissions/route.ts", "utf8");
 
 test("distributed counters live in a non-public schema and persist only keyed hashes", () => {
   assert.match(sql, /create schema if not exists private/);
@@ -27,6 +28,11 @@ test("submission and correction guards rate-limit normalized email and erase raw
   assert.match(sql, /correction-email/);
   assert.match(sql, /new\.source_ip := null/);
   assert.match(sql, /update public\.submissions set source_ip = null/);
+});
+
+test("submission route does not send raw requester IP in its database payload", () => {
+  assert.doesNotMatch(submissionRoute, /clientIpFromRequest/);
+  assert.doesNotMatch(submissionRoute, /source_ip\s*:/);
 });
 
 test("Turnstile-verified public forms use the private distributed IP limiter", () => {
