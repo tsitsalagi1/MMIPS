@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAlertStore, MAX_ALERT_REQUEST_BYTES, requestAlertSubscription } from "@/lib/alerts";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { expectedTurnstileHostname, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
 
 export const runtime = "nodejs";
-
-function expectedTurnstileHostname(request: NextRequest) {
-  const requestHostname = new URL(request.url).hostname.toLowerCase();
-  if (requestHostname === "mmips.com" || requestHostname === "www.mmips.com") return requestHostname;
-  return process.env.TURNSTILE_EXPECTED_HOSTNAME;
-}
 
 export async function POST(request: NextRequest) {
   const length = Number(request.headers.get("content-length") || "0");
