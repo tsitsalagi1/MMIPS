@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { expectedTurnstileHostname, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
 import { submissionIntakeModeFromEnv } from "@/lib/release-controls";
@@ -135,7 +135,10 @@ export async function POST(request: Request) {
       throw new Error("Synthetic rehearsal marker required.");
     }
 
-    const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
+    const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request, {
+      expectedAction: "submission_intake",
+      expectedHostname: expectedTurnstileHostname(request)
+    });
     if (!verification.ok) throw new Error(verification.message);
 
     const imageFiles = await getOptionalImages(form);
