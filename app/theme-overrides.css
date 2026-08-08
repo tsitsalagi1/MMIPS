@@ -1,0 +1,106 @@
+/* MMIPS public theme guardrails.
+   Keep the interface dark charcoal with warm cream text and gold interaction states.
+   Reserve muted red for urgency, danger, and destructive actions. */
+
+:root {
+  --bg: #11100e;
+  --panel: #1c1915;
+  --panel-2: #242018;
+  --text: #fffaf3;
+  --muted: #d9cbbb;
+  --line: #443b31;
+  --gold: #d8ad5d;
+  --gold-hover: #e7bd72;
+  --gold-ink: #1a150d;
+  --red: #b94a40;
+  --red-dark: #863129;
+  --blue: #d8ad5d;
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+::-moz-selection {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+a:hover {
+  color: var(--gold);
+}
+
+.nav-links a:hover,
+.nav-links a:focus-visible {
+  color: var(--gold);
+}
+
+.button,
+button {
+  background: var(--gold);
+  color: var(--gold-ink);
+}
+
+.button:hover,
+button:hover {
+  background: var(--gold-hover);
+  color: var(--gold-ink);
+}
+
+.button.secondary {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.button.secondary:hover {
+  background: rgba(216, 173, 93, .12);
+  color: var(--text);
+}
+
+/* Red is intentionally reserved for destructive or urgent actions. */
+.button.danger,
+button.danger {
+  background: #5e1712;
+  color: #fff8ef;
+}
+
+.button.danger:hover,
+button.danger:hover {
+  background: #3f0f0c;
+  color: #fff8ef;
+}
+
+.notice {
+  border-left-color: var(--gold);
+}
+
+.notice.danger,
+.notice.error,
+.notice.urgent {
+  border-left-color: var(--red);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(216, 173, 93, .24);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--gold);
+}
+
+[aria-selected="true"],
+[aria-current="page"] {
+  color: var(--gold);
+}
