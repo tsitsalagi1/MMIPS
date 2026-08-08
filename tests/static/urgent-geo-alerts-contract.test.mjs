@@ -8,6 +8,7 @@ const subscribe = fs.readFileSync("app/api/alerts/subscribe/route.ts", "utf8");
 const zipGeo = fs.readFileSync("lib/zip-geo.ts", "utf8");
 const urgentRoute = fs.readFileSync("app/api/admin/alerts/urgent/route.ts", "utf8");
 const urgentUi = fs.readFileSync("app/admin/AdminUrgentAlerts.tsx", "utf8");
+const urgentAlerts = fs.readFileSync("lib/urgent-alerts.ts", "utf8");
 const profileSearch = fs.readFileSync("app/api/profiles/search/route.ts", "utf8");
 
 test("public signup asks for email plus generalized ZIP/radius, not street/device location", () => {
@@ -45,6 +46,16 @@ test("urgent send requires published approval, urgent status, approved map point
   assert.match(urgentRoute, /MMIPS TEST PERSON/);
   assert.match(urgentRoute, /status: 423/);
   assert.match(urgentUi, /A raw submission never sends a public alert automatically/);
+});
+
+test("urgent retries reuse the frozen delivery ledger and summarize persisted delivery state", () => {
+  assert.match(urgentAlerts, /Freeze the initial audience in the private delivery ledger/);
+  assert.match(urgentAlerts, /from\("alert_deliveries"\)/);
+  assert.match(urgentAlerts, /select\("id,subscriber_id,delivery_status"\)/);
+  assert.match(urgentAlerts, /delivery\.delivery_status !== "queued" && delivery\.delivery_status !== "failed_retryable"/);
+  assert.match(urgentAlerts, /deliveryKey: delivery\.id/);
+  assert.match(urgentAlerts, /summarizeUrgentDeliveryState\(finalStatuses, matchedCount\)/);
+  assert.match(urgentAlerts, /sent_at: summary\.status === "sent" \? completedAt : null/);
 });
 
 test("ZIP-distance public search uses only approved public map points for geography", () => {
