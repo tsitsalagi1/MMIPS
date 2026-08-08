@@ -5,48 +5,6 @@ import { matchedUrgentSubscribers, sendUrgentCommunityAlert } from "@/lib/urgent
 
 export const dynamic = "force-dynamic";
 
-function personName(raw: any) {
-  const person = Array.isArray(raw?.persons) ? raw.persons[0] : raw?.persons;
-  return person?.full_name || "Name withheld";
-}
-
-async function loadTarget(admin: Awaited<ReturnType<typeof requireAdmin>> & { ok: true }, caseId: string) {
-  const { data: profile, error: profileError } = await admin.supabase
-    .from("cases")
-    .select("id,slug,status,profile_type,urgency_level,review_status,published_at,persons(full_name)")
-    .eq("id", caseId)
-    .maybeSingle();
-  if (profileError) throw profileError;
-  if (!profile) return { error: "Profile not found." } as const;
-
-  const { data: point, error: pointError } = await admin.supabase
-    .from("public_case_map_points")
-    .select("public_label,public_latitude,public_longitude,precision,moderator_approved,safety_reviewed_at,hidden_at")
-    .eq("case_id", caseId)
-    .is("hidden_at", null)
-    .eq("moderator_approved", true)
-    .maybeSingle();
-  if (pointError) throw pointError;
-  if (!point) return { error: "This profile needs an approved public map point before a geographic urgent alert can be sent." } as const;
-
-  const latitude = Number(point.public_latitude);
-  const longitude = Number(point.public_longitude);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return { error: "The approved public map point is unavailable." } as const;
-
-  return {
-    target: {
-      caseId: profile.id,
-      slug: profile.slug,
-      title: personName(profile),
-      publicMapLabel: point.public_label,
-      latitude,
-      longitude
-    },
-    profile,
-    point
-  } as const;
-}
-
 export async function GET(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
@@ -98,11 +56,53 @@ export async function POST(request: NextRequest) {
       entity_type: "cases",
       entity_id: caseId,
       reason: "Moderator confirmed approved urgent public alert.",
-      metadata: { slug: loaded.profile.slug, matched_count: result.matched, sent_count: result.sent, failed_count: result.failed ?? 0, duplicate: result.duplicate }
+      metadata: { slug: loaded.profile.slug, matched_count: result.matched, sent_count: result.sent, failed_count: result.failed, duplicate: result.duplicate }
     });
 
     return NextResponse.json({ ok: true, message: result.duplicate ? "This hourly urgent alert event was already sent." : `Urgent alert processed: ${result.sent} sent of ${result.matched} matched subscribers.`, result });
   } catch {
     return safeApiError({ code: "urgent_alert_send_failed", message: "Could not send the urgent community alert." });
   }
+}
+
+function personName(raw: any) {
+  const person = Array.isArray(raw?.persons) ? raw.persons[0] : raw?.persons;
+  return person?.full_name || "Name withheld";
+}
+
+async function loadTarget(admin: Awaited<ReturnType<typeof requireAdmin>> & { ok: true }, caseId: string) {
+  const { data: profile, error: profileError } = await admin.supabase
+    .from("cases")
+    .select("id,slug,status,profile_type,urgency_level,review_status,published_at,persons(full_name)")
+    .eq("id", caseId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile) return { error: "Profile not found." } as const;
+
+  const { data: point, error: pointError } = await admin.supabase
+    .from("public_case_map_points")
+    .select("public_label,public_latitude,public_longitude,precision,moderator_approved,safety_reviewed_at,hidden_at")
+    .eq("case_id", caseId)
+    .is("hidden_at", null)
+    .eq("moderator_approved", true)
+    .maybeSingle();
+  if (pointError) throw pointError;
+  if (!point) return { error: "This profile needs an approved public map point before a geographic urgent alert can be sent." } as const;
+
+  const latitude = Number(point.public_latitude);
+  const longitude = Number(point.public_longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return { error: "The approved public map point is unavailable." } as const;
+
+  return {
+    target: {
+      caseId: profile.id,
+      slug: profile.slug,
+      title: personName(profile),
+      publicMapLabel: point.public_label,
+      latitude,
+      longitude
+    },
+    profile,
+    point
+  } as const;
 }
