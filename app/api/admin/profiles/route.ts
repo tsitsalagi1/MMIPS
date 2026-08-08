@@ -16,8 +16,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const visibility = searchParams.get("visibility") || "published";
     const q = cleanSearch(searchParams.get("q"));
+    const officialSourceDrafts = visibility === "official_source_drafts";
 
-    if (q.length < 2) {
+    if (!officialSourceDrafts && q.length < 2) {
       return NextResponse.json({ ok: true, profiles: [], requiresSearch: true });
     }
 
@@ -63,7 +64,8 @@ export async function GET(request: Request) {
         last_public_update,
         published_at,
         person_id,
-        persons(id, full_name, age, tribal_affiliation)
+        persons(id, full_name, age, tribal_affiliation),
+        case_verifications(verification_type, source_label, source_url, notes, is_public)
       `)
       .order("updated_at", { ascending: false })
       .limit(250);
@@ -72,6 +74,8 @@ export async function GET(request: Request) {
       query.eq("review_status", "approved").not("published_at", "is", null);
     } else if (visibility === "hidden") {
       query.eq("review_status", "hidden");
+    } else if (officialSourceDrafts) {
+      query.eq("review_status", "pending_review").is("published_at", null);
     }
 
     if (q) {
@@ -102,7 +106,11 @@ export async function GET(request: Request) {
     const { data, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ ok: true, profiles: data || [] });
+    const profiles = officialSourceDrafts
+      ? (data || []).filter((profile: any) => Array.isArray(profile.case_verifications) && profile.case_verifications.some((item: any) => item.verification_type === "official_source" && item.source_url))
+      : (data || []);
+
+    return NextResponse.json({ ok: true, profiles, requiresSearch: !officialSourceDrafts });
   } catch {
     return safeApiError({ code: "public_profiles_load_failed", message: "Could not load public profiles." });
   }
