@@ -15,7 +15,7 @@ export default function HowItWorksPage() {
       <section className="feature-grid">
         <div className="card">
           <h2>1. Submit for review</h2>
-          <p>Submitted information go into a private review queue. They do not become public automatically.</p>
+          <p>Submitted information goes into a private review queue. It does not become public automatically.</p>
         </div>
         <div className="card">
           <h2>2. Safety check</h2>
@@ -28,6 +28,7 @@ export default function HowItWorksPage() {
         <div className="card">
           <h2>4. Correct or remove</h2>
           <p>Families and authorized contacts can ask MMIPS to correct, hide, or remove public submitted information.</p>
+          <Link href="/corrections">Request a correction or removal review</Link>
         </div>
       </section>
 
@@ -45,18 +46,32 @@ export default function HowItWorksPage() {
         <li>If approved, MMIPS creates a public profile with limited, approved public information.</li>
       </ol>
 
+      <h2>How community alerts work</h2>
+      <p>
+        Community members can subscribe to urgent MMIPS email alerts using a ZIP code and distance preference. Alerts are sent only from moderator-approved public information and direct anyone with information to the official reporting contact listed on the public profile. MMIPS does not collect case tips by email.
+      </p>
+      <div className="button-row">
+        <Link className="button" href="/alerts">Join community alerts</Link>
+        <Link className="button secondary" href="/profiles">Search public profiles</Link>
+      </div>
+
+      <h2>Family support and corrections</h2>
+      <p>
+        Family members and authorized contacts can use MMIPS family resources, submit information for review, or request a correction, safety edit, updated official contact, status change, or removal review.
+      </p>
+      <div className="button-row">
+        <Link className="button" href="/resources">Family Resources</Link>
+        <Link className="button secondary" href="/submit">Submit information for review</Link>
+        <Link className="button secondary" href="/corrections">Request correction/removal</Link>
+      </div>
+
       <h2>Contact</h2>
       <p>
         General questions: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />
         Correction/removal requests: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />
         Legal/privacy notices: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />
-        Public tip-related questions: <a href="mailto:tips@mmips.com">tips@mmips.com</a>
+        Case tips: use the official agency or tip contact listed on the public profile. Do not email case tips to MMIPS.
       </p>
-
-      <div className="button-row">
-        <Link className="button" href="/submit">Submit information for review</Link>
-        <Link className="button secondary" href="/corrections">Request correction/removal</Link>
-      </div>
     </main>
   );
 }
