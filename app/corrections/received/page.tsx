@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = { robots: { index: false, follow: false, noarchive: true } };
 
 function safeReference(value: string | undefined) {
   return value && /^MMIPS-C-[A-F0-9]{16}$/.test(value) ? value : null;
