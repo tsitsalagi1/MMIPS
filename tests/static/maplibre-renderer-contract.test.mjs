@@ -6,6 +6,7 @@ const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
 const experience = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
 const renderer = fs.readFileSync("components/map/MapLibreRenderer.tsx", "utf8");
+const rendererCss = fs.readFileSync("components/map/MapLibreRenderer.module.css", "utf8");
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
 const page = fs.readFileSync("app/map/page.tsx", "utf8");
 const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
@@ -15,6 +16,7 @@ test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server
   assert.equal(lock.packages["node_modules/maplibre-gl"].version, "6.0.0");
   assert.doesNotMatch(JSON.stringify(packageJson.dependencies), /maplibre-gl[^\n]*(\^|~|latest|cdn)/i);
   assert.match(renderer, /import \* as maplibregl from "maplibre-gl"/);
+  assert.match(renderer, /import "maplibre-gl\/dist\/maplibre-gl\.css"/);
   assert.doesNotMatch(serverSources, /maplibre-gl|\bwindow\b|\bdocument\b/);
 });
 
@@ -23,6 +25,8 @@ test("renderer is client-only and uses a real source/layer with bounded cleanup"
   assert.match(experience, /dynamic\(\(\) => import\("\.\/MapLibreRenderer"\), \{ ssr: false \}\)/);
   assert.match(renderer, /addSource\(SOURCE_ID, \{ type: "geojson"/);
   assert.match(renderer, /addLayer\(/);
+  assert.match(renderer, /map\.once\("load", onLoad\)/);
+  assert.match(renderer, /map\.on\("click", LAYER_ID, onPointClick\)/);
   assert.match(renderer, /map\.remove\(\)/);
   assert.match(renderer, /removeEventListener\("webglcontextlost"/);
   assert.doesNotMatch(renderer + experience, /dangerouslySetInnerHTML|new maplibregl\.Marker|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|flyTo|localStorage|sessionStorage/);
@@ -35,15 +39,19 @@ test("camera and interaction defaults preserve approximate context and page scro
   assert.match(renderer, /fitBounds\(bounds, \{ padding: 56, duration: 0, maxZoom: MAX_FIT_ZOOM \}\)/);
   for (const setting of ["dragRotate: false", "pitchWithRotate: false", "scrollZoom: false", "touchPitch: false", "maxPitch: 0"]) assert.match(renderer, new RegExp(setting));
   assert.match(renderer, /showCompass: false/);
+  assert.match(rendererCss, /\.canvas\{height:24rem;width:100%;min-height:24rem\}/);
 });
 
-test("configuration, request, WebGL2, and bounded failures fail to the list", () => {
+test("configuration, request, compatible WebGL fallback, and bounded failures fail safely to the list", () => {
   assert.match(boundary, /styleUrl\.protocol !== "https:"/);
   assert.match(boundary, /origin\.includes\("\*"\)/);
   assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
-  assert.match(boundary, /getContext\("webgl2"/);
-  for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL2_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
-  assert.match(renderer, /Visual map unavailable\. The complete accessible list remains available below\./);
+  assert.match(boundary, /getContext\("webgl2"\) \|\| canvas\.getContext\("webgl"\)/);
+  assert.doesNotMatch(boundary, /failIfMajorPerformanceCaveat:\s*true/);
+  for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
+  assert.match(renderer, /Visual map unavailable\./);
+  assert.match(renderer, /Retry visual map/);
+  assert.match(renderer, /MAP_LOAD_TIMEOUT_MS = 12000/);
   assert.doesNotMatch(renderer, /console\.(log|warn|error)\([^\n]*(url|points|geoJson|provider)/i);
 });
 
