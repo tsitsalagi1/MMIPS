@@ -74,9 +74,9 @@ button.danger:hover {
 }
 
 /*
-   Generic notice/status components previously inherited a pale indigo rule
-   (#eef2ff / #c7d2fe). Force every ordinary MMIPS notice/status panel back
-   into the charcoal + gold palette so the blue treatment cannot reappear.
+   Generic notice/status components previously inherited a pale indigo rule.
+   Force every ordinary MMIPS notice/status panel back into the charcoal + gold
+   palette so the blue treatment cannot reappear.
 */
 .notice,
 .status-message {
