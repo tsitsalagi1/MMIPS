@@ -10,6 +10,7 @@ const caseStatuses = new Set(["missing", "murdered_unsolved", "unidentified", "r
 const profileTypes = new Set(["urgent_missing", "missing", "murdered_info_needed", "unidentified", "located"]);
 const urgencyLevels = new Set(["standard", "urgent_public_awareness", "renewed_visibility", "status_update"]);
 const locationPrecisions = new Set(["exact_private", "approximate", "city", "county", "hidden"]);
+const OFFICIAL_SOURCE_PUBLICATION_LOCKED = true;
 
 function optionalText(value: unknown) {
   if (typeof value !== "string") return undefined;
@@ -48,66 +49,48 @@ function buildCaseUpdates(raw: any) {
 
   const publicSummary = optionalText(raw.public_summary);
   if (publicSummary !== undefined) updates.public_summary = publicSummary;
-
   const lastSeenAreaPublic = optionalText(raw.last_seen_area_public);
   if (lastSeenAreaPublic !== undefined) updates.last_seen_area_public = lastSeenAreaPublic;
-
   const leadAgency = optionalText(raw.lead_agency);
   if (leadAgency !== undefined) updates.lead_agency = leadAgency;
-
   const agencyCaseNumber = optionalText(raw.agency_case_number);
   if (agencyCaseNumber !== undefined) updates.agency_case_number = agencyCaseNumber;
-
   const namusNumber = optionalText(raw.namus_number);
   if (namusNumber !== undefined) updates.namus_number = namusNumber;
-
   const officialTipContact = optionalText(raw.official_tip_contact);
   if (officialTipContact !== undefined) updates.official_tip_contact = officialTipContact;
-
   const ncicStatus = optionalText(raw.ncic_status);
   if (ncicStatus !== undefined) updates.ncic_status = ncicStatus;
-
   const tribeNotified = optionalText(raw.tribe_notified);
   if (tribeNotified !== undefined) updates.tribe_notified = tribeNotified;
-
   const familyLiaison = optionalText(raw.family_liaison);
   if (familyLiaison !== undefined) updates.family_liaison = familyLiaison;
-
   const notificationArea = optionalText(raw.notification_area_requested);
   if (notificationArea !== undefined) updates.notification_area_requested = notificationArea;
-
   const likelyTravelMode = optionalText(raw.likely_travel_mode);
   if (likelyTravelMode !== undefined) updates.likely_travel_mode = likelyTravelMode;
-
   const possibleDirection = optionalText(raw.possible_direction);
   if (possibleDirection !== undefined) updates.possible_direction = possibleDirection;
-
   const vehicleDescription = optionalText(raw.vehicle_description);
   if (vehicleDescription !== undefined) updates.vehicle_description = vehicleDescription;
-
   if (typeof raw.official_info_pending === "boolean") updates.official_info_pending = raw.official_info_pending;
 
   if (Object.keys(updates).length) {
     updates.updated_at = new Date().toISOString();
     updates.last_public_update = todayIsoDate();
   }
-
   return updates;
 }
 
 function buildPersonUpdates(raw: any) {
   if (!raw || typeof raw !== "object") return {};
   const updates: Record<string, unknown> = {};
-
   const fullName = optionalText(raw.full_name);
   if (fullName !== undefined) updates.full_name = fullName;
-
   const tribalAffiliation = optionalText(raw.tribal_affiliation);
   if (tribalAffiliation !== undefined) updates.tribal_affiliation = tribalAffiliation;
-
   const age = optionalNumber(raw.age);
   if (age !== undefined) updates.age = age;
-
   return updates;
 }
 
@@ -122,26 +105,28 @@ export async function PATCH(request: Request, context: Params) {
     const action = String(body.action || "update");
     const moderatorNotes = String(body.moderator_notes || "").trim() || null;
 
+    if (action === "publish_official_source" && OFFICIAL_SOURCE_PUBLICATION_LOCKED) {
+      return NextResponse.json({
+        ok: false,
+        code: "official_source_publication_locked",
+        message: "Official-source publication is locked while MMIPS completes the synthetic launch rehearsal. Real cases must remain unpublished."
+      }, { status: 423 });
+    }
+
     const { data: current, error: loadError } = await admin.supabase
       .from("cases")
       .select("id, person_id, slug, status, profile_type, urgency_level, review_status, published_at")
       .eq("id", id)
       .single();
 
-    if (loadError || !current) {
-      return NextResponse.json({ ok: false, message: "Public profile not found." }, { status: 404 });
-    }
+    if (loadError || !current) return NextResponse.json({ ok: false, message: "Public profile not found." }, { status: 404 });
 
     const caseUpdates = buildCaseUpdates(body.case_updates);
     const personUpdates = buildPersonUpdates(body.person_updates);
 
     if (action === "publish_official_source") {
-      if (current.review_status !== "pending_review" || current.published_at) {
-        return NextResponse.json({ ok: false, message: "Only unpublished pending-review official-source drafts can use this publication action." }, { status: 409 });
-      }
-      if (!moderatorNotes || moderatorNotes.length < 10) {
-        return NextResponse.json({ ok: false, message: "Add a moderator note describing what you checked before publication." }, { status: 400 });
-      }
+      if (current.review_status !== "pending_review" || current.published_at) return NextResponse.json({ ok: false, message: "Only unpublished pending-review official-source drafts can use this publication action." }, { status: 409 });
+      if (!moderatorNotes || moderatorNotes.length < 10) return NextResponse.json({ ok: false, message: "Add a moderator note describing what you checked before publication." }, { status: 400 });
 
       const { data: sourceRows, error: sourceError } = await admin.supabase
         .from("case_verifications")
@@ -152,31 +137,21 @@ export async function PATCH(request: Request, context: Params) {
       if (sourceError) throw sourceError;
 
       const approvedSources = (sourceRows || []).filter((source: any) => isGovernmentOfficialSource(source.source_url));
-      if (!approvedSources.length) {
-        return NextResponse.json({ ok: false, message: "Publication requires a public HTTPS .gov official-source verification record." }, { status: 409 });
-      }
+      if (!approvedSources.length) return NextResponse.json({ ok: false, message: "Publication requires a public HTTPS .gov official-source verification record." }, { status: 409 });
 
       if (current.person_id && Object.keys(personUpdates).length) {
-        const { error: personError } = await admin.supabase
-          .from("persons")
-          .update(personUpdates)
-          .eq("id", current.person_id);
+        const { error: personError } = await admin.supabase.from("persons").update(personUpdates).eq("id", current.person_id);
         if (personError) throw personError;
       }
 
       const publishedAt = new Date().toISOString();
-      const { error: publishError } = await admin.supabase
-        .from("cases")
-        .update({
-          ...caseUpdates,
-          review_status: "approved",
-          published_at: publishedAt,
-          updated_at: publishedAt,
-          last_public_update: todayIsoDate()
-        })
-        .eq("id", id)
-        .eq("review_status", "pending_review")
-        .is("published_at", null);
+      const { error: publishError } = await admin.supabase.from("cases").update({
+        ...caseUpdates,
+        review_status: "approved",
+        published_at: publishedAt,
+        updated_at: publishedAt,
+        last_public_update: todayIsoDate()
+      }).eq("id", id).eq("review_status", "pending_review").is("published_at", null);
       if (publishError) throw publishError;
 
       await admin.supabase.from("audit_log").insert({
@@ -194,30 +169,17 @@ export async function PATCH(request: Request, context: Params) {
         }
       });
 
-      return NextResponse.json({
-        ok: true,
-        message: "Official-source profile published after human moderator review.",
-        slug: current.slug
-      });
+      return NextResponse.json({ ok: true, message: "Official-source profile published after human moderator review.", slug: current.slug });
     }
 
-    if (!Object.keys(caseUpdates).length && !Object.keys(personUpdates).length) {
-      return NextResponse.json({ ok: false, message: "No valid profile changes were provided." }, { status: 400 });
-    }
+    if (!Object.keys(caseUpdates).length && !Object.keys(personUpdates).length) return NextResponse.json({ ok: false, message: "No valid profile changes were provided." }, { status: 400 });
 
     if (Object.keys(caseUpdates).length) {
-      const { error: caseError } = await admin.supabase
-        .from("cases")
-        .update(caseUpdates)
-        .eq("id", id);
+      const { error: caseError } = await admin.supabase.from("cases").update(caseUpdates).eq("id", id);
       if (caseError) throw caseError;
     }
-
     if (current.person_id && Object.keys(personUpdates).length) {
-      const { error: personError } = await admin.supabase
-        .from("persons")
-        .update(personUpdates)
-        .eq("id", current.person_id);
+      const { error: personError } = await admin.supabase.from("persons").update(personUpdates).eq("id", current.person_id);
       if (personError) throw personError;
     }
 
@@ -229,21 +191,13 @@ export async function PATCH(request: Request, context: Params) {
       reason: moderatorNotes,
       metadata: {
         slug: current.slug,
-        before: {
-          status: current.status,
-          profile_type: current.profile_type,
-          urgency_level: current.urgency_level
-        },
+        before: { status: current.status, profile_type: current.profile_type, urgency_level: current.urgency_level },
         case_updates: caseUpdates,
         person_updates: Object.keys(personUpdates)
       }
     });
 
-    return NextResponse.json({
-      ok: true,
-      message: "Public profile updated. The live profile, flyer, JPEG export, map category, and QR-linked page now use the updated status/type.",
-      slug: current.slug
-    });
+    return NextResponse.json({ ok: true, message: "Public profile updated. The live profile, flyer, JPEG export, map category, and QR-linked page now use the updated status/type.", slug: current.slug });
   } catch {
     return safeApiError({ code: "public_profile_update_failed", message: "Could not update public profile." });
   }
