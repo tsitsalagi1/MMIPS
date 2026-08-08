@@ -88,7 +88,6 @@ async function getOptionalImages(form: FormData) {
   });
 }
 
-
 function normalizeProfileType(value: FormDataEntryValue | null) {
   const text = typeof value === "string" ? value.trim() : "";
   if (["urgent_missing", "missing", "murdered_info_needed", "unidentified"].includes(text)) return text;
@@ -108,7 +107,6 @@ function optionalText(form: FormData, name: string) {
 function optionalDateTimeLocal(form: FormData, name: string) {
   const value = optionalText(form, name);
   if (!value) return null;
-  // datetime-local arrives without a timezone. Store a best-effort ISO-like string so admins can read it.
   return value;
 }
 
@@ -127,9 +125,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
 
     const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
-    if (!verification.ok) {
-      throw new Error(verification.message);
-    }
+    if (!verification.ok) throw new Error(verification.message);
 
     const imageFiles = await getOptionalImages(form);
     const photoAltText = optionalText(form, "photo_alt_text");
@@ -184,13 +180,11 @@ export async function POST(request: Request) {
     }
 
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
-
     const { data: submissionRow, error } = await supabase
       .from("submissions")
       .insert(payload)
-      .select("id")
+      .select("id, public_reference")
       .single();
-
     if (error) throw error;
 
     if (imageFiles.length && submissionRow?.id) {
@@ -242,13 +236,14 @@ export async function POST(request: Request) {
         `Hello ${payload.submitter_name || ""},`,
         `MMIPS received your ${profileType === "urgent_missing" ? "urgent public-awareness" : profileType === "murdered_info_needed" ? "information-needed" : "public-awareness"} submission for review.`,
         "Nothing has been published. An MMIPS reviewer will review it for consent, safety, and accuracy before anything appears publicly.",
-        submissionRow?.id ? `Reference ID: ${submissionRow.id}` : null,
+        submissionRow?.public_reference ? `Reference: ${submissionRow.public_reference}` : null,
         "If this is an emergency or someone is in immediate danger, call 911. MMIPS is not law enforcement and does not replace a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.",
         "Questions or updates: contact@mmips.com"
       ].filter(Boolean).join("\n\n")
     });
 
-    return redirectTo(request, "/submit/received");
+    const reference = typeof submissionRow?.public_reference === "string" ? submissionRow.public_reference : "";
+    return redirectTo(request, `/submit/received${reference ? `?ref=${encodeURIComponent(reference)}` : ""}`);
   } catch {
     return redirectTo(request, "/submit?error=Submission%20could%20not%20be%20processed.%20Please%20review%20the%20form%20and%20try%20again.");
   }
