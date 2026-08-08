@@ -2,17 +2,38 @@ export default function PrivacyPage() {
   return (
     <main className="container section legal-body">
       <h1>Privacy Policy</h1>
-      <p className="muted">This starter text is not legal advice. Have an attorney review before public launch.</p>
-      <h2>Information collected</h2>
-      <p>MMIPS may collect submitted information, submitter contact information, photographs, documents, correction/removal requests, alert preferences, and technical logs needed to operate and secure the site.</p>
+      <p className="muted">Last updated August 8, 2026. This policy describes MMIPS&apos;s current site practices. It does not replace legal advice from your own attorney.</p>
+
+      <h2>What MMIPS is</h2>
+      <p>MMIPS is a moderated public-awareness and family-support resource. It is not law enforcement, an emergency service, a tip line, or an official missing-person reporting system.</p>
+
+      <h2>Information MMIPS may collect</h2>
+      <p>MMIPS may collect information submitted for review, submitter contact information and relationship, family-approved photographs, correction/removal requests, email-alert preferences and consent records, moderator review records, and limited technical security data needed to protect the service.</p>
+
       <h2>Public and private information</h2>
-      <p>Not all submitted information is public. MMIPS may keep submitter contact information, private notes, sensitive locations, and review records private. Public profiles should contain only reviewed information intended for public awareness.</p>
-      <h2>Safety masking</h2>
-      <p>MMIPS may generalize or hide locations to protect minors, domestic violence survivors, trafficking victims, families, witnesses, and active investigations.</p>
-      <h2>Alerts</h2>
-      <p>Users must opt in to receive alerts. SMS alerts, if enabled, must include opt-out instructions and maintain consent records.</p>
+      <p>Submitting information does not make it public. Public profiles contain only information approved for public awareness after moderation. Submitter contact information, private notes, sensitive or exact locations, internal safety review, correction requests, and administrative records are not intended for public display.</p>
+
+      <h2>Locations and the public map</h2>
+      <p>MMIPS does not publish exact private map coordinates through the public map. Any map point must be separately reviewed as a deliberately approximate public-awareness area. Homes, shelters, incident or recovery sites, witness or family locations, and investigative locations should not be placed on the public map.</p>
+
+      <h2>Photos and metadata</h2>
+      <p>Uploaded photos remain private during review. MMIPS accepts only limited image types and rejects images containing embedded EXIF/XMP/text metadata that could expose location or device information. Images selected for public use remain subject to moderator safety and permission review.</p>
+
+      <h2>Email alerts</h2>
+      <p>Email alerts use double opt-in. A subscription is not active until the confirmation step is completed. MMIPS keeps consent and delivery records needed to honor subscriptions, prevent duplicate delivery, and process unsubscribe requests. MMIPS does not currently offer SMS alerts through this Version 1 site.</p>
+
+      <h2>Security and abuse prevention</h2>
+      <p>Public forms use anti-abuse verification and rate limiting. MMIPS&apos;s application-level rate-limit counters use keyed hashes rather than storing raw requester IP or email values in the counter table. Raw source IP is not stored with new public submissions by the current application workflow.</p>
+
+      <h2>Service providers</h2>
+      <p>MMIPS uses third-party infrastructure to operate the site. Current providers include Vercel for web hosting, Supabase for database/storage/authentication services, Resend for transactional email, Cloudflare Turnstile for anti-abuse verification, and MapTiler for public basemap resources rendered through MapLibre. When your browser or the MMIPS server communicates with these providers, they may process ordinary technical request information under their own privacy and security terms.</p>
+
+      <h2>Retention, corrections, and removal</h2>
+      <p>MMIPS retains records as needed for moderation, safety, consent, correction/removal handling, auditability, and abuse prevention. Short-lived abuse counters are designed for limited retention. Families and authorized representatives may request correction, hiding, or removal of public information through the correction/removal process.</p>
+
       <h2>Children</h2>
-      <p>Only adults should submit information or subscribe to alerts. MMIPS should not knowingly collect personal information directly from children under 13.</p>
+      <p>Only adults should submit information or subscribe to alerts. MMIPS should not knowingly collect personal information directly from children under 13 through these forms.</p>
+
       <h2>Contact</h2>
       <p>Privacy/legal notices: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />Correction/removal requests: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />General contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></p>
     </main>
