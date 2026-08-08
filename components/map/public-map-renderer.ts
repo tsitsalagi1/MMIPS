@@ -4,7 +4,7 @@ import type { FeatureCollection, Point } from "geojson";
 export type MapFailureCode =
   | "MAP_CONFIG_UNAVAILABLE"
   | "MAP_CONFIG_INVALID"
-  | "MAP_WEBGL2_UNAVAILABLE"
+  | "MAP_WEBGL_UNAVAILABLE"
   | "MAP_INITIALIZATION_FAILED"
   | "MAP_STYLE_LOAD_FAILED"
   | "MAP_RESOURCE_REJECTED"
@@ -95,11 +95,12 @@ export function toPublicGeoJson(points: readonly PublicMapPoint[]): PublicMapFea
   };
 }
 
-export function hasUsableWebGL2(): boolean {
+export function hasUsableWebGL(): boolean {
   try {
+    if (typeof window === "undefined" || !window.WebGLRenderingContext) return false;
     const canvas = document.createElement("canvas");
-    const context = canvas.getContext("webgl2", { failIfMajorPerformanceCaveat: true });
-    if (!context || context.isContextLost()) return false;
+    const context = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    if (!context || typeof context.getParameter !== "function" || context.isContextLost()) return false;
     context.getExtension("WEBGL_lose_context")?.loseContext();
     return true;
   } catch {
