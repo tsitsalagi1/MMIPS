@@ -30,7 +30,8 @@ test("unpublished, rejected, and forbidden-precision records are excluded", () =
 
 test("anonymous loader uses the dedicated point projection then approved public cases", async () => {
   const calls = [];
-  const { cases, ...pointRow } = syntheticApprovedMapRow;
+  const { cases, ...basePointRow } = syntheticApprovedMapRow;
+  const pointRow = { ...basePointRow, case_id: cases.id };
 
   const pointTerminal = Promise.resolve({ data: [pointRow], error: null });
   const pointChain = {
