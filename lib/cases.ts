@@ -48,16 +48,33 @@ function publicStorageUrl(bucket: string, path?: string | null) {
   return `${url}/storage/v1/object/public/${bucket}/${encodedPath}`;
 }
 
+function safeHttpsUrl(value: unknown) {
+  if (typeof value !== "string" || !value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapCase(row: any): MmipsCase {
   const person = Array.isArray(row.persons) ? row.persons[0] : row.persons;
-  const verification = Array.isArray(row.case_verifications)
-    ? row.case_verifications
-        .map((item: any) => item.verification_type)
-        .filter(Boolean)
-        // A public profile has already been reviewed/approved. Never show a pending-review
-        // label on a public profile, even if an older verification row contains it.
-        .filter((status: string) => status !== "pending_review")
+  const publicVerifications = Array.isArray(row.case_verifications)
+    ? row.case_verifications.filter((item: any) => item?.is_public === true)
     : [];
+  const verification = publicVerifications
+    .map((item: any) => item.verification_type)
+    .filter(Boolean)
+    // A public profile has already been reviewed/approved. Never show a pending-review
+    // label on a public profile, even if an older verification row contains it.
+    .filter((status: string) => status !== "pending_review");
+  const officialSources = publicVerifications.flatMap((item: any) => {
+    if (item.verification_type !== "official_source") return [];
+    const url = safeHttpsUrl(item.source_url);
+    if (!url) return [];
+    return [{ label: item.source_label || "Official source", url }];
+  });
 
   const rawPhotos = Array.isArray(row.profile_photos) ? row.profile_photos : [];
   const photos = rawPhotos
@@ -86,6 +103,7 @@ function mapCase(row: any): MmipsCase {
     profileType: row.profile_type || (row.status === "murdered_unsolved" ? "murdered_info_needed" : row.status === "unidentified" ? "unidentified" : row.status === "resolved" ? "located" : "missing"),
     urgencyLevel: row.urgency_level || "standard",
     verification: verification.length ? verification : ["mmips_reviewed"],
+    officialSources,
     lastSeenDate: row.last_seen_date || null,
     lastKnownDatetime: row.last_known_datetime || null,
     lastKnownTimeZone: row.last_known_time_zone || null,
@@ -115,13 +133,15 @@ function mapCase(row: any): MmipsCase {
   };
 }
 
+const PUBLIC_CASE_SELECT = "id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, source_label, source_url, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)";
+
 export async function getPublishedCases(): Promise<MmipsCase[]> {
   const supabase = createPublicSupabaseClient();
   if (!supabase) return sampleCases;
 
   const { data, error } = await supabase
     .from("cases")
-    .select("id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)")
+    .select(PUBLIC_CASE_SELECT)
     .eq("review_status", "approved")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false });
@@ -141,7 +161,7 @@ export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
 
   const { data, error } = await supabase
     .from("cases")
-    .select("id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)")
+    .select(PUBLIC_CASE_SELECT)
     .eq("slug", slug)
     .eq("review_status", "approved")
     .not("published_at", "is", null)
