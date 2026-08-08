@@ -27,6 +27,8 @@ type Draft = {
   case_verifications?: OfficialSource[] | null;
 };
 
+const OFFICIAL_SOURCE_PUBLICATION_LOCKED = true;
+
 function personFor(draft: Draft) {
   return Array.isArray(draft.persons) ? draft.persons[0] : draft.persons;
 }
@@ -39,8 +41,6 @@ export default function AdminOfficialSourceDrafts() {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -60,9 +60,7 @@ export default function AdminOfficialSourceDrafts() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch("/api/admin/profiles?visibility=official_source_drafts", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await fetch("/api/admin/profiles?visibility=official_source_drafts", { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.ok) throw new Error(data.message || "Could not load official-source drafts.");
       setDrafts(data.profiles || []);
@@ -79,38 +77,6 @@ export default function AdminOfficialSourceDrafts() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken]);
 
-  async function publishDraft(draft: Draft) {
-    if (!sessionToken || !confirmed[draft.id]) return;
-    const moderatorNote = (notes[draft.id] || "").trim();
-    if (moderatorNote.length < 10) {
-      setMessage("Add a short moderator note describing what you checked before publishing.");
-      return;
-    }
-    const person = personFor(draft);
-    const ok = window.confirm(`Publish ${person?.full_name || draft.slug} to MMIPS after your official-source and safety review? This will make the profile public.`);
-    if (!ok) return;
-
-    setLoading(true);
-    setMessage("");
-    try {
-      const response = await fetch(`/api/admin/profiles/${draft.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionToken}` },
-        body: JSON.stringify({ action: "publish_official_source", moderator_notes: moderatorNote })
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.ok) throw new Error(data.message || "Could not publish this official-source draft.");
-      setMessage(`${data.message} Public profile: /profiles/${data.slug}`);
-      setConfirmed((current) => ({ ...current, [draft.id]: false }));
-      setNotes((current) => ({ ...current, [draft.id]: "" }));
-      await loadDrafts(sessionToken);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not publish this official-source draft.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   if (!sessionToken) return null;
 
   return (
@@ -118,21 +84,21 @@ export default function AdminOfficialSourceDrafts() {
       <div className="section-heading-row">
         <div>
           <p className="eyebrow">Human publication gate</p>
-          <h2 id="official-source-drafts-heading">Official-source drafts awaiting review</h2>
-          <p className="lead compact-lead">These records were prepared from public government case pages. They stay private until an authorized MMIPS moderator opens the source, compares the draft, confirms the safety boundary, and deliberately publishes it.</p>
+          <h2 id="official-source-drafts-heading">Official-source drafts held for later review</h2>
+          <p className="lead compact-lead">These government-source records remain private while MMIPS completes a synthetic launch rehearsal. They are retained only as drafts for future human review and are not being used as test cases.</p>
         </div>
         <button type="button" className="button secondary" onClick={() => loadDrafts()} disabled={loading}>{loading ? "Refreshing..." : "Refresh drafts"}</button>
       </div>
 
-      <div className="notice warning">
-        <strong>Do not treat source publication as automatic MMIPS approval.</strong>
-        <p>Open the official source and verify the name, status, public location, agency, and summary. Do not add exact private locations, allegations, investigative details, or unverified information.</p>
+      <div className="notice warning" role="status">
+        <strong>Real-case publication is locked during testing.</strong>
+        <p>Use only records labeled “MMIPS TEST PERSON — NOT A REAL PERSON” for launch rehearsal. Official-source publication will be unlocked only after the synthetic end-to-end test passes and a separate launch decision is made.</p>
       </div>
 
       {message ? <p className="notice small-notice" role="status">{message}</p> : null}
 
       <div className="admin-list">
-        {drafts.length === 0 ? <div className="card"><p>No official-source drafts are waiting for human review.</p></div> : drafts.map((draft) => {
+        {drafts.length === 0 ? <div className="card"><p>No official-source drafts are waiting for future review.</p></div> : drafts.map((draft) => {
           const person = personFor(draft);
           const sources = sourcesFor(draft);
           return (
@@ -142,7 +108,7 @@ export default function AdminOfficialSourceDrafts() {
                   <h3>{person?.full_name || draft.slug}</h3>
                   <p className="muted">{person?.tribal_affiliation || "Tribal affiliation not listed"} · {draft.status.replaceAll("_", " ")}</p>
                 </div>
-                <span className="badge badge-neutral">Pending human review</span>
+                <span className="badge badge-neutral">Private — publication locked</span>
               </div>
 
               <div className="admin-detail-grid">
@@ -168,29 +134,12 @@ export default function AdminOfficialSourceDrafts() {
                 ))}
               </div>
 
-              <label className="checkbox photo-permission-checkbox">
-                <input
-                  type="checkbox"
-                  checked={Boolean(confirmed[draft.id])}
-                  onChange={(event) => setConfirmed((current) => ({ ...current, [draft.id]: event.target.checked }))}
-                />
-                <span>
-                  <strong>I reviewed the official source and this MMIPS draft.</strong>
-                  <span>I confirm the draft matches the public source, routes tips to an official contact, and does not expose exact/private location or non-public investigative information.</span>
-                </span>
-              </label>
-
-              <label>Moderator review note
-                <textarea
-                  value={notes[draft.id] || ""}
-                  onChange={(event) => setNotes((current) => ({ ...current, [draft.id]: event.target.value }))}
-                  placeholder="Example: Reviewed BIA OJS MMU public case page on 2026-08-08; name/status/location/agency match; no private coordinates or allegations included."
-                />
-              </label>
-
-              <div className="button-row">
-                <button type="button" onClick={() => publishDraft(draft)} disabled={loading || !confirmed[draft.id] || (notes[draft.id] || "").trim().length < 10}>Publish reviewed official-source profile</button>
+              <div className="notice small-notice">
+                <strong>Publication disabled.</strong>
+                <p>This control is intentionally unavailable during the synthetic rehearsal. The server also rejects direct publication requests while this lock is active.</p>
               </div>
+
+              <button type="button" disabled={OFFICIAL_SOURCE_PUBLICATION_LOCKED}>Publish reviewed official-source profile</button>
             </article>
           );
         })}
