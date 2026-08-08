@@ -68,14 +68,15 @@ test("security static contract: Version 1 accepts JPEG PNG and WebP only", () =>
   assert.match(componentSource, /JPG, PNG, or WebP/);
 });
 
-test("security static contract: security headers are configured without full CSP or HSTS preload", () => {
+test("security static contract: baseline headers and full CSP are enforced", () => {
   const source = read("next.config.ts");
-  for (const header of ["X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "X-Frame-Options"]) {
+  for (const header of ["Content-Security-Policy", "Strict-Transport-Security", "X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "X-Frame-Options"]) {
     assert.match(source, new RegExp(header));
   }
   assert.match(source, /Cache-Control/);
-  assert.equal(source.includes("Content-Security-Policy"), false);
-  assert.equal(source.includes("Strict-Transport-Security"), false);
+  assert.match(source, /frame-ancestors 'none'/);
+  assert.match(source, /object-src 'none'/);
+  assert.doesNotMatch(source, /preload/);
 });
 
 test("security static contract: storage migration does not directly mutate storage.buckets", () => {
