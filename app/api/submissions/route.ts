@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
 import { submissionIntakeModeFromEnv } from "@/lib/release-controls";
@@ -177,7 +177,6 @@ export async function POST(request: Request) {
       submitter_email: required(form.get("submitter_email"), "Submitter email"),
       submitter_phone: optionalText(form, "submitter_phone"),
       relationship: required(form.get("relationship"), "Relationship"),
-      source_ip: clientIpFromRequest(request),
       review_status: "pending_review",
       photo_alt_text: photoAltText
     };
