@@ -50,6 +50,8 @@ create table if not exists public.urgent_alert_events (
   updated_at timestamptz not null default now()
 );
 
+create index if not exists urgent_alert_events_case_id_idx on public.urgent_alert_events(case_id);
+
 alter table public.urgent_alert_events enable row level security;
 alter table public.urgent_alert_events force row level security;
 revoke all on public.urgent_alert_events from public, anon, authenticated;
