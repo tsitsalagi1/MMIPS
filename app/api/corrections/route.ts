@@ -22,11 +22,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
-
     const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
-    if (!verification.ok) {
-      throw new Error(verification.message);
-    }
+    if (!verification.ok) throw new Error(verification.message);
 
     const caseReference = String(form.get("case_reference") ?? "").trim();
     const requestType = required(form.get("request_type"), "Request type");
@@ -38,7 +35,6 @@ export async function POST(request: Request) {
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
     if (!url || !serviceKey) {
       console.info("Correction/removal request captured in demo mode.", { mode: "demo", hasCaseReference: Boolean(caseReference), requestType });
       return redirectTo(request, "/corrections/received?mode=demo");
@@ -46,7 +42,6 @@ export async function POST(request: Request) {
 
     const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
     let caseId: string | null = null;
-
     if (caseReference) {
       const slug = caseReference.split("/profiles/").pop()?.split("?")[0]?.split("#")[0]?.replace(/^\/+|\/+$/g, "") || caseReference;
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
@@ -73,9 +68,8 @@ export async function POST(request: Request) {
         ].filter(Boolean).join("\n"),
         review_status: "pending_review"
       })
-      .select("id")
+      .select("id, public_reference")
       .single();
-
     if (error) throw error;
 
     await sendTransactionalEmail({
@@ -85,13 +79,14 @@ export async function POST(request: Request) {
         `Hello ${requesterName},`,
         "MMIPS received your correction/removal request.",
         "Nothing changes publicly until an MMIPS reviewer reviews the request for authorization, safety, and accuracy.",
-        correctionRow?.id ? `Reference ID: ${correctionRow.id}` : null,
+        correctionRow?.public_reference ? `Reference: ${correctionRow.public_reference}` : null,
         caseReference ? `Public profile reference: ${caseReference}` : null,
         "Questions or updates: corrections@mmips.com"
       ].filter(Boolean).join("\n\n")
     });
 
-    return redirectTo(request, "/corrections/received");
+    const reference = typeof correctionRow?.public_reference === "string" ? correctionRow.public_reference : "";
+    return redirectTo(request, `/corrections/received${reference ? `?ref=${encodeURIComponent(reference)}` : ""}`);
   } catch {
     return redirectTo(request, "/corrections?error=Correction%20request%20could%20not%20be%20processed.%20Please%20review%20the%20form%20and%20try%20again.");
   }
