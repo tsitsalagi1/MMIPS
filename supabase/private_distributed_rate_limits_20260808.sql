@@ -75,5 +75,48 @@ $$;
 revoke all on function public.mmips_consume_rate_limit(text, text, integer, integer) from public, anon, authenticated;
 grant execute on function public.mmips_consume_rate_limit(text, text, integer, integer) to service_role;
 
--- Older source IP values are not needed once the private distributed limiter is available.
+create or replace function private.mmips_submission_write_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = pg_catalog, public, private, extensions
+as $$
+begin
+  if new.submitter_email is null or not public.mmips_consume_rate_limit('submission-email', lower(new.submitter_email), 6, 3600) then
+    raise exception 'submission_rate_limited' using errcode = 'P0001';
+  end if;
+  new.source_ip := null;
+  return new;
+end;
+$$;
+
+create or replace function private.mmips_correction_write_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = pg_catalog, public, private, extensions
+as $$
+begin
+  if new.requester_email is null or not public.mmips_consume_rate_limit('correction-email', lower(new.requester_email), 10, 3600) then
+    raise exception 'correction_rate_limited' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function private.mmips_submission_write_guard() from public, anon, authenticated;
+revoke all on function private.mmips_correction_write_guard() from public, anon, authenticated;
+
+drop trigger if exists submissions_private_rate_limit_guard on public.submissions;
+create trigger submissions_private_rate_limit_guard
+before insert on public.submissions
+for each row execute function private.mmips_submission_write_guard();
+
+drop trigger if exists corrections_private_rate_limit_guard on public.correction_requests;
+create trigger corrections_private_rate_limit_guard
+before insert on public.correction_requests
+for each row execute function private.mmips_correction_write_guard();
+
+-- Older source IP values are not needed once the private distributed limiter is available,
+-- and the trigger prevents new raw source IP values from being persisted.
 update public.submissions set source_ip = null where source_ip is not null;
