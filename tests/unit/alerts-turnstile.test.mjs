@@ -1,11 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { verifyTurnstileToken } from '../../.test-dist/lib/security/turnstile.js';
+import { expectedTurnstileHostname, verifyTurnstileToken } from '../../.test-dist/lib/security/turnstile.js';
 
 const TURNSTILE_SECRET_KEY_NAME = 'TURNSTILE_SECRET_KEY';
 const TURNSTILE_BYPASS_KEY_NAME = 'ALLOW_INSECURE_TURNSTILE_BYPASS';
+const TURNSTILE_HOSTNAME_KEY_NAME = 'TURNSTILE_EXPECTED_HOSTNAME';
 const request = new Request('https://mmips.com/api/alerts/subscribe');
 function response(payload, ok = true) { return async () => ({ ok, async json() { return payload; } }); }
+
+test('Turnstile hostname resolver pins canonical production domains and requires config elsewhere', { concurrency: false }, () => {
+  const original = process.env[TURNSTILE_HOSTNAME_KEY_NAME];
+  try {
+    process.env[TURNSTILE_HOSTNAME_KEY_NAME] = 'preview.example.test';
+    assert.equal(expectedTurnstileHostname(new Request('https://mmips.com/api/submissions')), 'mmips.com');
+    assert.equal(expectedTurnstileHostname(new Request('https://www.mmips.com/api/corrections')), 'www.mmips.com');
+    assert.equal(expectedTurnstileHostname(new Request('https://preview.example.test/api/submissions')), 'preview.example.test');
+    delete process.env[TURNSTILE_HOSTNAME_KEY_NAME];
+    assert.equal(expectedTurnstileHostname(new Request('https://preview.example.test/api/submissions')), undefined);
+  } finally {
+    if (original === undefined) delete process.env[TURNSTILE_HOSTNAME_KEY_NAME];
+    else process.env[TURNSTILE_HOSTNAME_KEY_NAME] = original;
+  }
+});
 
 test('Turnstile behavior validates success, rejection, action, hostname, timeout, and production configuration', { concurrency: false }, async () => {
   const original = {
