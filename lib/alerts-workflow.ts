@@ -1,7 +1,7 @@
 import { canSendConfirmation, createConfirmationToken, createUnsubscribeTokenId, hashAlertToken, normalizeEmail, normalizePreferences, signUnsubscribeToken, verifyUnsubscribeToken, type AlertEventKind, type AlertStore } from "./alerts-core";
 
-export const ALERT_CONSENT_SOURCE = "alerts_v1_web";
-export const ALERT_CONSENT_TEXT = "alerts_v1_disclosure_2026-08";
+export const ALERT_CONSENT_SOURCE = "urgent_alerts_web";
+export const ALERT_CONSENT_TEXT = "urgent_geo_alerts_disclosure_2026-08";
 export type WorkflowEmail = { to: string; subject: string; text: string; html: string; headers?: Partial<Record<"List-Unsubscribe" | "List-Unsubscribe-Post", string>>; idempotencyKey?: string };
 export type WorkflowEmailResult = { ok: boolean; skipped: boolean; code?: "missing_recipient" | "provider_unconfigured" | "provider_rejected" | "provider_unavailable"; providerMessageId?: string };
 export type WorkflowMailer = { send(input: WorkflowEmail): Promise<WorkflowEmailResult> };
@@ -19,8 +19,8 @@ export async function requestAlertSubscription(store: AlertStore, emailInput: un
   const confirmation = (dependencies.confirmationFactory ?? createConfirmationToken)(now);
   const subscriber = await store.savePending({ email, consentSource: ALERT_CONSENT_SOURCE, consentText: ALERT_CONSENT_TEXT, confirmationTokenHash: confirmation.hash, confirmationExpiresAt: confirmation.expiresAt, unsubscribeTokenId: existing?.unsubscribe_token_id ?? (dependencies.unsubscribeIdFactory ?? createUnsubscribeTokenId)(), preferences: normalizePreferences(prefsInput), requestedAt: now.toISOString(), windowStartedAt: eligibility.windowStartedAt!, sendCount: eligibility.sendCount! });
   const origin = validatedSiteUrl(dependencies.siteUrl), confirmationUrl = `${origin}/alerts/confirm?token=${encodeURIComponent(confirmation.token)}`;
-  const text = `Please confirm your MMIPS email alerts subscription: ${confirmationUrl}\n\nSubscribing does not report a case or ask MMIPS to investigate. If you did not request this, ignore this message.`;
-  const result = await dependencies.mailer.send({ to: email, subject: "Confirm MMIPS email alerts", text, html: paragraphHtml(text) });
+  const text = `Please confirm your MMIPS urgent community alerts subscription: ${confirmationUrl}\n\nYour ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert falls within the area you chose. Subscribing does not report a case or ask MMIPS to investigate. If you did not request this, ignore this message.`;
+  const result = await dependencies.mailer.send({ to: email, subject: "Confirm MMIPS urgent community alerts", text, html: paragraphHtml(text) });
   if (result.ok) await store.markConfirmationSent(subscriber.id, now.toISOString());
   return { ok: true as const, code: "accepted" as const };
 }
@@ -28,7 +28,7 @@ export async function requestAlertSubscription(store: AlertStore, emailInput: un
 export async function confirmAlertSubscription(store: AlertStore, token: unknown, dependencies: Pick<WorkflowDependencies, "now" | "mailer">) {
   if (typeof token === "string" && token.length >= 32 && token.length <= 256) {
     const subscriber = await store.activateByConfirmationHash(hashAlertToken(token), dependencies.now?.() ?? new Date());
-    if (subscriber) { const text = "Your MMIPS public email alerts subscription is confirmed. Every alert includes an unsubscribe link."; await dependencies.mailer.send({ to: subscriber.email_normalized, subject: "MMIPS email alerts confirmed", text, html: paragraphHtml(text) }); }
+    if (subscriber) { const text = "Your MMIPS urgent community alerts subscription is confirmed. MMIPS will use your private ZIP/radius preference only for approved public alert matching. Every alert includes an unsubscribe link."; await dependencies.mailer.send({ to: subscriber.email_normalized, subject: "MMIPS urgent alerts confirmed", text, html: paragraphHtml(text) }); }
   }
   return { ok: true as const, code: "confirmation_processed" as const };
 }
