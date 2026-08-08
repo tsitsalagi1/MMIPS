@@ -19,15 +19,17 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
     setLoading(true);
     setMessage("");
     try {
-      const params = new URLSearchParams();
-      if (q.trim()) params.set("q", q.trim());
-      if (status !== "all") params.set("status", status);
-      if (state.trim()) params.set("state", state.trim());
-      if (zip.trim()) {
-        params.set("zip", zip.trim());
-        params.set("radiusMiles", radiusMiles);
-      }
-      const response = await fetch(`/api/profiles/search?${params.toString()}`, { headers: { Accept: "application/json" } });
+      const response = await fetch("/api/profiles/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          q: q.trim(),
+          status,
+          state: state.trim(),
+          zip: zip.trim() || undefined,
+          radiusMiles: zip.trim() ? Number(radiusMiles) : undefined
+        })
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setMessage(typeof data.message === "string" ? data.message : "Search is temporarily unavailable.");
@@ -75,7 +77,7 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
           </div>
           <fieldset className="field-group">
             <legend>Search near a ZIP code</legend>
-            <p className="field-help">Optional. ZIP-distance search compares a U.S. Census ZIP-area reference point with each case&apos;s moderator-approved approximate public map point. It never uses a private incident or home coordinate.</p>
+            <p className="field-help">Optional. ZIP-distance search compares a U.S. Census ZIP-area reference point with each case&apos;s moderator-approved approximate public map point. It never uses a private incident or home coordinate. Your ZIP search preference is sent in the request body rather than placed in the page URL.</p>
             <div className="check-grid">
               <label>ZIP code
                 <input inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="74464" />
