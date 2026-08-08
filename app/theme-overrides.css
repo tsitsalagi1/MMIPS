@@ -73,15 +73,31 @@ button.danger:hover {
   color: #fff8ef;
 }
 
-.notice {
-  border-left-color: var(--gold);
+/*
+   Generic notice/status components previously inherited a pale indigo rule
+   (#eef2ff / #c7d2fe). Force every ordinary MMIPS notice/status panel back
+   into the charcoal + gold palette so the blue treatment cannot reappear.
+*/
+.notice,
+.status-message {
+  background: linear-gradient(180deg, rgba(38, 33, 25, .98), rgba(25, 23, 19, .98)) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(216, 173, 93, .30) !important;
+  border-left: 6px solid var(--gold) !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .26) !important;
 }
 
-/*
-   Notice/warning panels must never fall back to pale-blue/info styling.
-   The stronger selector and !important declarations are deliberate theme
-   guardrails so generic warning/info rules cannot override the MMIPS palette.
-*/
+.notice strong,
+.status-message strong {
+  color: var(--gold) !important;
+}
+
+.notice p,
+.status-message p {
+  color: var(--muted) !important;
+}
+
+/* Warning/status panels use a slightly warmer gold-tinted charcoal surface. */
 .notice.warning,
 section.notice.warning,
 .notice[role="status"],
