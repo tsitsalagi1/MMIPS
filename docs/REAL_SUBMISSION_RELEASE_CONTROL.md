@@ -21,6 +21,7 @@ MMIPS uses two separate non-secret release-control flags so production and prote
 - `true`: Preview renders an explicit **Synthetic rehearsal only** warning and includes the synthetic rehearsal marker required by the API.
 - Setting the real-production flag does not open Preview.
 - Setting the synthetic-preview flag does not open Production.
+- Because Preview uses a noncanonical hostname, set `TURNSTILE_EXPECTED_HOSTNAME` for Preview to the exact protected preview hostname used for the rehearsal. The matching Turnstile site key must also permit that hostname. If the expected hostname is missing, server-side verification fails closed.
 
 ### Local test/development
 
@@ -37,6 +38,8 @@ The `/api/submissions` POST route resolves the intake mode before reading reques
 - `real`: normal production submission processing is allowed only because the exact real-production release flag was enabled.
 
 The `/submit` page mirrors this boundary: locked mode hides the form; synthetic mode shows a prominent fictional-data-only warning; real mode shows the normal production form.
+
+Turnstile tokens are action-scoped and hostname-validated. Submission intake uses `submission_intake`, correction/removal uses `correction_request`, and Alerts uses `alerts_subscribe`; tokens from one surface must not satisfy another.
 
 ## Go/no-go procedure for real intake
 
@@ -56,9 +59,10 @@ When approved:
 To enable a protected Vercel Preview for synthetic browser/E2E testing:
 
 1. Set `MMIPS_SYNTHETIC_SUBMISSIONS_ENABLED=true` for Preview only.
-2. Confirm the preview page displays the synthetic-only warning before entering any test data.
-3. Use fictional MMIPS test identities/data only.
-4. Remove or disable the Preview flag when the rehearsal is complete if continued intake is unnecessary.
+2. Set Preview `TURNSTILE_EXPECTED_HOSTNAME` to the exact protected preview hostname and confirm the Turnstile site key permits it.
+3. Confirm the preview page displays the synthetic-only warning before entering any test data.
+4. Use fictional MMIPS test identities/data only.
+5. Remove or disable the Preview flag when the rehearsal is complete if continued intake is unnecessary.
 
 ## Emergency stop
 
