@@ -68,7 +68,7 @@ export default async function SubmitPage({
             <label className="checkbox"><input type="checkbox" required name="confirm_authorized" /> I am a family member, authorized advocate, legal representative, tribal representative, law-enforcement representative, or I have permission to submit this information for public awareness.</label>
             <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I have not included suspect accusations, rumors, exact private addresses, graphic details, or information that could endanger the person/family/investigation.</label>
             <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may edit, delay, reject, hide, or remove submissions for safety, privacy, accuracy, or legal reasons.</label>
-            <TurnstileWidget />
+            <TurnstileWidget action="submission_intake" />
             <SubmissionReviewGate />
           </form>
         </>
