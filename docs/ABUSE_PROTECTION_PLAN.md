@@ -1,20 +1,23 @@
 # MMIPS Abuse Protection Plan
 
-Distributed rate limiting is unresolved and remains a release blocker. This task did not add a paid provider or claim distributed protection.
+MMIPS uses layered public-form abuse controls. The distributed limiter described here was applied to production on 2026-08-08 and does not require another external API provider or key.
 
 ## Current controls
 
-- Cloudflare Turnstile helper supports server-side verification when `TURNSTILE_SECRET_KEY` is configured.
-- Submission uploads are limited to five files and 5 MB per file.
-- Upload validation now requires allowed extensions, MIME type agreement, and image magic-byte signatures.
-- Search inputs in admin endpoints are length-bounded and strip `%`/`,`.
+- Cloudflare Turnstile is verified server-side and fails closed in production when its secret is missing.
+- Successful Turnstile-verified public form traffic is limited by a private keyed-hash IP counter (30/hour per action/path bucket).
+- Submission inserts are limited to 6/hour per normalized submitter email.
+- Correction/removal inserts are limited to 10/hour per normalized requester email.
+- Rate-limit counters live in an unexposed `private` PostgreSQL schema and store only keyed hashes, time buckets, and counts; raw identifiers are not stored in the counter table.
+- A database write guard clears submission `source_ip` before persistence, and legacy stored values were cleared when the migration was applied.
+- Old counter windows are opportunistically purged after eight days.
+- Alert subscriptions have additional durable normalized-email resend cooldown and bounded-send protections.
+- Supabase Auth provides provider-side authentication endpoint limits; MMIPS admin authorization separately requires the server-side admin allowlist.
+- Submission uploads are limited to five files and 5 MB per file, and current image validation also rejects unsafe embedded metadata and extreme dimensions.
+- Public error responses are designed not to enumerate private records or subscriber addresses.
 
-## Required before launch
+## Remaining operational hardening
 
-- Production Turnstile secret must be configured; missing secret must fail closed in production.
-- Verify hostname/action and token outcome fields where supported.
-- Add distributed IP/requester/email rate limits for submissions, corrections/removals, uploads, alert subscription/confirm/unsubscribe, and admin auth attempts.
-- Store only minimized IP/rate-limit identifiers with retention limits.
-- Add request body size limits at hosting/proxy layer.
-- Non-enumerating responses for correction/removal and future alert subscriber flows.
-- Monitoring/alerting for bursts, upload failures, Turnstile failures, and admin auth denial spikes.
+- Add hosting/proxy body-size controls where the hosting plan exposes them independently of route validation.
+- Add operator alerts for sustained abuse denials, upload/storage failures, Turnstile failures, and repeated admin-auth denials without logging raw sensitive identifiers.
+- Complete browser-level abuse testing with synthetic data only.
