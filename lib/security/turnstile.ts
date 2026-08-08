@@ -1,4 +1,4 @@
-import { consumeDistributedRateLimit } from "./rate-limit";
+import { consumeDistributedRateLimit } from "./rate-limit.js";
 
 type TurnstileResponse = { success: boolean; hostname?: string; action?: string };
 type TurnstileOptions = { expectedAction?: string; expectedHostname?: string; fetcher?: typeof fetch };
