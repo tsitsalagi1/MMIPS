@@ -28,19 +28,51 @@ test("unpublished, rejected, and forbidden-precision records are excluded", () =
   assert.equal(sanitizePublicMapRows([{ ...base, precision: "exact" }]).length, 0);
 });
 
-test("anonymous loader does not select or filter on private moderation columns", async () => {
+test("anonymous loader uses the dedicated point projection then approved public cases", async () => {
   const calls = [];
-  const terminal = Promise.resolve({ data: [syntheticApprovedMapRow], error: null });
+  const { cases, ...basePointRow } = syntheticApprovedMapRow;
+  const pointRow = { ...basePointRow, case_id: cases.id };
+
+  const pointTerminal = Promise.resolve({ data: [pointRow], error: null });
+  const pointChain = {
+    select: (columns) => { calls.push(["point-select", columns]); return pointChain; },
+    order: (...args) => { calls.push(["point-order", ...args]); return pointChain; },
+    limit: (...args) => { calls.push(["point-limit", ...args]); return pointTerminal; }
+  };
+
+  const caseTerminal = Promise.resolve({ data: [cases], error: null });
+  const caseChain = {
+    select: (columns) => { calls.push(["case-select", columns]); return caseChain; },
+    in: (...args) => { calls.push(["case-in", ...args]); return caseChain; },
+    eq: (...args) => { calls.push(["case-eq", ...args]); return caseChain; },
+    not: (...args) => { calls.push(["case-not", ...args]); return caseTerminal; }
+  };
+
+  const result = await loadPublicMapPoints({ from: (table) => table === "public_case_map_points" ? pointChain : caseChain });
+  assert.equal(result.availability, "available");
+  assert.equal(result.points.length, 1);
+
+  const pointSelected = calls.find(([name]) => name === "point-select")?.[1] ?? "";
+  assert.match(pointSelected, /case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at/);
+  assert.doesNotMatch(pointSelected, /moderator_approved|hidden_at|approved_by|safety_reviewed_at|public_notes/);
+
+  const caseSelected = calls.find(([name]) => name === "case-select")?.[1] ?? "";
+  assert.doesNotMatch(caseSelected, /latitude|longitude|moderator_notes|requester|source_ip/);
+  assert.match(caseSelected, /review_status/);
+  assert.match(caseSelected, /published_at/);
+  assert.deepEqual(calls.map(([name]) => name), ["point-select", "point-order", "point-limit", "case-select", "case-in", "case-eq", "case-not"]);
+});
+
+test("an empty public map relation is available rather than an error", async () => {
+  const calls = [];
+  const terminal = Promise.resolve({ data: [], error: null });
   const chain = {
     select: (columns) => { calls.push(["select", columns]); return chain; },
     order: (...args) => { calls.push(["order", ...args]); return chain; },
     limit: (...args) => { calls.push(["limit", ...args]); return terminal; }
   };
   const result = await loadPublicMapPoints({ from: () => chain });
-  assert.equal(result.availability, "available");
-  assert.equal(result.points.length, 1);
-  const selected = calls.find(([name]) => name === "select")?.[1] ?? "";
-  assert.doesNotMatch(selected, /moderator_approved|hidden_at|approved_by|safety_reviewed_at|public_notes/);
+  assert.deepEqual(result, { points: [], availability: "available" });
   assert.deepEqual(calls.map(([name]) => name), ["select", "order", "limit"]);
 });
 

@@ -67,16 +67,47 @@ export function sanitizePublicMapRows(rows: unknown[] | null | undefined): Publi
 type PublicMapClient = Pick<SupabaseClient, "from">;
 
 export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
-  const { data, error } = await client
+  /*
+    Read the dedicated public map relation first, without requiring PostgREST to
+    resolve the case relationship. A legitimately empty relation must be an
+    available/empty state, not an application error. Matching approved public
+    case/person fields are loaded only when public map points actually exist.
+  */
+  const { data: pointRows, error: pointError } = await client
     .from("public_case_map_points")
-    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, cases!inner(id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name))")
+    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at")
     .order("updated_at", { ascending: false })
     .limit(250);
-  if (error) {
+
+  if (pointError) {
     console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
     return { points: [], availability: "error" };
   }
-  return { points: sanitizePublicMapRows(data), availability: "available" };
+
+  if (!pointRows?.length) {
+    return { points: [], availability: "available" };
+  }
+
+  const caseIds = [...new Set(pointRows.map((row: any) => row.case_id).filter(Boolean))];
+  if (!caseIds.length) {
+    return { points: [], availability: "available" };
+  }
+
+  const { data: caseRows, error: caseError } = await client
+    .from("cases")
+    .select("id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name)")
+    .in("id", caseIds)
+    .eq("review_status", "approved")
+    .not("published_at", "is", null);
+
+  if (caseError) {
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
+    return { points: [], availability: "error" };
+  }
+
+  const casesById = new Map((caseRows || []).map((row: any) => [row.id, row]));
+  const mergedRows = pointRows.map((row: any) => ({ ...row, cases: casesById.get(row.case_id) }));
+  return { points: sanitizePublicMapRows(mergedRows), availability: "available" };
 }
 
 export async function getPublicMapPoints(): Promise<PublicMapResult> {
