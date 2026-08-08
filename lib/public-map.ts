@@ -80,7 +80,7 @@ export async function loadPublicMapPoints(client: PublicMapClient): Promise<Publ
     .limit(250);
 
   if (pointError) {
-    console.error("Public map request failed", { code: "PUBLIC_MAP_POINTS_QUERY_FAILED" });
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
     return { points: [], availability: "error" };
   }
 
@@ -101,7 +101,7 @@ export async function loadPublicMapPoints(client: PublicMapClient): Promise<Publ
     .not("published_at", "is", null);
 
   if (caseError) {
-    console.error("Public map request failed", { code: "PUBLIC_MAP_CASES_QUERY_FAILED" });
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
     return { points: [], availability: "error" };
   }
 
