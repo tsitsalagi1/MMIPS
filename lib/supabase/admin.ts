@@ -26,7 +26,7 @@ export async function requireAdmin(request: Request) {
   if (!token) {
     return {
       ok: false as const,
-      response: NextResponse.json({ ok: false, message: "Missing admin token." }, { status: 401 })
+      response: NextResponse.json({ ok: false, code: "admin_token_missing", message: "Missing admin token." }, { status: 401 })
     };
   }
 
@@ -36,7 +36,7 @@ export async function requireAdmin(request: Request) {
   if (error || !data.user?.email) {
     return {
       ok: false as const,
-      response: NextResponse.json({ ok: false, message: "Invalid admin session." }, { status: 401 })
+      response: NextResponse.json({ ok: false, code: "admin_session_invalid", message: "Invalid admin session." }, { status: 401 })
     };
   }
 
@@ -48,13 +48,25 @@ export async function requireAdmin(request: Request) {
       actor_id: data.user.id,
       action: "admin_access_denied",
       entity_type: "admin",
-      reason: `Email not allowlisted: ${email}`
+      reason: "Authenticated email is not in the admin allowlist."
     });
 
     return {
       ok: false as const,
-      response: NextResponse.json({ ok: false, message: "This account is not authorized for MMIPS admin." }, { status: 403 })
+      response: NextResponse.json({ ok: false, code: "admin_not_allowlisted", message: "This account is not authorized for MMIPS admin." }, { status: 403 })
     };
+  }
+
+  const hasVerifiedMfa = Boolean(data.user.factors?.some((factor) => factor.status === "verified"));
+  if (hasVerifiedMfa) {
+    const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
+    const aal = claimData?.claims?.aal;
+    if (claimError || aal !== "aal2") {
+      return {
+        ok: false as const,
+        response: NextResponse.json({ ok: false, code: "admin_mfa_required", message: "Authenticator verification is required for this admin account." }, { status: 403 })
+      };
+    }
   }
 
   return { ok: true as const, supabase, user: data.user, email };
