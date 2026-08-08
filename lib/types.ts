@@ -23,6 +23,11 @@ export interface MmipsPhoto {
   sortOrder?: number | null;
 }
 
+export interface MmipsOfficialSource {
+  label: string;
+  url: string;
+}
+
 export interface MmipsCase {
   id: string;
   slug: string;
@@ -33,6 +38,7 @@ export interface MmipsCase {
   profileType: ProfileType;
   urgencyLevel?: UrgencyLevel | string | null;
   verification: VerificationStatus[];
+  officialSources?: MmipsOfficialSource[];
   lastSeenDate?: string | null;
   lastKnownDatetime?: string | null;
   lastKnownTimeZone?: string | null;
