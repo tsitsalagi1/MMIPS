@@ -1,0 +1,51 @@
+/* Final public readability guardrails.
+   Avoid low-contrast semantic blue text on MMIPS dark surfaces.
+   Normal body/helper text must remain warm cream or muted warm neutral. */
+
+.field-help,
+.field-group .field-help,
+.form-help,
+.search-help,
+.help-text,
+small,
+.small-text {
+  color: var(--muted) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #cbbfad;
+  opacity: 1;
+}
+
+select:disabled,
+input:disabled,
+textarea:disabled {
+  color: #cbbfad;
+  opacity: .82;
+}
+
+/* Links use inherited readable text, then MMIPS gold for clear interaction states. */
+a {
+  color: inherit;
+}
+
+a:focus-visible,
+a:hover {
+  color: var(--gold);
+}
+
+/* Synthetic launch-rehearsal records must never look like real cases. */
+.synthetic-test-banner {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(216, 173, 93, .62);
+  border-radius: 12px;
+  background: rgba(216, 173, 93, .10);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.synthetic-test-banner strong {
+  color: var(--gold);
+}
