@@ -5,9 +5,10 @@ import test from 'node:test';
 const layout = fs.readFileSync('app/layout.tsx', 'utf8');
 const howItWorks = fs.readFileSync('app/how-it-works/page.tsx', 'utf8');
 const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
+const mapStyles = fs.readFileSync('components/map/PublicMapExperience.module.css', 'utf8');
 const caseCard = fs.readFileSync('components/CaseCard.tsx', 'utf8');
 
-test('top navigation follows the public-first MMIPS order and omits corrections/map', () => {
+test('top navigation follows the public-first MMIPS order with Map between Alerts and Family Resources', () => {
   const navStart = layout.indexOf('<div className="nav-links">');
   const navEnd = layout.indexOf('</div>', navStart);
   const nav = layout.slice(navStart, navEnd);
@@ -15,6 +16,7 @@ test('top navigation follows the public-first MMIPS order and omits corrections/
     'href="/how-it-works">How it works',
     'href="/profiles">Search Profiles',
     'href="/alerts">Alerts',
+    'href="/map">Map',
     'href="/resources">Family Resources',
     'href="/submit">Submit Information'
   ];
@@ -25,7 +27,6 @@ test('top navigation follows the public-first MMIPS order and omits corrections/
     previous = index;
   }
   assert.equal(nav.includes('href="/corrections"'), false);
-  assert.equal(nav.includes('href="/map"'), false);
 });
 
 test('corrections stays available in footer and How It Works', () => {
@@ -33,8 +34,9 @@ test('corrections stays available in footer and How It Works', () => {
   assert.match(howItWorks, /href="\/corrections"/);
 });
 
-test('family resources and public map remain discoverable outside the top navigation', () => {
+test('family resources and public map remain discoverable in navigation and footer', () => {
   assert.match(layout, /href="\/resources">Family Resources/);
+  assert.match(layout, /href="\/map">Map/);
   assert.match(layout, /href="\/map">Public Map/);
 });
 
@@ -43,6 +45,12 @@ test('helper and placeholder text are forced to readable warm neutral colors', (
   assert.match(readability, /color: var\(--muted\) !important/);
   assert.match(readability, /input::placeholder/);
   assert.doesNotMatch(readability, /#[0-9a-f]{0,2}46748d/i);
+});
+
+test('map selection and accessible-list cards stay on dark MMIPS surfaces', () => {
+  assert.match(mapStyles, /\.selection\{[^}]*background:var\(--surface-2,var\(--surface\)\)/);
+  assert.match(mapStyles, /\.item\{[^}]*background:var\(--surface\)/);
+  assert.doesNotMatch(mapStyles, /background:#fff(?:fff)?\b/i);
 });
 
 test('synthetic public cards are explicitly labeled as test data', () => {
