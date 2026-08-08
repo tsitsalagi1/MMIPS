@@ -5,13 +5,27 @@ import test from "node:test";
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const alertsPage = fs.readFileSync("app/alerts/page.tsx", "utf8");
 const theme = fs.readFileSync("app/theme-overrides.css", "utf8");
+const readability = fs.readFileSync("app/readability-overrides.css", "utf8");
 
-test("Alerts and Submit Information use the requested navigation order", () => {
-  const alertsIndex = layout.indexOf('<Link href="/alerts">Alerts</Link>');
-  const mapIndex = layout.indexOf('<Link href="/map">Map</Link>');
-  const submitIndex = layout.indexOf('<Link href="/submit">Submit Information</Link>');
-  assert.ok(alertsIndex > -1 && mapIndex > -1 && submitIndex > -1);
-  assert.ok(alertsIndex < mapIndex && mapIndex < submitIndex);
+test("public navigation prioritizes How It Works, Profiles, Alerts, Family Resources, then Submit", () => {
+  const navStart = layout.indexOf('<div className="nav-links">');
+  const navEnd = layout.indexOf('</div>', navStart);
+  const nav = layout.slice(navStart, navEnd);
+  const ordered = [
+    '<Link href="/how-it-works">How it works</Link>',
+    '<Link href="/profiles">Search Profiles</Link>',
+    '<Link href="/alerts">Alerts</Link>',
+    '<Link href="/resources">Family Resources</Link>',
+    '<Link href="/submit">Submit Information</Link>'
+  ];
+  let previous = -1;
+  for (const item of ordered) {
+    const index = nav.indexOf(item);
+    assert.ok(index > previous, `${item} should appear in requested order`);
+    previous = index;
+  }
+  assert.equal(nav.includes('<Link href="/map">'), false);
+  assert.equal(nav.includes('<Link href="/corrections">'), false);
 });
 
 test("Alerts page is a centered readable column with visible helper text", () => {
@@ -20,5 +34,7 @@ test("Alerts page is a centered readable column with visible helper text", () =>
   assert.match(theme, /width: min\(880px, calc\(100% - 32px\)\)/);
   assert.match(theme, /margin: 0 auto/);
   assert.match(theme, /\.alerts-page \.field-help,[\s\S]*color: var\(--muted\) !important/);
+  assert.match(readability, /\.field-help/);
+  assert.match(readability, /input::placeholder/);
   assert.match(theme, /\.alerts-page \.status-message:empty/);
 });
