@@ -78,7 +78,7 @@ export async function sendUrgentCommunityAlert(target: UrgentAlertTarget, actorI
       deliveryKey: delivery.id,
       siteUrl: siteUrl()
     });
-    const result = await sendClaimedAlert(store, delivery, { ...message, subject: "Urgent MMIPS community alert" }, { send: sendTransactionalEmail });
+    const result = await sendClaimedAlert(store, delivery, { ...message, to: subscriber.email_normalized, subject: "Urgent MMIPS community alert" }, { send: sendTransactionalEmail });
     if (result.ok) sent++; else failed++;
   }
 
