@@ -27,6 +27,16 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function isGovernmentOfficialSource(value: unknown) {
+  if (typeof value !== "string" || !value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && (url.hostname.endsWith(".gov") || url.hostname === "gov");
+  } catch {
+    return false;
+  }
+}
+
 function buildCaseUpdates(raw: any) {
   if (!raw || typeof raw !== "object") return {};
   const updates: Record<string, unknown> = {};
@@ -109,11 +119,12 @@ export async function PATCH(request: Request, context: Params) {
     const params = await context.params;
     const id = params.id;
     const body = await request.json().catch(() => ({}));
+    const action = String(body.action || "update");
     const moderatorNotes = String(body.moderator_notes || "").trim() || null;
 
     const { data: current, error: loadError } = await admin.supabase
       .from("cases")
-      .select("id, person_id, slug, status, profile_type, urgency_level, review_status")
+      .select("id, person_id, slug, status, profile_type, urgency_level, review_status, published_at")
       .eq("id", id)
       .single();
 
@@ -123,6 +134,72 @@ export async function PATCH(request: Request, context: Params) {
 
     const caseUpdates = buildCaseUpdates(body.case_updates);
     const personUpdates = buildPersonUpdates(body.person_updates);
+
+    if (action === "publish_official_source") {
+      if (current.review_status !== "pending_review" || current.published_at) {
+        return NextResponse.json({ ok: false, message: "Only unpublished pending-review official-source drafts can use this publication action." }, { status: 409 });
+      }
+      if (!moderatorNotes || moderatorNotes.length < 10) {
+        return NextResponse.json({ ok: false, message: "Add a moderator note describing what you checked before publication." }, { status: 400 });
+      }
+
+      const { data: sourceRows, error: sourceError } = await admin.supabase
+        .from("case_verifications")
+        .select("verification_type, source_label, source_url, is_public")
+        .eq("case_id", id)
+        .eq("verification_type", "official_source")
+        .eq("is_public", true);
+      if (sourceError) throw sourceError;
+
+      const approvedSources = (sourceRows || []).filter((source: any) => isGovernmentOfficialSource(source.source_url));
+      if (!approvedSources.length) {
+        return NextResponse.json({ ok: false, message: "Publication requires a public HTTPS .gov official-source verification record." }, { status: 409 });
+      }
+
+      if (current.person_id && Object.keys(personUpdates).length) {
+        const { error: personError } = await admin.supabase
+          .from("persons")
+          .update(personUpdates)
+          .eq("id", current.person_id);
+        if (personError) throw personError;
+      }
+
+      const publishedAt = new Date().toISOString();
+      const { error: publishError } = await admin.supabase
+        .from("cases")
+        .update({
+          ...caseUpdates,
+          review_status: "approved",
+          published_at: publishedAt,
+          updated_at: publishedAt,
+          last_public_update: todayIsoDate()
+        })
+        .eq("id", id)
+        .eq("review_status", "pending_review")
+        .is("published_at", null);
+      if (publishError) throw publishError;
+
+      await admin.supabase.from("audit_log").insert({
+        actor_id: admin.user.id,
+        action: "official_source_profile_published",
+        entity_type: "cases",
+        entity_id: id,
+        reason: moderatorNotes,
+        metadata: {
+          slug: current.slug,
+          official_source_count: approvedSources.length,
+          source_labels: approvedSources.map((source: any) => source.source_label).filter(Boolean).slice(0, 5),
+          case_updates: Object.keys(caseUpdates),
+          person_updates: Object.keys(personUpdates)
+        }
+      });
+
+      return NextResponse.json({
+        ok: true,
+        message: "Official-source profile published after human moderator review.",
+        slug: current.slug
+      });
+    }
 
     if (!Object.keys(caseUpdates).length && !Object.keys(personUpdates).length) {
       return NextResponse.json({ ok: false, message: "No valid profile changes were provided." }, { status: 400 });
@@ -164,7 +241,7 @@ export async function PATCH(request: Request, context: Params) {
 
     return NextResponse.json({
       ok: true,
-      message: `Public profile updated. The live profile, flyer, JPEG export, map category, and QR-linked page now use the updated status/type.`,
+      message: "Public profile updated. The live profile, flyer, JPEG export, map category, and QR-linked page now use the updated status/type.",
       slug: current.slug
     });
   } catch {
