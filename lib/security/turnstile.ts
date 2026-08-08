@@ -7,6 +7,13 @@ export function clientIpFromRequest(request: Request) {
   return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() || null;
 }
 
+export function expectedTurnstileHostname(request: Request) {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  if (requestHostname === "mmips.com" || requestHostname === "www.mmips.com") return requestHostname;
+  const configured = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim().toLowerCase();
+  return configured || undefined;
+}
+
 export async function verifyTurnstileToken(token: FormDataEntryValue | null, request: Request, options: TurnstileOptions = {}) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   const bypass = process.env.NODE_ENV !== "production" && process.env.ALLOW_INSECURE_TURNSTILE_BYPASS === "true";
