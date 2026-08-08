@@ -34,7 +34,7 @@ test('submission API checks release lock before reading request body', () => {
 test('synthetic mode requires an explicit rehearsal marker before downstream processing', () => {
   const parse = route.indexOf('request.formData()');
   const marker = route.indexOf('form.get("synthetic_rehearsal") !== "true"');
-  const turnstile = route.indexOf('verifyTurnstileToken');
+  const turnstile = route.indexOf('const verification = await verifyTurnstileToken', marker);
   assert.ok(marker > parse, 'synthetic marker can only be checked after form parsing');
   assert.ok(turnstile > marker, 'synthetic marker must be checked before Turnstile/downstream processing');
   assert.match(route, /synthetic_submission_marker_required/);
