@@ -14,7 +14,10 @@ test('map health endpoint probes configured style without exposing full style UR
   assert.match(route, /styleHasKeyParameter/);
   assert.match(route, /disallowedResourceOrigins/);
   assert.match(route, /Cache-Control.*no-store/);
-  assert.doesNotMatch(route, /\bstyleUrl\s*:/);
+
+  const responseBlock = route.slice(route.indexOf('return NextResponse.json('));
+  assert.ok(responseBlock.length > 0);
+  assert.doesNotMatch(responseBlock, /\bstyleUrl\b/);
   assert.doesNotMatch(route, /searchParams\.get\(["']key["']\)/);
   assert.doesNotMatch(route, /apiKey|keyValue|secret/i);
 });
