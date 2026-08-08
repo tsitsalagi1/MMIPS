@@ -5,13 +5,19 @@ import { lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
 
 export const runtime = "nodejs";
 
+function expectedTurnstileHostname(request: NextRequest) {
+  const requestHostname = new URL(request.url).hostname.toLowerCase();
+  if (requestHostname === "mmips.com" || requestHostname === "www.mmips.com") return requestHostname;
+  return process.env.TURNSTILE_EXPECTED_HOSTNAME;
+}
+
 export async function POST(request: NextRequest) {
   const length = Number(request.headers.get("content-length") || "0");
   if (length > MAX_ALERT_REQUEST_BYTES) return NextResponse.json({ ok: false, code: "request_too_large", message: "We could not process that request. Please check the form and try again." }, { status: 413 });
   let body: { email?: unknown; zip?: unknown; radiusMiles?: unknown; allUrgent?: unknown; turnstileToken?: unknown };
   try { body = await request.json(); } catch { return NextResponse.json({ ok: false, code: "invalid_request", message: "We could not process that request. Please check the form and try again." }, { status: 400 }); }
 
-  const turnstile = await verifyTurnstileToken(typeof body.turnstileToken === "string" ? body.turnstileToken : null, request, { expectedAction: "alerts_subscribe", expectedHostname: process.env.TURNSTILE_EXPECTED_HOSTNAME });
+  const turnstile = await verifyTurnstileToken(typeof body.turnstileToken === "string" ? body.turnstileToken : null, request, { expectedAction: "alerts_subscribe", expectedHostname: expectedTurnstileHostname(request) });
   if (!turnstile.ok) return NextResponse.json({ ok: false, code: "abuse_check_failed", message: "We could not process that request right now. Please try again later." }, { status: 400 });
 
   const zip = normalizeZip(body.zip);
