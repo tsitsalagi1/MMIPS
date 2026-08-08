@@ -154,3 +154,101 @@ input[type="radio"] {
 [aria-current="page"] {
   color: var(--gold);
 }
+
+/* Alerts page: centered reading column with high-contrast helper text. */
+.alerts-page {
+  width: min(880px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 46px 0 24px;
+  display: grid;
+  gap: 20px;
+}
+
+.alerts-page .card {
+  width: 100%;
+}
+
+.alerts-page .alerts-hero {
+  padding: 30px;
+  background:
+    linear-gradient(90deg, rgba(216, 173, 93, .07), transparent 52%),
+    linear-gradient(180deg, rgba(33, 30, 25, .98), rgba(25, 23, 19, .98));
+}
+
+.alerts-page h1 {
+  font-size: clamp(42px, 7vw, 66px);
+  line-height: 1;
+  max-width: 14ch;
+}
+
+.alerts-page h2 {
+  font-size: clamp(28px, 4vw, 38px);
+}
+
+.alerts-page p,
+.alerts-page li,
+.alerts-page label,
+.alerts-page legend {
+  color: var(--text);
+}
+
+.alerts-page .lead,
+.alerts-page .field-help,
+.alerts-page .muted {
+  color: var(--muted) !important;
+}
+
+.alerts-page .field-help {
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.alerts-page .alerts-preference {
+  border: 1px solid rgba(216, 173, 93, .34);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.alerts-page .alerts-preference legend {
+  padding: 0 8px;
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.alerts-page .alerts-turnstile {
+  padding-top: 4px;
+}
+
+.alerts-page .status-message:empty {
+  display: none;
+}
+
+.alerts-page .error-summary {
+  background: rgba(94, 23, 18, .55);
+  color: var(--text);
+  border-color: rgba(185, 74, 64, .72);
+}
+
+.alerts-page .error-summary p {
+  color: var(--text);
+}
+
+.alerts-page button[type="submit"] {
+  justify-self: start;
+}
+
+@media (max-width: 640px) {
+  .alerts-page {
+    width: min(100% - 24px, 880px);
+    padding-top: 30px;
+  }
+
+  .alerts-page .alerts-hero,
+  .alerts-page .card {
+    padding: 20px;
+  }
+
+  .alerts-page h1 {
+    font-size: clamp(38px, 12vw, 52px);
+  }
+}
