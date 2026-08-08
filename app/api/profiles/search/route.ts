@@ -9,13 +9,15 @@ function includesText(value: unknown, query: string) {
   return typeof value === "string" && value.toLowerCase().includes(query);
 }
 
-export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const q = (url.searchParams.get("q") || "").trim().toLowerCase().slice(0, 100);
-  const status = (url.searchParams.get("status") || "all").trim();
-  const state = (url.searchParams.get("state") || "").trim().toLowerCase().slice(0, 40);
-  const zipInput = (url.searchParams.get("zip") || "").trim();
-  const radiusInput = url.searchParams.get("radiusMiles");
+export async function POST(request: NextRequest) {
+  let body: { q?: unknown; status?: unknown; state?: unknown; zip?: unknown; radiusMiles?: unknown };
+  try { body = await request.json(); } catch { return NextResponse.json({ ok: false, message: "Search request was not valid." }, { status: 400 }); }
+
+  const q = typeof body.q === "string" ? body.q.trim().toLowerCase().slice(0, 100) : "";
+  const status = typeof body.status === "string" ? body.status.trim().slice(0, 40) : "all";
+  const state = typeof body.state === "string" ? body.state.trim().toLowerCase().slice(0, 40) : "";
+  const zipInput = typeof body.zip === "string" ? body.zip.trim() : "";
+  const radiusInput = body.radiusMiles;
 
   let profiles = await getPublishedCases();
 
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
   if (status !== "all") profiles = profiles.filter((item) => item.status === status);
   if (state) profiles = profiles.filter((item) => includesText(item.lastSeenLocation, state));
 
-  if (zipInput || radiusInput) {
+  if (zipInput || radiusInput !== undefined) {
     const zip = normalizeZip(zipInput);
     const radiusMiles = normalizeAlertRadius(radiusInput);
     if (!zip || !radiusMiles) return NextResponse.json({ ok: false, message: "Enter a valid 5-digit ZIP code and choose a distance." }, { status: 400 });
@@ -46,5 +48,5 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ ok: true, count: profiles.length, profiles }, { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" } });
+  return NextResponse.json({ ok: true, count: profiles.length, profiles }, { headers: { "Cache-Control": "private, no-store" } });
 }
