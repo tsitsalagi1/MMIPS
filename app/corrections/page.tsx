@@ -59,7 +59,7 @@ export default async function CorrectionRequestPage({
         <label className="checkbox"><input type="checkbox" required name="confirm_good_faith" /> I am submitting this request in good faith for safety, privacy, accuracy, consent, or official-contact reasons.</label>
         <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I have not included public suspect accusations, rumors, private addresses, graphic details, or information that could endanger the person/family/investigation.</label>
         <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may contact me for verification and may delay, reject, or partially apply requests for safety, privacy, accuracy, or legal reasons.</label>
-        <TurnstileWidget />
+        <TurnstileWidget action="correction_request" />
         <button type="submit">Send correction/removal request</button>
       </form>
     </main>
