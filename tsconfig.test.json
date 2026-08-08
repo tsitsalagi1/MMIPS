@@ -24,6 +24,7 @@
     "lib/email.ts",
     "lib/security/turnstile.ts",
     "lib/public-map.ts",
+    "lib/zip-geo.ts",
     "components/map/public-map-renderer.ts"
   ]
 }
