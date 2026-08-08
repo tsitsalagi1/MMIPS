@@ -48,7 +48,7 @@ export async function sendUrgentCommunityAlert(target: UrgentAlertTarget, actorI
   const publicUrl = `${siteUrl().replace(/\/$/, "")}/cases/${encodeURIComponent(target.slug)}`;
 
   const { data: existing } = await client.from("urgent_alert_events").select("id,status,matched_count,sent_count").eq("event_key", eventKey).maybeSingle();
-  if (existing?.status === "sent") return { matched: existing.matched_count ?? 0, sent: existing.sent_count ?? 0, duplicate: true };
+  if (existing?.status === "sent") return { matched: existing.matched_count ?? 0, sent: existing.sent_count ?? 0, failed: 0, duplicate: true };
 
   const { data: eventRow, error: eventError } = await client.from("urgent_alert_events").upsert({
     case_id: target.caseId,
