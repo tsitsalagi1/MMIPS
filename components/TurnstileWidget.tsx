@@ -1,6 +1,6 @@
 import Script from "next/script";
 
-export function TurnstileWidget() {
+export function TurnstileWidget({ action }: { action?: string } = {}) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   if (!siteKey) {
@@ -14,7 +14,7 @@ export function TurnstileWidget() {
   return (
     <div className="turnstile-wrap">
       <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
-      <div className="cf-turnstile" data-sitekey={siteKey} data-theme="dark" />
+      <div className="cf-turnstile" data-sitekey={siteKey} data-action={action} data-theme="dark" />
       <p className="muted small-text">This verification helps protect families from spam and malicious submissions.</p>
     </div>
   );
