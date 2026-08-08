@@ -9,7 +9,7 @@ export type AlertMailer = { send(input: Parameters<typeof sendTransactionalEmail
 const productionMailer: AlertMailer = { send: sendTransactionalEmail };
 export const ALERT_CONSENT_SOURCE = workflow.ALERT_CONSENT_SOURCE;
 export const ALERT_CONSENT_TEXT = workflow.ALERT_CONSENT_TEXT;
-const subscriberFields = "id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_id,unsubscribe_token_version,preferences,confirmation_last_sent_at,confirmation_window_started_at,confirmation_send_count";
+const subscriberFields = "id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_id,unsubscribe_token_version,preferences,home_zip,home_latitude,home_longitude,radius_miles,all_urgent,geography_source,confirmation_last_sent_at,confirmation_window_started_at,confirmation_send_count";
 
 function supabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -23,7 +23,31 @@ export function createSupabaseAlertStore(): AlertStore | null {
     async findSubscriberByEmail(email) { const { data, error } = await client.from("alert_subscribers").select(subscriberFields).eq("email_normalized", email).maybeSingle(); if (error) throw new Error("alerts_db_lookup_failed"); return data; },
     async savePending(input) {
       const current = await this.findSubscriberByEmail(input.email);
-      const values = { email: input.email, email_normalized: input.email, status: "pending", consent_source: input.consentSource, consent_text: input.consentText, consent_at: input.requestedAt, subscription_requested_at: input.requestedAt, confirmation_token_hash: input.confirmationTokenHash, confirmation_expires_at: input.confirmationExpiresAt, unsubscribe_token_id: current?.unsubscribe_token_id ?? input.unsubscribeTokenId, unsubscribe_token_version: 1, preferences: input.preferences, confirmation_window_started_at: input.windowStartedAt, confirmation_send_count: input.sendCount, confirmed_at: null, unsubscribed_at: null, updated_at: input.requestedAt };
+      const values = {
+        email: input.email,
+        email_normalized: input.email,
+        status: "pending",
+        consent_source: input.consentSource,
+        consent_text: input.consentText,
+        consent_at: input.requestedAt,
+        subscription_requested_at: input.requestedAt,
+        confirmation_token_hash: input.confirmationTokenHash,
+        confirmation_expires_at: input.confirmationExpiresAt,
+        unsubscribe_token_id: current?.unsubscribe_token_id ?? input.unsubscribeTokenId,
+        unsubscribe_token_version: 1,
+        preferences: input.preferences,
+        home_zip: input.preferences.homeZip ?? current?.home_zip ?? null,
+        home_latitude: input.preferences.homeLatitude ?? current?.home_latitude ?? null,
+        home_longitude: input.preferences.homeLongitude ?? current?.home_longitude ?? null,
+        radius_miles: input.preferences.radiusMiles ?? current?.radius_miles ?? null,
+        all_urgent: input.preferences.allUrgent ?? current?.all_urgent ?? false,
+        geography_source: input.preferences.geographySource ?? current?.geography_source ?? null,
+        confirmation_window_started_at: input.windowStartedAt,
+        confirmation_send_count: input.sendCount,
+        confirmed_at: null,
+        unsubscribed_at: null,
+        updated_at: input.requestedAt
+      };
       const { data, error } = await client.from("alert_subscribers").upsert(values, { onConflict: "email_normalized" }).select(subscriberFields).single(); if (error) throw new Error("alerts_db_upsert_failed"); return data;
     },
     async markConfirmationSent(id, sentAt) { const { error } = await client.from("alert_subscribers").update({ confirmation_last_sent_at: sentAt, updated_at: sentAt }).eq("id", id).eq("status", "pending"); if (error) throw new Error("alerts_db_sent_marker_failed"); },
