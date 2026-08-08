@@ -91,6 +91,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </div>
       </section>
 
+      {item.officialSources?.length ? (
+        <section className="card official-source-card">
+          <h2>Official source</h2>
+          <p>This MMIPS profile was reviewed against the public source below. The official agency remains the authoritative source for case information and tips.</p>
+          <ul>
+            {item.officialSources.map((source) => (
+              <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer noopener">{source.label}</a></li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section className="section check-grid">
         <div className="card">
           <h2>Official information checklist</h2>
