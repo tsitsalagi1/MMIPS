@@ -48,9 +48,9 @@ export default function AlertsPage() {
   }
 
   return (
-    <main className="stack page-narrow" id="main-content">
+    <main className="alerts-page stack page-narrow" id="main-content">
       {siteKey && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" strategy="afterInteractive" onLoad={renderTurnstile} />}
-      <section className="hero-card stack">
+      <section className="alerts-hero card stack">
         <p className="eyebrow">Private email alerts</p>
         <h1>Get approved public MMIPS updates by email</h1>
         <p className="lead">Alerts are for moderator-approved public profiles and material public status updates only. They do not include private case details, exact sensitive locations, requester information, private photos, rumors, accusations, or graphic details.</p>
@@ -67,7 +67,7 @@ export default function AlertsPage() {
         </ul>
       </section>
 
-      <form className="card stack" onSubmit={submit} noValidate aria-describedby="alerts-help alerts-privacy alerts-status">
+      <form className="card stack alerts-subscribe-card" onSubmit={submit} noValidate aria-describedby="alerts-help alerts-privacy alerts-status">
         <h2>Subscribe with double opt-in</h2>
         <p id="alerts-help">Required fields are marked. Version 1 supports one broad preference: all approved public alerts. More specific location preferences are deferred until they can be proven public-safe.</p>
         <div className="field-group">
@@ -75,13 +75,13 @@ export default function AlertsPage() {
           <p id="alert-email-help" className="field-help">Use an email address where you can receive the confirmation link. Do not enter phone numbers, addresses, private case details, or tips here.</p>
           <input id="alert-email" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" aria-describedby="alert-email-help" />
         </div>
-        <fieldset className="field-group">
+        <fieldset className="field-group alerts-preference">
           <legend>Alert preference</legend>
           <label className="checkbox"><input type="checkbox" checked readOnly /> All approved public MMIPS email alerts</label>
           <p className="field-help">This broad preference avoids exact-location or sensitive targeting in Version 1.</p>
         </fieldset>
         <p id="alerts-privacy" className="notice">MMIPS stores subscriber information privately. Public responses are intentionally general and will not reveal whether an email was already subscribed.</p>
-        {siteKey ? <div className="field-group"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, retry the check before submitting.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable. Subscription requests will remain disabled.</p>}
+        {siteKey ? <div className="field-group alerts-turnstile"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, retry the check before submitting.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable. Subscription requests will remain disabled.</p>}
         {status === "error" && <div className="error-summary" role="alert"><strong>Request not completed.</strong><p>{message}</p></div>}
         <div id="alerts-status" ref={statusRef} tabIndex={-1} role="status" aria-live="polite" className="status-message">{status === "loading" ? "Sending the request…" : message}</div>
         <button type="submit" disabled={status === "loading" || !siteKey || !turnstileToken}>{status === "loading" ? "Sending request…" : "Send confirmation email"}</button>
