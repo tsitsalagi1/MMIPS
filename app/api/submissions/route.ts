@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
-import { realSubmissionIntakeEnabledFromEnv } from "@/lib/release-controls";
+import { submissionIntakeModeFromEnv } from "@/lib/release-controls";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -122,13 +122,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!realSubmissionIntakeEnabledFromEnv()) {
-    console.warn("MMIPS real submission intake blocked by release control.", { code: "real_submission_intake_locked" });
+  const intakeMode = submissionIntakeModeFromEnv();
+  if (intakeMode === "locked") {
+    console.warn("MMIPS submission intake blocked by release control.", { code: "submission_intake_locked" });
     return redirectTo(request, "/submit?error=New%20submissions%20are%20temporarily%20paused%20while%20MMIPS%20completes%20launch%20safety%20and%20privacy%20checks.");
   }
 
   try {
     const form = await request.formData();
+    if (intakeMode === "synthetic" && form.get("synthetic_rehearsal") !== "true") {
+      console.warn("MMIPS synthetic submission rejected without rehearsal marker.", { code: "synthetic_submission_marker_required" });
+      throw new Error("Synthetic rehearsal marker required.");
+    }
 
     const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
     if (!verification.ok) throw new Error(verification.message);
