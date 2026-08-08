@@ -1,11 +1,25 @@
-export function realSubmissionIntakeEnabled(input: { nodeEnv?: string; flag?: string }) {
-  if (input.nodeEnv !== "production") return true;
-  return input.flag === "true";
+export type SubmissionIntakeMode = "locked" | "synthetic" | "real";
+
+type SubmissionIntakeInput = {
+  nodeEnv?: string;
+  vercelEnv?: string;
+  realFlag?: string;
+  syntheticFlag?: string;
+};
+
+export function submissionIntakeMode(input: SubmissionIntakeInput): SubmissionIntakeMode {
+  if (input.nodeEnv === "test" || input.nodeEnv === "development") return "synthetic";
+  if (input.vercelEnv === "preview") return input.syntheticFlag === "true" ? "synthetic" : "locked";
+  if (input.vercelEnv === "production") return input.realFlag === "true" ? "real" : "locked";
+  if (input.nodeEnv === "production") return input.realFlag === "true" ? "real" : "locked";
+  return "locked";
 }
 
-export function realSubmissionIntakeEnabledFromEnv() {
-  return realSubmissionIntakeEnabled({
+export function submissionIntakeModeFromEnv() {
+  return submissionIntakeMode({
     nodeEnv: process.env.NODE_ENV,
-    flag: process.env.MMIPS_REAL_SUBMISSIONS_ENABLED
+    vercelEnv: process.env.VERCEL_ENV,
+    realFlag: process.env.MMIPS_REAL_SUBMISSIONS_ENABLED,
+    syntheticFlag: process.env.MMIPS_SYNTHETIC_SUBMISSIONS_ENABLED
   });
 }
