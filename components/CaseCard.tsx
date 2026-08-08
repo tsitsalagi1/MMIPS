@@ -5,8 +5,10 @@ import type { MmipsCase } from "../lib/types";
 export function CaseCard({ item }: { item: MmipsCase }) {
   const imageAlt = item.photoAltText || (item.photoUrl ? `${item.fullName} public profile image` : "");
   const locationLabel = item.profileType === "murdered_info_needed" ? "Public area" : "Last seen";
+  const isSynthetic = item.slug.startsWith("mmips-test-");
   return (
     <article className={`card case-card profile-card-${item.profileType}`}>
+      {isSynthetic ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — This is not a real person or real case.</p> : null}
       <div className="case-card-grid">
         <div className="case-image" aria-hidden={!item.photoUrl}>
           <img src={item.photoUrl || "/placeholder-person.svg"} alt={imageAlt} />

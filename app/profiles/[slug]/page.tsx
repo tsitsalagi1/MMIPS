@@ -16,9 +16,11 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const title = flyerTitleForProfile(item.profileType, item.status);
   const isMurdered = item.profileType === "murdered_info_needed";
   const isUrgent = item.profileType === "urgent_missing";
+  const isSynthetic = item.slug.startsWith("mmips-test-");
 
   return (
     <main className="container section">
+      {isSynthetic ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — This is a fictional rehearsal profile, not a real person or real case. Do not send real tips.</p> : null}
       <div className={`profile-hero profile-hero-${item.profileType}`}>
         <div>
           <p className="muted">MMIPS public profile</p>

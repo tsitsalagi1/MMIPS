@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import "./theme-overrides.css";
+import "./readability-overrides.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com"),
@@ -33,13 +34,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <span>MMIPS</span>
             </Link>
             <div className="nav-links">
+              <Link href="/how-it-works">How it works</Link>
               <Link href="/profiles">Search Profiles</Link>
               <Link href="/alerts">Alerts</Link>
-              <Link href="/map">Map</Link>
+              <Link href="/resources">Family Resources</Link>
               <Link href="/submit">Submit Information</Link>
-              <Link href="/resources">Resources</Link>
-              <Link href="/how-it-works">How it works</Link>
-              <Link href="/corrections">Corrections</Link>
             </div>
           </nav>
         </header>
@@ -51,11 +50,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
             <nav className="footer-links" aria-label="Footer navigation">
               <Link href="/how-it-works">How it works</Link>
+              <Link href="/profiles">Search Profiles</Link>
+              <Link href="/alerts">Alerts</Link>
+              <Link href="/map">Public Map</Link>
+              <Link href="/resources">Family Resources</Link>
+              <Link href="/corrections">Correction/removal requests</Link>
               <Link href="/safety-policy">Safety Policy</Link>
               <Link href="/data-policy">Data & Privacy Policy</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
-              <Link href="/corrections">Correction/removal requests</Link>
             </nav>
             <div className="footer-contact" aria-label="MMIPS contact email addresses">
               <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>

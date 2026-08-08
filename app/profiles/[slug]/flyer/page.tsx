@@ -17,6 +17,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
   const flyerTitle = flyerTitleForProfile(item.profileType, item.status);
   const isUrgent = item.profileType === "urgent_missing";
   const isMurdered = item.profileType === "murdered_info_needed";
+  const isSynthetic = item.slug.startsWith("mmips-test-");
   const flyerPhotos = (item.photos || []).filter((photo) => photo.useOnFlyer !== false);
   const mainPhoto = flyerPhotos.find((photo) => photo.isMain) || flyerPhotos[0] || { url: item.photoUrl, altText: item.photoAltText, caption: null };
   const detailPhotos = flyerPhotos.filter((photo) => photo.url !== mainPhoto.url).slice(0, 4);
@@ -45,6 +46,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
         </div>
 
         <article className={`flyer-sheet flyer-${item.profileType}`} aria-label={`${item.fullName} printable flyer`}>
+          {isSynthetic ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA — NOT A REAL PERSON OR CASE.</strong> Rehearsal flyer only. Do not send real tips or redistribute as a real alert.</p> : null}
           <header className="flyer-header">
             <img src="/mmips-hand-transparent.png" alt="" aria-hidden="true" />
             <div>
