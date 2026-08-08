@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
+import { realSubmissionIntakeEnabledFromEnv } from "@/lib/release-controls";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -121,6 +122,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!realSubmissionIntakeEnabledFromEnv()) {
+    console.warn("MMIPS real submission intake blocked by release control.", { code: "real_submission_intake_locked" });
+    return redirectTo(request, "/submit?error=New%20submissions%20are%20temporarily%20paused%20while%20MMIPS%20completes%20launch%20safety%20and%20privacy%20checks.");
+  }
+
   try {
     const form = await request.formData();
 
