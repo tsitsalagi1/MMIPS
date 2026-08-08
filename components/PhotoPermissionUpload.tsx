@@ -218,13 +218,13 @@ export function PhotoPermissionUpload() {
         </label>
         {blocked ? (
           <p id={warningId} className="photo-permission-warning" role="alert">
-            {tooManyPhotos ? `Please choose no more than ${MAX_PHOTOS} images.` : "Please check the photo/flyer permission box to enable “Submit for review.”"}
+            {tooManyPhotos ? `Please choose no more than ${MAX_PHOTOS} images.` : "Please check the photo/flyer permission box to enable the final review and submission step."}
           </p>
         ) : null}
       </div>
 
       <p id={helpId} className="small-text muted">
-        Allowed image types: JPG, PNG, or WebP. Maximum size: 5 MB per image, up to {MAX_PHOTOS} images. Do not upload graphic images, private addresses, or images that could endanger the person/family/investigation.
+        Allowed image types: JPG, PNG, or WebP. Maximum size: 5 MB per image, up to {MAX_PHOTOS} images. For privacy, MMIPS rejects embedded EXIF/XMP/text metadata and images larger than 8000×8000 pixels or 40 megapixels. If a phone photo is rejected for metadata, export or save a metadata-free copy first. Do not upload graphic images, private addresses, or images that could endanger the person/family/investigation.
       </p>
     </section>
   );
