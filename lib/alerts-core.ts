@@ -72,7 +72,8 @@ export function normalizePreferences(input: unknown): AlertPreferences {
       };
     }
   }
-  return { categories: ["all_public_alerts"] };
+  // Invalid or incomplete geography must never broaden an urgent-alert subscription.
+  return { categories: ["urgent_community_alerts"] };
 }
 
 export function createOpaqueToken() { return crypto.randomBytes(ALERT_TOKEN_BYTES).toString("base64url"); }
