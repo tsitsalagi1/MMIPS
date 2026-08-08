@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { clientIpFromRequest, verifyTurnstileToken } from "@/lib/security/turnstile";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
 
@@ -123,7 +123,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
-
     const verification = await verifyTurnstileToken(form.get("cf-turnstile-response"), request);
     if (!verification.ok) throw new Error(verification.message);
 
@@ -166,14 +165,12 @@ export async function POST(request: Request) {
       submitter_email: required(form.get("submitter_email"), "Submitter email"),
       submitter_phone: optionalText(form, "submitter_phone"),
       relationship: required(form.get("relationship"), "Relationship"),
-      source_ip: clientIpFromRequest(request),
       review_status: "pending_review",
       photo_alt_text: photoAltText
     };
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
     if (!url || !serviceKey) {
       console.info("Submission captured in demo mode.", { mode: "demo", imageCount: imageFiles.length, profileType });
       return redirectTo(request, "/submit/received?mode=demo");
