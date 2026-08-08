@@ -12,6 +12,7 @@ const SOURCE_ID = "approved-public-areas";
 const LAYER_ID = "approved-public-areas-circles";
 const MAX_FIT_ZOOM = 7;
 const SINGLE_POINT_ZOOM = 5;
+const MAPTILER_ORIGIN = "https://api.maptiler.com";
 
 interface Props {
   points: PublicMapPoint[];
@@ -22,12 +23,22 @@ function reportMapFailure(code: MapFailureCode) {
   console.error("Visual map unavailable", { code });
 }
 
+function usesMapTiler(styleUrl: string | undefined) {
+  if (!styleUrl) return false;
+  try {
+    return new URL(styleUrl).origin === MAPTILER_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 export default function MapLibreRenderer({ points, onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelect);
   const [failure, setFailure] = useState<MapFailureCode | null>(null);
   const geoJson = useMemo(() => toPublicGeoJson(points), [points]);
+  const showMapTilerLogo = usesMapTiler(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -137,6 +148,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
 
   return <div className={styles.frame}>
     <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Optional visual map of approved approximate public-awareness areas" />
+    {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
     {failure ? <p className={styles.fallback} role="status">Visual map unavailable. The complete accessible list remains available below.</p> : null}
   </div>;
 }
