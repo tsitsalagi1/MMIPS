@@ -19,13 +19,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const isSynthetic = item.slug.startsWith("mmips-test-");
 
   return (
-    <main className="container section">
+    <main className="container section public-profile-page">
       {isSynthetic ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — This is a fictional rehearsal profile, not a real person or real case. Do not send real tips.</p> : null}
       <div className={`profile-hero profile-hero-${item.profileType}`}>
         <div>
           <p className="muted">MMIPS public profile</p>
           <h1>{item.fullName}</h1>
-          <p>{profileIntroForType(item.profileType)}</p>
+          <p className="reading-measure">{profileIntroForType(item.profileType)}</p>
         </div>
         <div className="badge-stack"><ProfileTypeBadge profileType={item.profileType} /><CaseStatusBadge status={item.status} /></div>
       </div>
@@ -34,14 +34,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       {isUrgent ? (
         <section className="notice urgent-soft">
           <strong>Urgent public awareness</strong>
-          <p>Information may still be updated as official details become available. MMIPS does not collect tips or direct searches. Use the listed official contact or call 911 in an emergency.</p>
+          <p>Official details may still change. MMIPS does not collect tips or direct searches. Send information to the official contact below, or call 911 for immediate danger.</p>
         </section>
       ) : null}
 
       {isMurdered ? (
         <section className="notice soft">
           <strong>Remembering / information needed</strong>
-          <p>This profile is shared for dignity, visibility, and official information routing. It does not use urgent missing-person alert tools.</p>
+          <p>This profile supports remembrance, public awareness, and official information sharing. It does not use urgent missing-person alerts.</p>
         </section>
       ) : null}
 
@@ -49,13 +49,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         <div className="public-photo-wrap">
           <img src={item.photoUrl || "/placeholder-person.svg"} alt={item.photoAltText || `${item.fullName} public profile image`} />
         </div>
-        <p className="muted small-text">Images are shown only after approval for public display. Request removal if an image should not be public.</p>
+        <p className="muted small-text">Images appear only after approval for public display. Family members and authorized contacts can request removal or changes.</p>
       </section>
 
       {item.photos && item.photos.length > 1 ? (
         <section className="card public-gallery-card">
           <h2>Additional approved photos</h2>
-          <p className="muted">These images were approved for public display to help with recognition. Do not repost with rumors, accusations, or unsafe private-location details.</p>
+          <p className="muted reading-measure">These photos were approved for public display to help with recognition. Please share the approved profile or flyer without adding rumors, accusations, or private-location details.</p>
           <div className="public-photo-gallery">
             {item.photos.filter((photo) => !photo.isMain).map((photo) => (
               <figure key={photo.id || photo.url}>
@@ -67,27 +67,27 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </section>
       ) : null}
 
-      <section className="feature-grid">
-        <div className="card"><h3>{isMurdered ? "Public area" : "Last seen / location"}</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>
-        <div className="card"><h3>Official contact</h3><p>{item.leadAgency ?? "Unknown"}</p><p className="muted">Agency report/case #: {item.agencyCaseNumber ?? "Unknown"}</p></div>
-        <div className="card"><h3>Have information?</h3><p>{item.tipPhone ?? "Use the listed official contact or call 911 in an emergency."}</p><p className="muted">Do not send tips to MMIPS. Never post public rumors or accusations.</p></div>
+      <section className="feature-grid profile-primary-facts" aria-label="Key public information">
+        <div className="card"><h3>{isMurdered ? "Public area" : "Last seen / public area"}</h3><p>{item.lastSeenLocation}</p><p className="muted">{item.publicLocationNote}</p></div>
+        <div className="card"><h3>Official contact</h3><p><strong>Agency:</strong> {item.leadAgency ?? "Not listed yet"}</p><p><strong>Case number:</strong> {item.agencyCaseNumber ?? "Not listed yet"}</p></div>
+        <div className="card"><h3>If you have information</h3><p>{item.tipPhone ?? "Use the listed official agency contact, or call 911 for immediate danger."}</p><p className="muted">Do not send investigative tips to MMIPS or post public accusations.</p></div>
       </section>
 
       {(isUrgent || item.notificationAreaRequested || item.likelyTravelMode) ? (
         <section className="card alert-planning-public">
-          <h2>{isMurdered ? "Map / visibility area" : "Public-awareness area"}</h2>
-          <p>{item.notificationAreaRequested || "Broad awareness area not publicly listed."}</p>
+          <h2>{isMurdered ? "Public map / visibility area" : "Public awareness area"}</h2>
+          <p>{item.notificationAreaRequested || "A broad awareness area is not publicly listed yet."}</p>
           {item.lastKnownDatetime ? <p><strong>Last known date/time:</strong> {item.lastKnownDatetime}{item.lastKnownTimeZone ? ` (${item.lastKnownTimeZone})` : ""}</p> : null}
-          {item.likelyTravelMode ? <p><strong>Likely travel mode:</strong> {item.likelyTravelMode}</p> : null}
+          {item.likelyTravelMode ? <p><strong>Possible travel:</strong> {item.likelyTravelMode}</p> : null}
           {item.possibleDirection ? <p><strong>Possible direction:</strong> {item.possibleDirection}</p> : null}
-          <p className="muted">This is for broad public-awareness routing only. It is not a prediction, a search plan, or an official investigative finding.</p>
+          <p className="muted reading-measure">This area is only for broad public awareness. It is not an exact location, prediction, search plan, or official investigative finding.</p>
         </section>
       ) : null}
 
       <section className="card">
-        <h2>Public summary</h2>
-        <p>{item.summary}</p>
-        {item.officialInfoPending ? <p className="notice small-notice">Official numbers or public agency details may be updated later.</p> : null}
+        <h2>What is publicly known</h2>
+        <p className="reading-measure">{item.summary}</p>
+        {item.officialInfoPending ? <p className="notice small-notice">Some official case numbers or agency details may be added later.</p> : null}
         <div className="badge-row">
           {item.verification.filter((status) => status !== "mmips_reviewed").map((status) => <VerificationBadge key={status} status={status} />)}
         </div>
@@ -96,7 +96,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
       {item.officialSources?.length ? (
         <section className="card official-source-card">
           <h2>Official source</h2>
-          <p>This MMIPS profile was reviewed against the public source below. The official agency remains the authoritative source for case information and tips.</p>
+          <p className="reading-measure">MMIPS reviewed this profile against the public source below. The official agency remains the source for case updates and investigative tips.</p>
           <ul>
             {item.officialSources.map((source) => (
               <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer noopener">{source.label}</a></li>
@@ -105,34 +105,34 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
         </section>
       ) : null}
 
-      <section className="section check-grid">
+      <section className="section check-grid profile-reference-grid">
         <div className="card">
-          <h2>Official information checklist</h2>
-          <table className="table"><tbody>
-            <tr><th>Agency report/case number</th><td>{item.agencyCaseNumber ?? "Unknown"}</td></tr>
-            <tr><th>NamUs number</th><td>{item.namusNumber ?? "Unknown"}</td></tr>
-            <tr><th>NCIC status</th><td>{item.ncicStatus ?? "Unknown"}</td></tr>
-            <tr><th>Tribe notified</th><td>{item.tribeNotified ?? "Unknown"}</td></tr>
-            <tr><th>Family liaison</th><td>{item.familyLiaison ?? "Unknown"}</td></tr>
-            <tr><th>Last public update</th><td>{item.lastPublicUpdate ?? "Unknown"}</td></tr>
-          </tbody></table>
+          <h2>Official case details</h2>
+          <dl className="profile-facts">
+            <div><dt>Agency case number</dt><dd>{item.agencyCaseNumber ?? "Not listed yet"}</dd></div>
+            <div><dt>NamUs number</dt><dd>{item.namusNumber ?? "Not listed yet"}</dd></div>
+            <div><dt>NCIC status</dt><dd>{item.ncicStatus ?? "Not listed yet"}</dd></div>
+            <div><dt>Tribe notified</dt><dd>{item.tribeNotified ?? "Not listed yet"}</dd></div>
+            <div><dt>Family liaison</dt><dd>{item.familyLiaison ?? "Not listed yet"}</dd></div>
+            <div><dt>Last public update</dt><dd>{item.lastPublicUpdate ?? "Not listed yet"}</dd></div>
+          </dl>
         </div>
         <div className="card">
-          <h2>Map safety</h2>
-          <p>Public location precision: <strong>{item.locationPrecision}</strong></p>
-          <p className="muted">Exact private addresses, shelter locations, domestic violence locations, and sensitive minor locations should not be public.</p>
+          <h2>Location privacy</h2>
+          <p><strong>Public location detail:</strong> {item.locationPrecision}</p>
+          <p className="muted reading-measure">MMIPS should not publish exact private addresses, shelter locations, domestic-violence locations, or other sensitive locations that could put someone at risk.</p>
         </div>
       </section>
 
       <section className="card correction-cta">
-        <h2>Need to correct or remove this public profile?</h2>
-        <p>Family members, authorized advocates, tribal representatives, and official contacts can request corrections, safety edits, updated official contacts, status changes, or removal review.</p>
-        <Link className="button secondary" href={`/corrections?profile=${encodeURIComponent(item.slug)}`}>Request correction/removal review</Link>
+        <h2>Need to correct or remove this profile?</h2>
+        <p className="reading-measure">Family members, authorized advocates, Tribal representatives, and official contacts can ask MMIPS to correct information, hide unsafe details, update official contacts, change status, or review removal.</p>
+        <Link className="button secondary" href={`/corrections?profile=${encodeURIComponent(item.slug)}`}>Request a correction or removal</Link>
       </section>
 
       <section className="card flyer-cta">
-        <h2>Print a flyer</h2>
-        <p>Use a printer-friendly version for community sharing. It includes only the approved public information and the official contact information shown on this page.</p>
+        <h2>Print or share a flyer</h2>
+        <p className="reading-measure">The printable flyer uses only the approved public information and official contact details shown on this profile.</p>
         <Link className="button secondary" href={`/profiles/${item.slug}/flyer`}>Open printable flyer</Link>
       </section>
 

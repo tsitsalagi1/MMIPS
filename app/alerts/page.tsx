@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 
 declare global { interface Window { turnstile?: { render(element: HTMLElement, options: Record<string, unknown>): string; reset(id: string): void } } }
 
-const genericPending = "If this email can receive MMIPS urgent alerts, a confirmation message will be sent. Please check your email and confirm before alerts are active.";
+const genericPending = "If this email can receive MMIPS urgent alerts, a confirmation message will be sent. Check your email and confirm before alerts become active.";
 
 export default function AlertsPage() {
   const [email, setEmail] = useState("");
@@ -27,7 +27,7 @@ export default function AlertsPage() {
       action: "alerts_subscribe",
       callback: (token: string) => setTurnstileToken(token),
       "expired-callback": () => setTurnstileToken(""),
-      "error-callback": () => { setTurnstileToken(""); setMessage("The anti-spam check could not load. Please retry it."); }
+      "error-callback": () => { setTurnstileToken(""); setMessage("The anti-spam check could not load. Please try it again."); }
     });
   }
   useEffect(() => { renderTurnstile(); });
@@ -35,7 +35,7 @@ export default function AlertsPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("loading");
-    setMessage("Saving your private alert preferences and sending a confirmation request.");
+    setMessage("Saving your alert choices and sending a confirmation email.");
     try {
       const response = await fetch("/api/alerts/subscribe", {
         method: "POST",
@@ -68,42 +68,42 @@ export default function AlertsPage() {
 
       <section className="alerts-hero card stack">
         <p className="eyebrow">Urgent community alerts</p>
-        <h1>Help your community. Get urgent MMIP alerts near you.</h1>
-        <p className="lead">When a moderator-approved public case needs urgent awareness, nearby community members may recognize a person, vehicle, area, or circumstance that can help an official investigation. Choose your ZIP code and how far from that area you want to receive MMIPS urgent email alerts.</p>
+        <h1>Get urgent MMIPS alerts near you.</h1>
+        <p className="lead">MMIPS sends email alerts when an approved public profile needs urgent community attention. Enter your ZIP code and choose how far from that area you want to receive alerts.</p>
       </section>
 
       <section className="card stack" aria-labelledby="alerts-consent-heading">
-        <h2 id="alerts-consent-heading">How urgent alerts work</h2>
+        <h2 id="alerts-consent-heading">How alerts work</h2>
         <ul className="checklist">
-          <li>MMIPS sends alerts only after a profile is approved for public awareness and a moderator explicitly authorizes the urgent alert.</li>
-          <li>Your ZIP code is used as a generalized Census ZIP Code Tabulation Area reference point. MMIPS does not ask for your street address or device location.</li>
-          <li>Your email address, ZIP code, and distance preference stay private and are used only for alert delivery and consent records.</li>
-          <li>You must confirm through an email link before alerts become active.</li>
-          <li>Every alert contains an unsubscribe link. No account or explanation is required to unsubscribe.</li>
-          <li>MMIPS is not an emergency service or tip line. Urgent information should go to emergency services or the official contact listed on the public profile.</li>
+          <li>A moderator must approve the public profile and the urgent alert before MMIPS sends it.</li>
+          <li>We use your ZIP code only to match you with nearby alerts. We do not ask for your street address or phone location.</li>
+          <li>Your email address, ZIP code, and distance choice stay private.</li>
+          <li>You must click the confirmation link in your email before alerts begin.</li>
+          <li>Every alert includes a simple unsubscribe link. You do not need an account or an explanation to unsubscribe.</li>
+          <li>MMIPS is not a tip line or emergency service. Send tips to the official contact shown in the alert. Call 911 for immediate danger.</li>
         </ul>
       </section>
 
       <form className="card stack alerts-subscribe-card" onSubmit={submit} noValidate aria-describedby="alerts-help alerts-privacy alerts-status">
         <h2>Sign up for urgent community alerts</h2>
-        <p id="alerts-help">Choose the area you want to help watch. Location matching uses only a generalized ZIP-area reference point and an approved approximate public-awareness point for the case.</p>
+        <p id="alerts-help">Enter your email and ZIP code, then choose how far away you want alerts. Email and ZIP code are required. Alert distance starts at 50 miles, but you can change it.</p>
 
         <div className="field-group">
-          <label htmlFor="alert-email">Email address <span aria-hidden="true">*</span></label>
-          <p id="alert-email-help" className="field-help">Use an email address where you can receive the confirmation link. Do not enter tips, case details, addresses, or phone numbers here.</p>
+          <label htmlFor="alert-email">Email address</label>
+          <p id="alert-email-help" className="field-help">We will send the confirmation link here. Do not enter tips, case details, addresses, or phone numbers.</p>
           <input id="alert-email" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" aria-describedby="alert-email-help" />
         </div>
 
         <div className="check-grid">
           <div className="field-group">
-            <label htmlFor="alert-zip">ZIP code <span aria-hidden="true">*</span></label>
-            <p id="alert-zip-help" className="field-help">Five digits only. This is an alert-area preference, not a request for your home address.</p>
+            <label htmlFor="alert-zip">ZIP code</label>
+            <p id="alert-zip-help" className="field-help">Five digits only. We use this to match nearby alerts, not to find your home address.</p>
             <input id="alert-zip" name="zip" inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} required aria-describedby="alert-zip-help" />
           </div>
 
           <div className="field-group">
-            <label htmlFor="alert-radius">Alert distance <span aria-hidden="true">*</span></label>
-            <p id="alert-radius-help" className="field-help">Receive an urgent alert when its approved public-awareness point falls within this distance of your ZIP-area reference point.</p>
+            <label htmlFor="alert-radius">Alert distance</label>
+            <p id="alert-radius-help" className="field-help">Choose how close an approved urgent alert must be to your ZIP area before we email you.</p>
             <select id="alert-radius" name="radiusMiles" value={radiusMiles} onChange={(event) => setRadiusMiles(event.target.value)} aria-describedby="alert-radius-help">
               <option value="10">Within 10 miles</option>
               <option value="25">Within 25 miles</option>
@@ -115,16 +115,16 @@ export default function AlertsPage() {
         </div>
 
         <fieldset className="field-group alerts-preference">
-          <legend>Urgent alert preference</legend>
-          <label className="checkbox"><input type="checkbox" checked={allUrgent} onChange={(event) => setAllUrgent(event.target.checked)} /> Also send me every approved urgent MMIPS alert, even when it is outside my selected distance.</label>
-          <p className="field-help">Leave this unchecked if you want only ZIP/radius-matched urgent alerts.</p>
+          <legend>Want every urgent MMIPS alert?</legend>
+          <label className="checkbox"><input type="checkbox" checked={allUrgent} onChange={(event) => setAllUrgent(event.target.checked)} /> Yes. Send me every approved urgent MMIPS alert, even when it is outside my selected distance.</label>
+          <p className="field-help">Leave this unchecked if you want only alerts that match your ZIP code and distance.</p>
         </fieldset>
 
-        <p id="alerts-privacy" className="notice"><strong>Privacy:</strong> MMIPS stores subscriber information privately. The server sends only the ZIP code—not your email address—to the U.S. Census Bureau TIGERweb service to obtain a generalized ZCTA reference point. Public responses do not reveal whether an email is subscribed.</p>
+        <p id="alerts-privacy" className="notice"><strong>Privacy:</strong> MMIPS keeps your subscriber information private. To get a general ZIP-area location, our server sends only your ZIP code to the U.S. Census Bureau. It does not send your email address. Public pages do not show whether an email is subscribed.</p>
 
-        {siteKey ? <div className="field-group alerts-turnstile"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, retry it before submitting.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable. Subscription requests will remain disabled.</p>}
+        {siteKey ? <div className="field-group alerts-turnstile"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, try it again before you submit.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable, so alert sign-up is temporarily unavailable.</p>}
 
-        {status === "error" && <div className="error-summary" role="alert"><strong>Request not completed.</strong><p>{message}</p></div>}
+        {status === "error" && <div className="error-summary" role="alert"><strong>We could not finish the request.</strong><p>{message}</p></div>}
         <div id="alerts-status" ref={statusRef} tabIndex={-1} role="status" aria-live="polite" className="status-message">{status === "loading" ? "Sending the request…" : message}</div>
         <button type="submit" disabled={status === "loading" || !siteKey || !turnstileToken}>{status === "loading" ? "Sending request…" : "Send confirmation email"}</button>
       </form>

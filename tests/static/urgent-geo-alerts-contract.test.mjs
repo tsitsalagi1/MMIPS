@@ -12,11 +12,11 @@ const urgentAlerts = fs.readFileSync("lib/urgent-alerts.ts", "utf8");
 const profileSearch = fs.readFileSync("app/api/profiles/search/route.ts", "utf8");
 
 test("public signup asks for email plus generalized ZIP/radius, not street/device location", () => {
-  assert.match(page, /Help your community\. Get urgent MMIP alerts near you/);
+  assert.match(page, /Get urgent MMIPS alerts near you/);
   assert.match(page, /ZIP code/);
   assert.match(page, /Within 10 miles/);
   assert.match(page, /Within 250 miles/);
-  assert.match(page, /does not ask for your street address or device location/);
+  assert.match(page, /We do not ask for your street address or phone location/);
   assert.doesNotMatch(page, /navigator\.geolocation|getCurrentPosition|watchPosition/);
 });
 

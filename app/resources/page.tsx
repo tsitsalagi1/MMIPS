@@ -9,31 +9,31 @@ const officialLinks = [
   },
   {
     title: "NamUs",
-    body: "National missing, unidentified, and unclaimed-person resource. Ask law enforcement whether a NamUs entry exists and write down the NamUs number.",
+    body: "NamUs is the national system for missing, unidentified, and unclaimed people. Ask the investigating agency whether a NamUs record exists and save the NamUs number.",
     href: "https://namus.nij.ojp.gov/",
     linkText: "Open NamUs"
   },
   {
     title: "BIA Missing and Murdered Unit",
-    body: "For missing or murdered Indigenous people, the BIA Office of Justice Services Missing and Murdered Unit lists resources, contacts, and public profiles.",
+    body: "The BIA Missing and Murdered Unit provides resources and contacts for missing or murdered Indigenous people.",
     href: "https://www.bia.gov/service/mmu",
     linkText: "Open BIA MMU"
   },
   {
     title: "FBI tips",
-    body: "Use the FBI tip portal only when appropriate or when an official profile/flyer directs tips to the FBI.",
+    body: "Use the FBI tip site when the FBI is involved or an official profile or flyer tells the public to send information there.",
     href: "https://tips.fbi.gov/home",
     linkText: "Open FBI tips"
   },
   {
     title: "National Center for Missing & Exploited Children",
-    body: "For missing children, call NCMEC after reporting to local law enforcement: 1-800-THE-LOST / 1-800-843-5678.",
+    body: "For a missing child, report to law enforcement first. You can also contact NCMEC at 1-800-THE-LOST (1-800-843-5678).",
     href: "https://www.missingkids.org/gethelpnow/isyourchildmissing",
     linkText: "Open NCMEC"
   },
   {
     title: "StrongHearts Native Helpline",
-    body: "Confidential domestic, dating, and sexual violence support for Native people and loved ones. If the person is in immediate danger, call 911 first.",
+    body: "Confidential support for Native people and loved ones affected by domestic, dating, or sexual violence. Call 911 first for immediate danger.",
     href: "https://strongheartshelpline.org/",
     linkText: "Open StrongHearts"
   }
@@ -41,42 +41,42 @@ const officialLinks = [
 
 const immediateSteps = [
   "Call 911 if there is immediate danger.",
-  "Contact local law enforcement and tribal law enforcement as soon as possible. Do not wait 24 hours.",
-  "Ask for the agency report/case number and the name/contact of the lead investigator or family liaison.",
-  "Ask whether the person has been entered into NCIC. Families may not get direct NCIC access, but they can ask the agency to confirm entry.",
-  "Ask whether NamUs has been created or requested. Write down the NamUs number/link.",
-  "Ask whether the relevant Tribe, tribal police, victim-services program, BIA MMU, or FBI should be notified.",
-  "Gather recent photos, identifying marks, clothing, vehicle details, last-known time/location, and safe public contact information.",
-  "Do not post rumors, suspect accusations, exact private addresses, shelter locations, or unsafe details publicly. Send information to the official contact."
+  "Contact Tribal law enforcement and the appropriate local law-enforcement agency as soon as possible. You do not need to wait 24 hours.",
+  "Ask for the agency case number. Write down the investigator's or family liaison's name and contact information.",
+  "Ask the investigating agency whether the person has been entered into NCIC, the national law-enforcement database.",
+  "Ask whether a NamUs record has been created. Save the NamUs number or link.",
+  "Ask whether the person's Tribe, Tribal police, victim-services program, the BIA Missing and Murdered Unit, or the FBI should be contacted.",
+  "Gather recent photos and basic identifying information, including clothing, vehicle details, and the last known time and general area.",
+  "Keep private or dangerous details off social media. Send tips and sensitive information to the official investigating agency."
 ];
 
 const askFor = [
-  "Agency report/case number",
+  "Agency case number",
   "Lead investigator or family liaison contact",
   "NCIC entry confirmation",
   "NamUs number or link",
-  "Official tip line or public information officer contact",
-  "Whether a tribal agency or BIA MMU has been notified",
+  "Official tip line or public-information contact",
+  "Whether a Tribal agency or BIA MMU has been notified",
   "Official flyer, if one exists",
   "What information is safe to share publicly"
 ];
 
 export default function ResourcesPage() {
   return (
-    <main className="container section resources-page">
+    <main className="container section resources-page plain-language-page">
       <h1>Family resources</h1>
-      <p className="lead">This page helps families and authorized advocates move quickly, contact the right official channels, and share public information safely. MMIPS does not collect investigative tips.</p>
+      <p className="lead">If someone you love is missing, start here. These steps can help you report the case, keep important information organized, and share public information safely.</p>
       <SafetyNotice />
 
       <section className="card resource-priority-card">
         <h2>If someone is missing now</h2>
-        <p className="lead compact-lead">Start with official reporting first. Then use MMIPS for public awareness, flyers, profile updates, and safe sharing.</p>
+        <p className="lead compact-lead">Start with official reporting. Then MMIPS can help with reviewed public awareness, profiles, flyers, and updates.</p>
         <ol className="resource-checklist">
           {immediateSteps.map((step) => <li key={step}>{step}</li>)}
         </ol>
       </section>
 
-      <section className="feature-grid resource-link-grid">
+      <section className="feature-grid resource-link-grid" aria-label="Official and support resources">
         {officialLinks.map((resource) => (
           <div className="card" key={resource.title}>
             <h3>{resource.title}</h3>
@@ -86,35 +86,35 @@ export default function ResourcesPage() {
         ))}
       </section>
 
-      <section className="card">
-        <h2>What to ask for when you talk to an agency</h2>
-        <p>Keep a written note of who you spoke with, the date/time, and what they said. These fields also help MMIPS publish accurate public-awareness information after review.</p>
+      <section className="card plain-language-section">
+        <h2>What to ask the agency</h2>
+        <p>Keep a simple written record of who you spoke with, when you spoke, and what they told you. These details can also help MMIPS keep a public profile accurate.</p>
         <div className="resource-chip-list">
           {askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}
         </div>
       </section>
 
-      <section className="card">
-        <h2>Before sharing online</h2>
+      <section className="card plain-language-section">
+        <h2>Before you share online</h2>
         <div className="feature-grid compact-grid">
           <div>
-            <h3>Share</h3>
-            <p>Recent approved photos, official contact information, broad last-known area, NamUs/agency numbers, MMIPS profile link, and the current flyer.</p>
+            <h3>Helpful to share</h3>
+            <p>Approved recent photos, the official contact, a broad last-known area, agency or NamUs numbers, the MMIPS profile link, and the current approved flyer.</p>
           </div>
           <div>
-            <h3>Do not share</h3>
-            <p>Rumors, suspect names, private addresses, shelter/domestic-violence locations, graphic images, exact minor-sensitive locations, or screenshots that could endanger someone.</p>
+            <h3>Keep private</h3>
+            <p>Rumors, public suspect accusations, private addresses, shelter or domestic-violence locations, graphic images, and exact sensitive locations.</p>
           </div>
           <div>
             <h3>Where tips go</h3>
-            <p>Send tips to the official agency, official tip line, NamUs, BIA MMU, FBI, tribal police, or 911 in an emergency. Do not send investigative tips to MMIPS.</p>
+            <p>Send tips to the official agency or tip line shown on the public profile. Use 911 for immediate danger. Do not send investigative tips to MMIPS.</p>
           </div>
         </div>
       </section>
 
-      <section className="card">
-        <h2>MMIPS contact</h2>
-        <p>Use these for site questions, corrections, removals, privacy, or updated public information. Do not use MMIPS email for emergency tips.</p>
+      <section className="card plain-language-section">
+        <h2>Contact MMIPS</h2>
+        <p>Use these addresses for site questions, corrections, removals, privacy questions, or updates to approved public information. Do not email emergency or investigative tips to MMIPS.</p>
         <p className="contact-line">
           General: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />
           Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />

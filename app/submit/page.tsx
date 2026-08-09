@@ -15,11 +15,11 @@ export default async function SubmitPage({
   const intakeMode = submissionIntakeModeFromEnv();
 
   return (
-    <main className="container section">
+    <main className="container section plain-language-page">
       <h1>Submit information for review</h1>
-      <p className="lead">Submissions are reviewed before anything is published. This form is for public awareness only and does not replace emergency reporting or official missing-person systems.</p>
+      <p className="lead">Use this form to ask MMIPS to review information for public awareness. Nothing becomes public automatically.</p>
       <SafetyNotice />
-      {error ? <div className="notice warning"><strong>Submission error:</strong> {error}</div> : null}
+      {error ? <div className="notice warning"><strong>We could not process the submission.</strong><p>{error}</p></div> : null}
       {intakeMode === "locked" ? (
         <div className="card notice warning" role="status" aria-live="polite">
           <h2>New submissions are temporarily paused</h2>
@@ -38,36 +38,40 @@ export default async function SubmitPage({
             {intakeMode === "synthetic" ? <input type="hidden" name="synthetic_rehearsal" value="true" /> : null}
             <ProfileTypeFields />
 
-            <h2>Person and public-awareness information</h2>
+            <h2>Information about the person</h2>
+            <p className="field-help">Enter only information that is safe and authorized for MMIPS to review. You can leave optional fields blank.</p>
             <div className="check-grid">
               <label>Person's full name<input name="full_name" required /></label>
-              <label>Age<input name="age" type="number" min="0" /></label>
-              <label>Tribal affiliation, if family approves<input name="tribal_affiliation" /></label>
-              <label>Last seen / public location date<input name="last_seen_date" type="date" /></label>
-              <label>Public location text<input name="last_seen_location" required placeholder="Example: Tahlequah area, Cherokee County, or location withheld for safety" /></label>
-              <label>Lead agency<input name="lead_agency" placeholder="Police, sheriff, tribal police, FBI, BIA MMU..." /></label>
-              <label>Agency report/case number<input name="agency_case_number" /></label>
-              <label>NamUs number or link<input name="namus_number" /></label>
-              <label>Official tip phone / link<input name="tip_contact" placeholder="Send public information to this official contact, not MMIPS" /></label>
+              <label>Age, if known<input name="age" type="number" min="0" /></label>
+              <label>Tribal affiliation, if approved to share<input name="tribal_affiliation" /></label>
+              <label>Last seen date, if known<input name="last_seen_date" type="date" /></label>
+              <label>Safe public location description<input name="last_seen_location" required placeholder="Example: Tahlequah area, Cherokee County, or location withheld for safety" /></label>
+              <label>Lead investigating agency, if known<input name="lead_agency" placeholder="Example: Tribal police, sheriff, police department, FBI, or BIA MMU" /></label>
+              <label>Agency case number, if known<input name="agency_case_number" /></label>
+              <label>NamUs number or link, if known<input name="namus_number" /></label>
+              <label>Official tip phone or link, if public<input name="tip_contact" placeholder="Use the official agency contact, not MMIPS" /></label>
             </div>
-            <label>Summary of verified public facts<textarea name="summary" required placeholder="Use facts only. No suspect accusations, rumors, private addresses, or sensitive location details."></textarea></label>
+            <label>Public facts MMIPS should review<textarea name="summary" required placeholder="Use facts only. Do not include rumors, public accusations, private addresses, or sensitive locations."></textarea></label>
 
-            <h2>Photos, flyer preview, and image permissions</h2>
+            <h2>Photos</h2>
+            <p className="field-help">Upload only photos you have permission to share with MMIPS for review.</p>
             <PhotoPermissionUpload />
 
-            <h2>Submitter information</h2>
+            <h2>Your contact information</h2>
+            <p className="field-help">MMIPS uses this information to review the submission and contact you if clarification is needed. It is not published on the public profile.</p>
             <div className="check-grid">
               <label>Your name<input name="submitter_name" required /></label>
               <label>Your email<input name="submitter_email" type="email" required /></label>
-              <label>Your relationship<select name="relationship" required><option value="family">Family member</option><option value="authorized_advocate">Authorized advocate</option><option value="tribal_representative">Tribal representative</option><option value="law_enforcement">Law enforcement / agency</option><option value="other">Other / needs review</option></select></label>
+              <label>Your relationship to the person or case<select name="relationship" required><option value="family">Family member</option><option value="authorized_advocate">Authorized advocate</option><option value="tribal_representative">Tribal representative</option><option value="law_enforcement">Law enforcement / agency</option><option value="other">Other / needs review</option></select></label>
               <label>Phone, optional<input name="submitter_phone" /></label>
             </div>
 
-            <h2>Required safety confirmations</h2>
-            <label className="checkbox"><input type="checkbox" required name="confirm_not_law_enforcement" /> I understand MMIPS is not law enforcement and this does not replace calling 911, filing a police report, contacting tribal/local/federal authorities, or submitting to NamUs.</label>
-            <label className="checkbox"><input type="checkbox" required name="confirm_authorized" /> I am a family member, authorized advocate, legal representative, tribal representative, law-enforcement representative, or I have permission to submit this information for public awareness.</label>
-            <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I have not included suspect accusations, rumors, exact private addresses, graphic details, or information that could endanger the person/family/investigation.</label>
-            <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may edit, delay, reject, hide, or remove submissions for safety, privacy, accuracy, or legal reasons.</label>
+            <h2>Before you send</h2>
+            <p className="field-help">Please confirm each statement. These checks help protect the person, family, and investigation.</p>
+            <label className="checkbox"><input type="checkbox" required name="confirm_not_law_enforcement" /> I understand MMIPS is not law enforcement and does not replace 911, an official report, or NamUs.</label>
+            <label className="checkbox"><input type="checkbox" required name="confirm_authorized" /> I am authorized to send this information for public-awareness review, or I am asking MMIPS to verify my authority before anything becomes public.</label>
+            <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I did not include rumors, public accusations, private addresses, graphic details, or information that could put someone at risk.</label>
+            <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may edit, delay, reject, hide, or remove information for safety, privacy, accuracy, or legal reasons.</label>
             <TurnstileWidget action="submission_intake" />
             <SubmissionReviewGate />
           </form>

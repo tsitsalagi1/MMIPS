@@ -35,6 +35,226 @@ a:hover {
   color: var(--gold);
 }
 
+/*
+   Trauma-informed reading rhythm.
+   Families may be reading while worried, tired, or under acute stress. Keep lines
+   open, paragraphs separated, headings less compressed, and reading widths bounded.
+*/
+body {
+  line-height: 1.65;
+}
+
+p,
+li,
+dd,
+td,
+th,
+.field-help {
+  line-height: 1.65;
+}
+
+p {
+  margin-bottom: 1.15rem;
+}
+
+li + li {
+  margin-top: .55rem;
+}
+
+h1 {
+  line-height: 1.04;
+  letter-spacing: -.035em;
+}
+
+h2 {
+  line-height: 1.14;
+  letter-spacing: -.02em;
+}
+
+h3 {
+  line-height: 1.28;
+  margin-bottom: .65rem;
+}
+
+.lead {
+  line-height: 1.55;
+  max-width: 64ch;
+}
+
+.text-measure,
+.reading-measure {
+  max-width: 68ch;
+}
+
+/* Give family-facing forms a clear label → help → control rhythm. */
+.field-group {
+  display: grid;
+  gap: .55rem;
+}
+
+.field-group > label,
+.field-group > legend {
+  line-height: 1.35;
+}
+
+.field-group .field-help {
+  margin: 0 0 .25rem;
+  max-width: 66ch;
+}
+
+/* Keep key family-facing pages separated into obvious reading blocks. */
+.plain-language-page > h2,
+.plain-language-page > .plain-language-section {
+  margin-top: 1.5rem;
+}
+
+.plain-language-section {
+  display: grid;
+  gap: .45rem;
+}
+
+.plain-language-section > :last-child,
+.safety-notice > :last-child {
+  margin-bottom: 0;
+}
+
+.safety-notice p {
+  max-width: 72ch;
+}
+
+/* Public profile search cards should scan as separate facts, not one text block. */
+.case-card {
+  padding: clamp(20px, 3vw, 28px);
+}
+
+.case-card-grid > div:last-child {
+  display: grid;
+  gap: .78rem;
+  align-content: start;
+}
+
+.case-card .case-header-line {
+  margin-bottom: .15rem;
+}
+
+.case-card .case-header-line h2 {
+  margin-bottom: 0;
+}
+
+.case-card p {
+  margin: 0;
+  line-height: 1.68;
+  max-width: 68ch;
+}
+
+.case-card .case-card-location {
+  color: var(--text);
+}
+
+.case-card .case-card-summary {
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.case-card .badge-row {
+  margin-top: .15rem;
+}
+
+.case-card .button {
+  justify-self: start;
+  margin-top: .15rem;
+}
+
+/* Public profile detail pages: larger gaps and scan-friendly fact rows. */
+.public-profile-page {
+  display: grid;
+  gap: 1.35rem;
+}
+
+.public-profile-page > .synthetic-test-banner,
+.public-profile-page > .profile-hero,
+.public-profile-page > .notice,
+.public-profile-page > .card,
+.public-profile-page > .feature-grid,
+.public-profile-page > .section,
+.public-profile-page > .share-box {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.public-profile-page .profile-hero {
+  gap: 1.25rem;
+}
+
+.public-profile-page .profile-hero p,
+.public-profile-page .card p,
+.public-profile-page .notice p {
+  max-width: 68ch;
+}
+
+.public-profile-page .feature-grid {
+  margin: 0;
+}
+
+.public-profile-page .feature-grid .card {
+  display: grid;
+  align-content: start;
+  gap: .55rem;
+}
+
+.public-profile-page .feature-grid .card p {
+  margin: 0;
+}
+
+.profile-facts {
+  margin: 0;
+  display: grid;
+}
+
+.profile-facts > div {
+  display: grid;
+  grid-template-columns: minmax(170px, .8fr) minmax(0, 1.2fr);
+  gap: .75rem 1.25rem;
+  padding: .9rem 0;
+  border-bottom: 1px solid rgba(216, 173, 93, .18);
+}
+
+.profile-facts > div:last-child {
+  border-bottom: 0;
+}
+
+.profile-facts dt {
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.profile-facts dd {
+  margin: 0;
+  color: var(--text);
+}
+
+/* Keep dense explanatory lists readable and easy to scan. */
+.checklist,
+.resource-checklist {
+  padding-left: 1.35rem;
+}
+
+.checklist li,
+.resource-checklist li {
+  padding-left: .2rem;
+}
+
+@media (max-width: 700px) {
+  .profile-facts > div {
+    grid-template-columns: 1fr;
+    gap: .2rem;
+  }
+
+  .case-card-grid > div:last-child {
+    gap: .9rem;
+  }
+}
+
 /* Synthetic launch-rehearsal records must never look like real cases. */
 .synthetic-test-banner {
   margin: 0 0 14px;

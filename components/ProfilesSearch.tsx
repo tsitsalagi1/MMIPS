@@ -77,7 +77,7 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
           </div>
           <fieldset className="field-group">
             <legend>Search near a ZIP code</legend>
-            <p className="field-help">Optional. ZIP-distance search compares a U.S. Census ZIP-area reference point with each case&apos;s moderator-approved approximate public map point. It never uses a private incident or home coordinate. Your ZIP search preference is sent in the request body rather than placed in the page URL.</p>
+            <p className="field-help">Optional. Enter a ZIP code to find public profiles with an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
             <div className="check-grid">
               <label>ZIP code
                 <input inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="74464" />
@@ -104,7 +104,7 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
       {profiles.length ? profiles.map((item) => <CaseCard key={item.id} item={item} />) : (
         <div className="card calm-panel" style={{ marginTop: "22px" }}>
           <h2>No matching public profiles.</h2>
-          <p className="text-measure">Try a broader search or a larger ZIP-code distance. A profile without an approved public map point will not appear in ZIP-distance results.</p>
+          <p className="text-measure">Try fewer search words, a larger distance, or clear one of the filters. ZIP-distance results include only profiles that have an approved public awareness area.</p>
         </div>
       )}
     </>
