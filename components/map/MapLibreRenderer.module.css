@@ -9,9 +9,12 @@
 .fallback button{justify-self:start}
 .providerLogo{position:absolute;left:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;padding:4px 6px;border-radius:4px;background:rgba(255,255,255,.92)}
 .providerLogo img{display:block;width:88px;height:auto}
+.publicMarker{width:22px;height:22px;min-width:22px;min-height:22px;padding:0;border:3px solid #fff5e8;border-radius:50%;background:#b3263b;box-shadow:0 2px 7px rgba(0,0,0,.4);cursor:pointer}
+.publicMarker:hover{transform:scale(1.12)}
+.publicMarker:focus-visible{outline:3px solid #111;outline-offset:3px;box-shadow:0 0 0 6px #f3bd55}
 .frame :global(.maplibregl-map){font:inherit}
 .frame :global(.maplibregl-ctrl button){min-width:44px;min-height:44px}
 .frame :global(.maplibregl-ctrl-attrib){color:#1f1a16}
 .frame :global(.maplibregl-ctrl-attrib a){color:#4f3512}
-@media(max-width:680px){.loadingNotice{align-items:flex-start;flex-direction:column}}
+@media(max-width:680px){.loadingNotice{align-items:flex-start;flex-direction:column}.publicMarker{width:26px;height:26px;min-width:26px;min-height:26px}}
 @media(prefers-reduced-motion:reduce){.frame *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
