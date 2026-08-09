@@ -203,7 +203,7 @@ export default function ProfilesSearch() {
             <p><strong>{selected.publicName}</strong> · {mapCategoryLabel(selected.profileType, selected.publicStatus)}</p>
             <p>{selected.publicMapLabel}. Approximate public-awareness area; not an exact location.</p>
             <Link href={`/profiles/${selected.slug}`}>Open selected public profile</Link>
-          </> : <p>Select a map point to see its public profile summary here.</p>}
+          </> : visiblePoints.length === 0 && !mapLoading ? <p>No approved map points match the current search. Change or reset the search to see other areas.</p> : <p>Select a map point to see its public profile summary here.</p>}
         </div>
       </section>
     </section>
