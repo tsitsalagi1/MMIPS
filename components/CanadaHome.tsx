@@ -50,7 +50,7 @@ export function CanadaHome() {
             <h3>Canadian geography and search</h3>
             <p>
               Canada will use provinces and territories, Canadian postal codes, communities and localities, and kilometres.
-              It will not reuse U.S. ZIP-code, state, county, NamUs, or NCIC assumptions.
+              It will use Canadian case-reference and reporting fields rather than reusing United States-specific identifiers or geography fields.
             </p>
           </div>
           <div className="card calm-card">
