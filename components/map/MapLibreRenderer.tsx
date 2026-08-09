@@ -230,11 +230,10 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !focusTarget) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     map.flyTo({
       center: [focusTarget.longitude, focusTarget.latitude],
       zoom: focusTarget.zoom ?? 9,
-      duration: reduceMotion ? 0 : 700
+      duration: 0
     });
   }, [focusTarget, attempt]);
 
