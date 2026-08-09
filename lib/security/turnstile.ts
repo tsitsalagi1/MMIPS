@@ -9,7 +9,7 @@ export function clientIpFromRequest(request: Request) {
 
 export function expectedTurnstileHostname(request: Request) {
   const requestHostname = new URL(request.url).hostname.toLowerCase();
-  if (requestHostname === "mmips.com" || requestHostname === "www.mmips.com") return requestHostname;
+  if (["mmips.com", "www.mmips.com", "us.mmips.com"].includes(requestHostname)) return requestHostname;
   const configured = process.env.TURNSTILE_EXPECTED_HOSTNAME?.trim().toLowerCase();
   return configured || undefined;
 }
