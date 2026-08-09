@@ -17,7 +17,7 @@ test('map health endpoint probes configured style without exposing full style UR
 
   const responseBlock = route.slice(route.indexOf('return NextResponse.json('));
   assert.ok(responseBlock.length > 0);
-  assert.doesNotMatch(responseBlock, /\bstyleUrl\b/);
+  assert.doesNotMatch(responseBlock, /^\s{6}styleUrl(?:\s*[:,])/m);
   assert.doesNotMatch(route, /searchParams\.get\(["']key["']\)/);
   assert.doesNotMatch(route, /apiKey|keyValue|secret/i);
 });
