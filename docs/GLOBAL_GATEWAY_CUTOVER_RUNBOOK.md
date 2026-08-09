@@ -38,7 +38,7 @@ The global gateway application code rejects `/api/*` and redirects country appli
 
 1. Deploy this branch to Preview and run the complete CI suite.
 2. On the existing MMIPS Vercel project, add `us.mmips.com` while leaving `mmips.com` attached.
-3. In the Cloudflare Turnstile widget used by the U.S. public forms, add `us.mmips.com` to the allowed production hostnames before testing forms on the new domain. The MMIPS server verifier already recognizes `us.mmips.com`, but the widget/provider configuration must also permit it.
+3. Verify that the Cloudflare Turnstile widget used by the U.S. public forms authorizes `us.mmips.com` before testing protected forms. Cloudflare documents that authorizing the root `mmips.com` also authorizes its subdomains; if the widget is instead restricted to a narrower hostname such as `www.mmips.com`, explicitly add `us.mmips.com`. The MMIPS server verifier already recognizes `us.mmips.com`.
 4. Set `MMIPS_SITE_MODE=us`, `NEXT_PUBLIC_SITE_URL=https://us.mmips.com`, and `NEXT_PUBLIC_GLOBAL_SITE_URL=https://mmips.com` on the existing country project.
 5. Deploy and verify `https://us.mmips.com` before changing the apex domain.
 6. Verify on the U.S. portal:
