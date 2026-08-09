@@ -89,14 +89,14 @@ test("ZIP search uses the existing Census lookup behind a no-store same-origin r
   assert.doesNotMatch(zipRoute, /console\.|request\.nextUrl|searchParams/);
 });
 
-test("ZIP search can focus the map without overriding reduced-motion preferences", () => {
+test("ZIP search focuses the map with a zero-duration camera change", () => {
   assert.match(experience, /focusTarget=\{mapFocus\}/);
   assert.match(renderer, /focusTarget\?: MapFocusTarget \| null/);
-  assert.match(renderer, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
   assert.match(renderer, /map\.flyTo\(/);
   assert.match(renderer, /center: \[focusTarget\.longitude, focusTarget\.latitude\]/);
   assert.match(renderer, /zoom: focusTarget\.zoom \?\? 9/);
-  assert.match(renderer, /duration: reduceMotion \? 0 : 700/);
+  assert.match(renderer, /duration: 0/);
+  assert.doesNotMatch(renderer, /duration:\s*[1-9][0-9]*/);
 });
 
 test("configuration, request, compatible WebGL fallback, and hard failures fail safely", () => {
