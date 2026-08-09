@@ -10,6 +10,7 @@ const clusters = fs.readFileSync("components/map/public-map-clusters.ts", "utf8"
 const rendererCss = fs.readFileSync("components/map/MapLibreRenderer.module.css", "utf8");
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
 const page = fs.readFileSync("app/map/page.tsx", "utf8");
+const zipRoute = fs.readFileSync("app/api/map/zip/route.ts", "utf8");
 const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
 
 test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server boundaries", () => {
@@ -75,7 +76,30 @@ test("camera frames the United States and Canada and preserves page scrolling", 
   assert.match(rendererCss, /\.canvas\{height:24rem;width:100%;min-height:24rem\}/);
 });
 
-test("configuration, request, compatible WebGL fallback, and hard failures fail safely to the list", () => {
+test("ZIP search uses the existing Census lookup behind a no-store same-origin request", () => {
+  assert.match(experience, /fetch\("\/api\/map\/zip"/);
+  assert.match(experience, /method: "POST"/);
+  assert.match(experience, /cache: "no-store"/);
+  assert.match(experience, /pattern="\[0-9\]\{5\}"/);
+  assert.match(experience, /autoComplete="postal-code"/);
+  assert.match(experience, /MMIPS does not save this ZIP search as a case location/);
+  assert.match(zipRoute, /lookupZcta\(zip\)/);
+  assert.match(zipRoute, /normalizeZip/);
+  assert.match(zipRoute, /"Cache-Control": "no-store"/);
+  assert.doesNotMatch(zipRoute, /console\.|request\.nextUrl|searchParams/);
+});
+
+test("ZIP search can focus the map without overriding reduced-motion preferences", () => {
+  assert.match(experience, /focusTarget=\{mapFocus\}/);
+  assert.match(renderer, /focusTarget\?: MapFocusTarget \| null/);
+  assert.match(renderer, /window\.matchMedia\("\(prefers-reduced-motion: reduce\)"\)/);
+  assert.match(renderer, /map\.flyTo\(/);
+  assert.match(renderer, /center: \[focusTarget\.longitude, focusTarget\.latitude\]/);
+  assert.match(renderer, /zoom: focusTarget\.zoom \?\? 9/);
+  assert.match(renderer, /duration: reduceMotion \? 0 : 700/);
+});
+
+test("configuration, request, compatible WebGL fallback, and hard failures fail safely", () => {
   assert.match(boundary, /styleUrl\.protocol !== "https:"/);
   assert.match(boundary, /origin\.includes\("\*"\)/);
   assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
@@ -83,25 +107,26 @@ test("configuration, request, compatible WebGL fallback, and hard failures fail 
   assert.doesNotMatch(boundary, /failIfMajorPerformanceCaveat:\s*true/);
   for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
   assert.match(renderer, /Visual map unavailable\./);
+  assert.match(renderer, /Use Search Profiles to browse public profiles without the map/);
   assert.match(renderer, /Retry visual map/);
 });
 
 test("slow basemap loading remains non-destructive", () => {
   assert.match(renderer, /MAP_SLOW_LOAD_NOTICE_MS = 15000/);
   assert.match(renderer, /if \(!mapLoaded\) setLoadingSlowly\(true\)/);
-  assert.match(renderer, /MMIPS public locations remain available in the accessible results/);
+  assert.match(renderer, /Public profiles remain available through Search Profiles/);
   assert.match(renderer, /map\.once\("idle", onIdle\)/);
   assert.match(renderer, /data-map-state=\{failure \? "fallback" : loadingSlowly \? "loading-slowly" : "interactive"\}/);
   assert.match(rendererCss, /\.loadingNotice/);
 });
 
-test("map and accessible results use one filtered public point collection without rendering an endless list", () => {
+test("map page is map-first and does not duplicate paginated profile cards", () => {
   assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
-  assert.match(experience, /ACCESSIBLE_PAGE_SIZE = 20/);
-  assert.match(experience, /accessiblePoints\.map\(\(point\)/);
-  assert.doesNotMatch(experience, /profiles\.map\(\(profile\)/);
+  assert.match(experience, /href="\/profiles"/);
+  assert.match(experience, /Prefer a list or need a non-map view\? Search public profiles/);
+  assert.doesNotMatch(experience, /ACCESSIBLE_PAGE_SIZE|accessiblePoints|accessible-map-list|Previous 20|Next 20|Page \{safePage\}/);
+  assert.doesNotMatch(experience, /\.map\(\(point\) => <article/);
   assert.doesNotMatch(page, /getPublishedCases\(\)/);
   assert.match(page, /getPublicMapPoints\(\)/);
-  assert.match(experience, /Previous 20/);
-  assert.match(experience, /Next 20/);
+  assert.match(page, /<h1>MMIPS public map<\/h1>/);
 });
