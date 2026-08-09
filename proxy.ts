@@ -23,7 +23,7 @@ function adminContentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
-function isGlobalGatewayAsset(pathname: string) {
+function isCountryShellAsset(pathname: string) {
   return pathname.startsWith("/_next/") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
@@ -34,7 +34,7 @@ function globalGatewayIsolation(request: NextRequest) {
   if (process.env.MMIPS_SITE_MODE !== "global") return null;
 
   const pathname = request.nextUrl.pathname;
-  if (pathname === "/" || isGlobalGatewayAsset(pathname)) return NextResponse.next();
+  if (pathname === "/" || isCountryShellAsset(pathname)) return NextResponse.next();
 
   // The global gateway intentionally has no country case/search/submission/admin API surface.
   if (pathname.startsWith("/api/")) {
@@ -50,9 +50,33 @@ function globalGatewayIsolation(request: NextRequest) {
   return NextResponse.redirect(gatewayUrl, 307);
 }
 
+function canadaPrelaunchIsolation(request: NextRequest) {
+  if (process.env.MMIPS_SITE_MODE !== "ca") return null;
+
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/" || isCountryShellAsset(pathname)) return NextResponse.next();
+
+  // Canada has no live case database or intake surface yet. Never fall through to
+  // the United States routes merely because both builds share a Git repository.
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "MMIPS Canada is preparing and does not accept or expose case data yet." },
+      { status: 404, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
+  const canadaHome = request.nextUrl.clone();
+  canadaHome.pathname = "/";
+  canadaHome.search = "";
+  return NextResponse.redirect(canadaHome, 307);
+}
+
 export function proxy(request: NextRequest) {
   const globalResponse = globalGatewayIsolation(request);
   if (globalResponse) return globalResponse;
+
+  const canadaResponse = canadaPrelaunchIsolation(request);
+  if (canadaResponse) return canadaResponse;
 
   if (!request.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
 
