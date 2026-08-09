@@ -42,7 +42,7 @@ test("camera and interaction defaults preserve approximate context and page scro
   assert.match(rendererCss, /\.canvas\{height:24rem;width:100%;min-height:24rem\}/);
 });
 
-test("configuration, request, compatible WebGL fallback, and bounded failures fail safely to the list", () => {
+test("configuration, request, compatible WebGL fallback, and hard failures fail safely to the list", () => {
   assert.match(boundary, /styleUrl\.protocol !== "https:"/);
   assert.match(boundary, /origin\.includes\("\*"\)/);
   assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
@@ -51,8 +51,17 @@ test("configuration, request, compatible WebGL fallback, and bounded failures fa
   for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
   assert.match(renderer, /Visual map unavailable\./);
   assert.match(renderer, /Retry visual map/);
-  assert.match(renderer, /MAP_LOAD_TIMEOUT_MS = 12000/);
+  assert.doesNotMatch(renderer, /MAP_LOAD_TIMEOUT_MS|setFailure\("MAP_STYLE_LOAD_FAILED"\)[\s\S]{0,160}setTimeout/);
   assert.doesNotMatch(renderer, /console\.(log|warn|error)\([^\n]*(url|points|geoJson|provider)/i);
+});
+
+test("slow style loading remains non-destructive and gives the user a wait-or-retry choice", () => {
+  assert.match(renderer, /MAP_SLOW_LOAD_NOTICE_MS = 15000/);
+  assert.match(renderer, /if \(!mapLoaded\) setLoadingSlowly\(true\)/);
+  assert.match(renderer, /Map is taking longer than expected to load\./);
+  assert.match(renderer, /You can keep waiting; the map will continue loading, or you can retry it\./);
+  assert.match(renderer, /data-map-state=\{failure \? "fallback" : loadingSlowly \? "loading-slowly" : "interactive"\}/);
+  assert.match(rendererCss, /\.loadingNotice/);
 });
 
 test("map uses filtered points while the complete list uses published profiles", () => {
