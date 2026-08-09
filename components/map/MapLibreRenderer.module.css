@@ -1,6 +1,9 @@
 .frame{position:relative;min-height:24rem;border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
 .canvas{height:24rem;width:100%;min-height:24rem}
 .hiddenCanvas{display:none}
+.loadingNotice{display:flex;gap:1rem;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-top:1px solid var(--border);background:var(--surface);color:var(--text)}
+.loadingNotice p{margin:0;color:var(--text)}
+.loadingNotice button{flex:0 0 auto}
 .fallback{display:grid;gap:1rem;margin:0;padding:2rem;background:var(--surface);color:var(--text)}
 .fallback p{margin:0;color:var(--text)}
 .fallback button{justify-self:start}
@@ -10,4 +13,5 @@
 .frame :global(.maplibregl-ctrl button){min-width:44px;min-height:44px}
 .frame :global(.maplibregl-ctrl-attrib){color:#1f1a16}
 .frame :global(.maplibregl-ctrl-attrib a){color:#4f3512}
+@media(max-width:680px){.loadingNotice{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){.frame *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
