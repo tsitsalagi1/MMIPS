@@ -3,75 +3,74 @@ import { SafetyNotice } from "../../components/SafetyNotice";
 
 export default function HowItWorksPage() {
   return (
-    <main className="container section legal-body">
+    <main className="container section legal-body plain-language-page">
       <h1>How MMIPS works</h1>
-      <p className="lead">
-        MMIPS is a moderated public-awareness and family-support platform. It is built to help families,
-        authorized advocates, Tribal representatives, and official contacts share reviewed submitted information
-        without creating a rumor board or replacing official reporting systems.
-      </p>
+      <p className="lead">MMIPS helps families, authorized advocates, Tribal representatives, and official contacts share reviewed public information safely. Nothing becomes public automatically.</p>
       <SafetyNotice />
 
       <section className="feature-grid">
         <div className="card">
-          <h2>1. Submit for review</h2>
-          <p>Submitted information goes into a private review queue. It does not become public automatically.</p>
+          <h2>1. Send information for review</h2>
+          <p>Your submission goes into a private review queue. The public cannot see it.</p>
         </div>
         <div className="card">
-          <h2>2. Safety check</h2>
-          <p>MMIPS checks for family or authorized-submitter consent, public-source support, safe location wording, and official or family-approved tip contact information.</p>
+          <h2>2. Review for safety</h2>
+          <p>MMIPS checks permission to share, official or public sources, safe location wording, and the correct official contact for tips.</p>
         </div>
         <div className="card">
-          <h2>3. Publish only approved facts</h2>
-          <p>Only approved public fields appear on public profiles. Private submitter information, internal notes, and unsafe details stay private.</p>
+          <h2>3. Publish only approved information</h2>
+          <p>Only reviewed public information appears on a profile. Submitter contact information, internal notes, and unsafe details stay private.</p>
         </div>
         <div className="card">
           <h2>4. Correct or remove</h2>
-          <p>Families and authorized contacts can ask MMIPS to correct, hide, or remove public submitted information.</p>
-          <Link href="/corrections">Request a correction or removal review</Link>
+          <p>Families and authorized contacts can ask MMIPS to correct, hide, or remove public information.</p>
+          <Link href="/corrections">Request a correction or removal</Link>
         </div>
       </section>
 
-      <h2>What MMIPS is not</h2>
-      <p>
-        MMIPS is not law enforcement, an emergency service, a police-reporting system, NamUs, NCIC, Tribal police,
-        BIA MMU, FBI, or a substitute for any official authority. If someone is in immediate danger, call 911 first.
-      </p>
+      <section className="card plain-language-section">
+        <h2>What MMIPS does not do</h2>
+        <p>MMIPS is not law enforcement, an emergency service, or an official reporting system. It does not replace Tribal police, local law enforcement, NamUs, the BIA Missing and Murdered Unit, the FBI, or other official agencies.</p>
+        <p><strong>If someone is in immediate danger, call 911.</strong></p>
+      </section>
 
-      <h2>What happens after information is submitted?</h2>
-      <ol>
-        <li>The submission is saved privately for review.</li>
-        <li>An admin reviews safety, consent, public-source support, and contact information.</li>
-        <li>The admin may approve, reject, request more information, or keep the submission hidden.</li>
-        <li>If approved, MMIPS creates a public profile with limited, approved public information.</li>
-      </ol>
+      <section className="card plain-language-section">
+        <h2>What happens after you submit information?</h2>
+        <ol>
+          <li>MMIPS saves the submission privately.</li>
+          <li>A reviewer checks safety, permission to share, sources, and contact information.</li>
+          <li>The reviewer may approve it, reject it, ask for more information, or keep it private.</li>
+          <li>If approved, MMIPS creates a public profile using only the information cleared for public sharing.</li>
+        </ol>
+      </section>
 
-      <h2>How community alerts work</h2>
-      <p>
-        Community members can subscribe to urgent MMIPS email alerts using a ZIP code and distance preference. Alerts are sent only from moderator-approved public information and direct anyone with information to the official reporting contact listed on the public profile. MMIPS does not collect case tips by email.
-      </p>
-      <div className="button-row">
-        <Link className="button" href="/alerts">Join community alerts</Link>
-        <Link className="button secondary" href="/profiles">Search public profiles</Link>
-      </div>
+      <section className="card plain-language-section">
+        <h2>How community alerts work</h2>
+        <p>Community members can choose a ZIP code and distance for urgent MMIPS email alerts. A moderator must approve an alert before it is sent. Every alert links to the public profile and tells people where official tips should go.</p>
+        <p>MMIPS does not collect investigative tips by email.</p>
+        <div className="button-row">
+          <Link className="button" href="/alerts">Sign up for alerts</Link>
+          <Link className="button secondary" href="/profiles">Search public profiles</Link>
+        </div>
+      </section>
 
-      <h2>Family support and corrections</h2>
-      <p>
-        Family members and authorized contacts can use MMIPS family resources, submit information for review, or request a correction, safety edit, updated official contact, status change, or removal review.
-      </p>
-      <div className="button-row">
-        <Link className="button" href="/resources">Family Resources</Link>
-        <Link className="button secondary" href="/submit">Submit information for review</Link>
-        <Link className="button secondary" href="/corrections">Request correction/removal</Link>
-      </div>
+      <section className="card plain-language-section">
+        <h2>Help for families</h2>
+        <p>Family members and authorized contacts can use Family Resources, send information for review, or ask for a correction, safety change, status update, or removal review.</p>
+        <div className="button-row">
+          <Link className="button" href="/resources">Family Resources</Link>
+          <Link className="button secondary" href="/submit">Submit information for review</Link>
+          <Link className="button secondary" href="/corrections">Request a correction or removal</Link>
+        </div>
+      </section>
 
-      <h2>Contact</h2>
-      <p>
-        General questions: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />
-        Correction/removal requests: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />
-        Legal/privacy notices: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />
-        Case tips: use the official agency or tip contact listed on the public profile. Do not email case tips to MMIPS.
-      </p>
+      <section className="card plain-language-section">
+        <h2>Contact MMIPS</h2>
+        <p>General questions: <a href="mailto:contact@mmips.com">contact@mmips.com</a></p>
+        <p>Corrections or removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a></p>
+        <p>Legal or privacy questions: <a href="mailto:legal@mmips.com">legal@mmips.com</a></p>
+        <p><strong>Case tips:</strong> use the official agency or tip contact on the public profile. Do not email case tips to MMIPS.</p>
+      </section>
     </main>
   );
 }
