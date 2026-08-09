@@ -34,6 +34,9 @@ export const sampleCases: MmipsCase[] = [
   }
 ];
 
+const PUBLIC_CASE_PAGE_SIZE = 500;
+const PUBLIC_CASE_SAFETY_LIMIT = 10000;
+
 function createPublicSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -133,24 +136,48 @@ function mapCase(row: any): MmipsCase {
 
 const PUBLIC_CASE_SELECT = "id, slug, status, profile_type, urgency_level, review_status, public_summary, last_seen_date, last_known_datetime, last_known_time_zone, last_seen_area_public, last_seen_city, last_seen_state, notification_area_requested, likely_travel_mode, possible_direction, vehicle_description, official_info_pending, location_precision, lead_agency, agency_case_number, namus_number, ncic_status, tribe_notified, family_liaison, official_tip_contact, photo_storage_path, photo_alt_text, last_public_update, published_at, persons(id, full_name, age, tribal_affiliation), case_verifications(verification_type, source_label, source_url, is_public), profile_photos(id, storage_path, alt_text, caption, photo_type, use_on_profile, use_on_flyer, is_main, sort_order)";
 
-export async function getPublishedCases(): Promise<MmipsCase[]> {
+export async function getPublishedCases(options: { limit?: number; offset?: number } = {}): Promise<MmipsCase[]> {
   const supabase = createPublicSupabaseClient();
   if (!supabase) return sampleCases;
 
-  const { data, error } = await supabase
-    .from("cases")
-    .select(PUBLIC_CASE_SELECT)
-    .eq("review_status", "approved")
-    .not("published_at", "is", null)
-    .order("published_at", { ascending: false });
+  const requestedLimit = Number.isInteger(options.limit) && Number(options.limit) > 0
+    ? Math.min(Number(options.limit), PUBLIC_CASE_SAFETY_LIMIT)
+    : null;
+  const offset = Number.isInteger(options.offset) && Number(options.offset) >= 0 ? Number(options.offset) : 0;
 
-  if (error) {
-    console.error("Could not load published profiles", { code: error.code });
-    return [];
+  if (requestedLimit) {
+    const { data, error } = await supabase
+      .from("cases")
+      .select(PUBLIC_CASE_SELECT)
+      .eq("review_status", "approved")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: false })
+      .range(offset, offset + requestedLimit - 1);
+    if (error) {
+      console.error("Could not load published profiles", { code: error.code });
+      return [];
+    }
+    return (data || []).map(mapCase);
   }
 
-  if (!data?.length) return [];
-  return data.map(mapCase);
+  const rows: any[] = [];
+  for (let from = offset; from < offset + PUBLIC_CASE_SAFETY_LIMIT; from += PUBLIC_CASE_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("cases")
+      .select(PUBLIC_CASE_SELECT)
+      .eq("review_status", "approved")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: false })
+      .range(from, from + PUBLIC_CASE_PAGE_SIZE - 1);
+    if (error) {
+      console.error("Could not load published profiles", { code: error.code });
+      return [];
+    }
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < PUBLIC_CASE_PAGE_SIZE) break;
+  }
+  return rows.map(mapCase);
 }
 
 export async function getCaseBySlug(slug: string): Promise<MmipsCase | null> {
