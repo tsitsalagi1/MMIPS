@@ -276,14 +276,16 @@ for select using (
 
 -- Column grants prevent exact/private case coordinates, family-liaison details,
 -- affiliation permission flags, and private verification notes from becoming
--- readable merely because a row satisfies an RLS public-read policy.
+-- readable merely because a row satisfies an RLS public-read policy. Release-
+-- state columns used by the security-invoker projection are granted as well;
+-- RLS ensures a public reader can see only rows already satisfying those gates.
 grant select (id, full_name, age, public_notes) on persons to anon, authenticated;
 grant select (
   id, person_id, affiliation_type, preferred_people_or_nation_name,
   preferred_community_name, inuit_region, metis_government_or_community
 ) on person_indigenous_affiliations to anon, authenticated;
 grant select (
-  id, person_id, slug, status, public_summary, last_seen_date,
+  id, person_id, slug, status, review_status, public_summary, last_seen_date,
   last_seen_locality, last_seen_province_territory, last_seen_area_public,
   lead_police_service, official_tip_contact, last_public_update,
   published_at, synthetic
@@ -297,7 +299,7 @@ grant select (
 ) on case_verifications to anon, authenticated;
 grant select (
   id, case_id, public_latitude, public_longitude, public_area_label,
-  province_territory, created_at, updated_at
+  province_territory, moderator_approved, hidden, created_at, updated_at
 ) on public_case_map_points to anon, authenticated;
 grant select (id, case_id, storage_path, alt_text, created_at) on profile_photos to anon, authenticated;
 
