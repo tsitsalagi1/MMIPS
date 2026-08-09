@@ -1,7 +1,14 @@
 import Link from "next/link";
+import { GlobalGateway } from "../components/GlobalGateway";
 import { SafetyNotice } from "../components/SafetyNotice";
+import { mmipsSiteMode } from "../lib/site-mode";
 
 export default function HomePage() {
+  if (mmipsSiteMode() === "global") return <GlobalGateway />;
+  return <UnitedStatesHomePage />;
+}
+
+function UnitedStatesHomePage() {
   return (
     <main>
       <section className="hero calm-hero">
