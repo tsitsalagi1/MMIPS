@@ -1,7 +1,9 @@
 export function SafetyNotice() {
   return (
-    <section className="notice">
-      <strong>Emergency and legal notice:</strong> MMIPS is a public-awareness and family-support resource. It is not law enforcement, it does not collect or investigate tips, it does not replace calling 911, and it does not replace filing a police report, submitting to NamUs, contacting tribal law enforcement, BIA MMU, FBI, or local authorities.
+    <section className="notice safety-notice" aria-label="Important safety information">
+      <strong>Need immediate help?</strong>
+      <p>If someone is in immediate danger, call 911.</p>
+      <p>MMIPS is a public-awareness and family-support resource. It is not law enforcement and it is not a tip line. File official reports with the appropriate Tribal, local, state, or federal agency. NamUs and the BIA Missing and Murdered Unit may also be important official resources.</p>
     </section>
   );
 }
