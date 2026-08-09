@@ -10,11 +10,12 @@ const profilesPage = fs.readFileSync('app/profiles/page.tsx', 'utf8');
 const profilesSearch = fs.readFileSync('components/ProfilesSearch.tsx', 'utf8');
 const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
 
-test('map accessible results are paginated instead of rendering every public profile', () => {
-  assert.match(mapExperience, /ACCESSIBLE_PAGE_SIZE = 20/);
-  assert.match(mapExperience, /Previous 20/);
-  assert.match(mapExperience, /Next 20/);
-  assert.doesNotMatch(mapExperience, /profiles\.map\(/);
+test('map page avoids duplicating paginated profile cards at public scale', () => {
+  assert.match(mapExperience, /href="\/profiles"/);
+  assert.match(mapExperience, /Search public profiles/);
+  assert.match(mapExperience, /Zoom map to a ZIP code/);
+  assert.doesNotMatch(mapExperience, /ACCESSIBLE_PAGE_SIZE|Previous 20|Next 20|accessiblePoints/);
+  assert.doesNotMatch(mapExperience, /\.map\(\(point\) => <article/);
   assert.doesNotMatch(mapPage, /getPublishedCases/);
 });
 
