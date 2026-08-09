@@ -52,7 +52,7 @@ test("Canada prelaunch fails closed instead of falling through to United States 
   assert.match(proxy, /MMIPS_SITE_MODE !== "ca"/);
   assert.match(proxy, /MMIPS Canada is preparing and does not accept or expose case data yet/);
   assert.match(proxy, /canadaHome\.pathname = "\/"/);
-  assert.match(canadaHome, /does not accept case submissions, expose U\.S\. profiles, or connect to the U\.S\. MMIPS database/);
+  assert.match(canadaHome, /does not accept case submissions, expose U\.S\. profiles, or connect to the U\.S\. MMIPS\s+database/);
   assert.doesNotMatch(canadaHome, /NamUs/);
   assert.doesNotMatch(canadaHome, /NCIC/);
   assert.doesNotMatch(canadaHome, /ZIP code/);
