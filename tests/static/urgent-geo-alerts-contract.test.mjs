@@ -59,10 +59,12 @@ test("urgent retries reuse the frozen delivery ledger and summarize persisted de
   assert.match(urgentAlerts, /sent_at: summary\.status === "sent" \? completedAt : null/);
 });
 
-test("ZIP-distance public search uses only approved public map points for geography", () => {
-  assert.match(profileSearch, /getPublishedCases/);
+test("ZIP-distance public search uses only the public projection and approved approximate map points for geography", () => {
+  assert.match(profileSearch, /searchPublicProfileIds/);
+  assert.doesNotMatch(profileSearch, /getPublishedCases/);
   assert.match(profileSearch, /getPublicMapPointsNear/);
+  assert.match(publicMap, /MAP_PROJECTION = "public_map_profile_projection"/);
   assert.match(publicMap, /distanceMiles/);
-  assert.match(publicMap, /loadNearbyPointRows/);
+  assert.match(publicMap, /loadNearbyProjectionRows/);
   assert.doesNotMatch(profileSearch, /last_known_location_private|latitude\s*:\s*item\.latitude|longitude\s*:\s*item\.longitude/);
 });
