@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const INITIAL_PROFILE_LIMIT = 24;
 
 export default async function ProfilesPage() {
-  const profiles = (await getPublishedCases()).slice(0, INITIAL_PROFILE_LIMIT);
+  const profiles = await getPublishedCases({ limit: INITIAL_PROFILE_LIMIT });
 
   return (
     <main className="container section">
