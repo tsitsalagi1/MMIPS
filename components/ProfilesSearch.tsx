@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { CaseCard } from "./CaseCard";
 import type { MmipsCase } from "@/lib/types";
+
+const RESULTS_PER_PAGE = 20;
 
 export default function ProfilesSearch({ initialProfiles }: { initialProfiles: MmipsCase[] }) {
   const [profiles, setProfiles] = useState(initialProfiles);
@@ -11,13 +13,18 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
   const [radiusMiles, setRadiusMiles] = useState("50");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialProfiles.length ? `Showing the ${initialProfiles.length} most recently published profiles. Use search to narrow the list.` : "");
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(profiles.length / RESULTS_PER_PAGE));
+  const safePage = Math.min(page, totalPages);
+  const visibleProfiles = useMemo(() => profiles.slice((safePage - 1) * RESULTS_PER_PAGE, safePage * RESULTS_PER_PAGE), [profiles, safePage]);
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setMessage("");
+    setPage(1);
     try {
       const response = await fetch("/api/profiles/search", {
         method: "POST",
@@ -36,7 +43,7 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
         return;
       }
       setProfiles(Array.isArray(data.profiles) ? data.profiles : []);
-      setMessage(`${Number(data.count || 0)} public profile${Number(data.count || 0) === 1 ? "" : "s"} found.`);
+      setMessage(`${Number(data.count || 0)} public profile${Number(data.count || 0) === 1 ? "" : "s"} found. Results are shown 20 at a time.`);
     } catch {
       setMessage("Search is temporarily unavailable. Please try again.");
     } finally {
@@ -51,7 +58,8 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
     setZip("");
     setRadiusMiles("50");
     setProfiles(initialProfiles);
-    setMessage("");
+    setPage(1);
+    setMessage(initialProfiles.length ? `Showing the ${initialProfiles.length} most recently published profiles. Use search to narrow the list.` : "");
   }
 
   return (
@@ -71,13 +79,13 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
                 <option value="resolved">Resolved</option>
               </select>
             </label>
-            <label>State
-              <input value={state} onChange={(event) => setState(event.target.value)} placeholder="Oklahoma, Arizona, Montana..." />
+            <label>State or province
+              <input value={state} onChange={(event) => setState(event.target.value)} placeholder="Oklahoma, Arizona, Alberta..." />
             </label>
           </div>
           <fieldset className="field-group">
-            <legend>Search near a ZIP code</legend>
-            <p className="field-help">Optional. Enter a ZIP code to find public profiles with an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
+            <legend>Search near a U.S. ZIP code</legend>
+            <p className="field-help">Optional. Enter a U.S. ZIP code to find public profiles with an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
             <div className="check-grid">
               <label>ZIP code
                 <input inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="74464" />
@@ -101,7 +109,14 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
         </form>
       </div>
 
-      {profiles.length ? profiles.map((item) => <CaseCard key={item.id} item={item} />) : (
+      {visibleProfiles.length ? <>
+        {visibleProfiles.map((item) => <CaseCard key={item.id} item={item} />)}
+        {totalPages > 1 ? <nav className="profile-pagination" aria-label="Public profile result pages">
+          <button type="button" className="secondary" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous 20</button>
+          <span>Page {safePage} of {totalPages}</span>
+          <button type="button" className="secondary" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next 20</button>
+        </nav> : null}
+      </> : (
         <div className="card calm-panel" style={{ marginTop: "22px" }}>
           <h2>No matching public profiles.</h2>
           <p className="text-measure">Try fewer search words, a larger distance, or clear one of the filters. ZIP-distance results include only profiles that have an approved public awareness area.</p>
