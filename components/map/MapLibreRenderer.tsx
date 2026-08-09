@@ -33,6 +33,7 @@ interface Props {
   points: PublicMapPoint[];
   onSelect: (publicId: string) => void;
   focusTarget?: MapFocusTarget | null;
+  onFailure?: () => void;
 }
 
 function reportMapFailure(code: MapFailureCode) {
@@ -95,12 +96,13 @@ function createMarkers(map: MapLibreMap, geoJson: PublicMapFeatureCollection, on
   });
 }
 
-export default function MapLibreRenderer({ points, onSelect, focusTarget }: Props) {
+export default function MapLibreRenderer({ points, onSelect, focusTarget, onFailure }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<ActiveMarker[]>([]);
   const clusterCleanupRef = useRef<null | (() => void)>(null);
   const onSelectRef = useRef(onSelect);
+  const onFailureRef = useRef(onFailure);
   const [failure, setFailure] = useState<MapFailureCode | null>(null);
   const [loadingSlowly, setLoadingSlowly] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -108,23 +110,27 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
   const showMapTilerLogo = usesMapTiler(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
 
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+  useEffect(() => { onFailureRef.current = onFailure; }, [onFailure]);
 
   useEffect(() => {
     setFailure(null);
     setLoadingSlowly(false);
+    const fail = (code: MapFailureCode) => {
+      setFailure(code);
+      reportMapFailure(code);
+      onFailureRef.current?.();
+    };
     const configResult = readPublicMapConfig({
       NEXT_PUBLIC_MAP_STYLE_URL: process.env.NEXT_PUBLIC_MAP_STYLE_URL,
       NEXT_PUBLIC_MAP_ATTRIBUTION: process.env.NEXT_PUBLIC_MAP_ATTRIBUTION,
       NEXT_PUBLIC_MAP_ALLOWED_ORIGINS: process.env.NEXT_PUBLIC_MAP_ALLOWED_ORIGINS
     });
     if (!configResult.ok) {
-      setFailure(configResult.code);
-      reportMapFailure(configResult.code);
+      fail(configResult.code);
       return;
     }
     if (!hasUsableWebGL()) {
-      setFailure("MAP_WEBGL_UNAVAILABLE");
-      reportMapFailure("MAP_WEBGL_UNAVAILABLE");
+      fail("MAP_WEBGL_UNAVAILABLE");
       return;
     }
     if (!containerRef.current) return;
@@ -156,8 +162,7 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
         }
       });
     } catch {
-      setFailure("MAP_INITIALIZATION_FAILED");
-      reportMapFailure("MAP_INITIALIZATION_FAILED");
+      fail("MAP_INITIALIZATION_FAILED");
       return;
     }
 
@@ -176,8 +181,7 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
     const onError = () => { if (!mapLoaded) reportMapFailure("MAP_STYLE_LOAD_FAILED"); };
     const onContextLost = (event: Event) => {
       event.preventDefault();
-      setFailure("MAP_CONTEXT_LOST");
-      reportMapFailure("MAP_CONTEXT_LOST");
+      fail("MAP_CONTEXT_LOST");
     };
     const canvas = map.getCanvas();
     map.once("load", onLoad);
@@ -241,11 +245,11 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
     <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Visual map of approved approximate public-awareness areas" />
     {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
     {!failure && loadingSlowly ? <div className={styles.loadingNotice} role="status">
-      <p><strong>Map is taking longer than expected to load.</strong> Search controls remain available while background map tiles continue loading.</p>
+      <p><strong>Map is taking longer than expected to load.</strong> Search controls and the text results view remain available while background map tiles continue loading.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
     {failure ? <div className={styles.fallback} role="status" data-map-failure-code={failure}>
-      <p><strong>Visual map unavailable.</strong> Search controls remain available above.</p>
+      <p><strong>Visual map unavailable.</strong> The same current results are available in the text view on this page.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
   </div>;
