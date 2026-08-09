@@ -11,34 +11,36 @@ export default async function CorrectionRequestPage({
   const error = params?.error;
 
   return (
-    <main className="container section">
+    <main className="container section plain-language-page">
       <h1>Request a correction or removal</h1>
-      <p className="lead">Families, authorized advocates, tribal representatives, and official contacts can ask MMIPS to correct, hide, or remove a public profile.</p>
+      <p className="lead">If a public MMIPS profile is wrong, unsafe, outdated, or should not be public, you can ask us to review it.</p>
       <SafetyNotice />
       <section className="notice">
-        <strong>Safety rule:</strong> use this form for corrections, removal requests, consent questions, unsafe-location concerns, or updated official contact information. Do not submit public suspect accusations or rumors.
+        <strong>Use this form for profile changes.</strong>
+        <p>You can ask for a correction, removal, safer location wording, a consent review, or an updated official contact.</p>
+        <p>Do not use this form for public accusations, rumors, or investigative tips.</p>
       </section>
-      {error ? <div className="notice warning"><strong>Request error:</strong> {error}</div> : null}
+      {error ? <div className="notice warning"><strong>We could not send the request.</strong><p>{error}</p></div> : null}
 
       <form className="card form" action="/api/corrections" method="post">
-        <h2>Public profile information</h2>
+        <h2>Which profile needs review?</h2>
         <div className="check-grid">
-          <label>Public profile URL, slug, or person's name<input name="case_reference" defaultValue={profileSlug} placeholder="/profiles/example-slug or person's name" /></label>
-          <label>Request type
+          <label>Profile link or person's name<input name="case_reference" defaultValue={profileSlug} placeholder="Paste the profile link or enter the person's name" /></label>
+          <label>What do you need?
             <select name="request_type" required>
-              <option value="correction">Correction</option>
-              <option value="removal">Removal / hide request</option>
-              <option value="unsafe_location">Unsafe location concern</option>
-              <option value="consent_question">Consent / authorization concern</option>
-              <option value="updated_tip_contact">Updated official tip contact</option>
-              <option value="other">Other</option>
+              <option value="correction">Correct information</option>
+              <option value="removal">Remove or hide the profile</option>
+              <option value="unsafe_location">Fix an unsafe location</option>
+              <option value="consent_question">Review consent or permission</option>
+              <option value="updated_tip_contact">Update the official tip contact</option>
+              <option value="other">Something else</option>
             </select>
           </label>
         </div>
 
-        <label>What needs to be changed, removed, or reviewed?<textarea name="request_details" required placeholder="Give the correction/removal request. Include only facts needed for review. Do not include private addresses or public accusations."></textarea></label>
+        <label>Tell us what needs to change<textarea name="request_details" required placeholder="Tell us what is wrong, unsafe, outdated, or should be removed. Include only the facts we need to review the request. Do not include private addresses or public accusations."></textarea></label>
 
-        <h2>Your information</h2>
+        <h2>How can we contact you?</h2>
         <div className="check-grid">
           <label>Your name<input name="requester_name" required /></label>
           <label>Your email<input name="requester_email" type="email" required /></label>
@@ -55,12 +57,12 @@ export default async function CorrectionRequestPage({
           <label>Phone, optional<input name="requester_phone" /></label>
         </div>
 
-        <h2>Required confirmations</h2>
-        <label className="checkbox"><input type="checkbox" required name="confirm_good_faith" /> I am submitting this request in good faith for safety, privacy, accuracy, consent, or official-contact reasons.</label>
-        <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I have not included public suspect accusations, rumors, private addresses, graphic details, or information that could endanger the person/family/investigation.</label>
-        <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may contact me for verification and may delay, reject, or partially apply requests for safety, privacy, accuracy, or legal reasons.</label>
+        <h2>Before you send this request</h2>
+        <label className="checkbox"><input type="checkbox" required name="confirm_good_faith" /> I am making this request in good faith to protect safety, privacy, accuracy, consent, or official contact information.</label>
+        <label className="checkbox"><input type="checkbox" required name="confirm_no_rumors" /> I did not include public accusations, rumors, private addresses, graphic details, or information that could put someone at risk.</label>
+        <label className="checkbox"><input type="checkbox" required name="confirm_review" /> I understand MMIPS may contact me to verify the request before making a public change.</label>
         <TurnstileWidget action="correction_request" />
-        <button type="submit">Send correction/removal request</button>
+        <button type="submit">Send correction or removal request</button>
       </form>
     </main>
   );
