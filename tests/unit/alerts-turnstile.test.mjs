@@ -14,6 +14,7 @@ test('Turnstile hostname resolver pins canonical production domains and requires
     process.env[TURNSTILE_HOSTNAME_KEY_NAME] = 'preview.example.test';
     assert.equal(expectedTurnstileHostname(new Request('https://mmips.com/api/submissions')), 'mmips.com');
     assert.equal(expectedTurnstileHostname(new Request('https://www.mmips.com/api/corrections')), 'www.mmips.com');
+    assert.equal(expectedTurnstileHostname(new Request('https://us.mmips.com/api/submissions')), 'us.mmips.com');
     assert.equal(expectedTurnstileHostname(new Request('https://preview.example.test/api/submissions')), 'preview.example.test');
     delete process.env[TURNSTILE_HOSTNAME_KEY_NAME];
     assert.equal(expectedTurnstileHostname(new Request('https://preview.example.test/api/submissions')), undefined);

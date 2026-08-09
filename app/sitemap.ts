@@ -1,7 +1,14 @@
 import type { MetadataRoute } from "next";
+import { mmipsSiteMode } from "../lib/site-mode";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const isGlobal = mmipsSiteMode() === "global";
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com").replace(/\/$/, "");
+
+  if (isGlobal) {
+    return [{ url: base, changeFrequency: "weekly", priority: 1 }];
+  }
+
   const paths = [
     "",
     "/profiles",

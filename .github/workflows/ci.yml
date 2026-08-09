@@ -34,8 +34,16 @@ jobs:
         run: npm run test:contract
       - name: Security unit and contract tests
         run: npm run test:security
-      - name: Production build
+      - name: United States production build
         run: npm run build
+      - name: Global gateway production build without country database credentials
+        env:
+          MMIPS_SITE_MODE: global
+          NEXT_PUBLIC_SITE_URL: https://mmips.com
+          NEXT_PUBLIC_US_SITE_URL: https://us.mmips.com
+        run: |
+          rm -rf .next
+          npm run build
       - name: Public smoke checks without browser automation
         run: npm run test:smoke
       - name: Static accessibility baseline checks

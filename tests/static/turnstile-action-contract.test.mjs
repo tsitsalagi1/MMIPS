@@ -25,9 +25,11 @@ test('correction server validates the matching Turnstile action and hostname', (
   assert.match(correctionRoute, /expectedHostname: expectedTurnstileHostname\(request\)/);
 });
 
-test('canonical production hostname derives from the actual request and noncanonical hosts require configuration', () => {
-  assert.match(turnstile, /requestHostname === "mmips\.com"/);
-  assert.match(turnstile, /requestHostname === "www\.mmips\.com"/);
+test('canonical production hostnames include the U.S. country portal and noncanonical hosts require configuration', () => {
+  assert.match(turnstile, /"mmips\.com"/);
+  assert.match(turnstile, /"www\.mmips\.com"/);
+  assert.match(turnstile, /"us\.mmips\.com"/);
+  assert.match(turnstile, /includes\(requestHostname\)/);
   assert.match(turnstile, /TURNSTILE_EXPECTED_HOSTNAME/);
   assert.match(turnstile, /turnstile_expected_hostname_missing/);
 });

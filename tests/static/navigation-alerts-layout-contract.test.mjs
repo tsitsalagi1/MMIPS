@@ -7,10 +7,17 @@ const alertsPage = fs.readFileSync("app/alerts/page.tsx", "utf8");
 const theme = fs.readFileSync("app/theme-overrides.css", "utf8");
 const readability = fs.readFileSync("app/readability-overrides.css", "utf8");
 
-test("public navigation prioritizes How It Works, Profiles, Alerts, Family Resources, then Submit", () => {
-  const navStart = layout.indexOf('<div className="nav-links">');
+function unitedStatesNav() {
+  const headerStart = layout.indexOf("function UnitedStatesHeader()");
+  assert.ok(headerStart >= 0, "United States header should exist");
+  const navStart = layout.indexOf('<div className="nav-links">', headerStart);
   const navEnd = layout.indexOf('</div>', navStart);
-  const nav = layout.slice(navStart, navEnd);
+  assert.ok(navStart >= headerStart && navEnd > navStart, "United States navigation should exist");
+  return layout.slice(navStart, navEnd);
+}
+
+test("United States public navigation prioritizes How It Works, Profiles, Alerts, Family Resources, then Submit", () => {
+  const nav = unitedStatesNav();
   const ordered = [
     '<Link href="/how-it-works">How it works</Link>',
     '<Link href="/profiles">Search Profiles</Link>',
@@ -24,6 +31,7 @@ test("public navigation prioritizes How It Works, Profiles, Alerts, Family Resou
     assert.ok(index > previous, `${item} should appear in requested order`);
     previous = index;
   }
+  assert.match(nav, /United States · Change country/);
   assert.equal(nav.includes('<Link href="/map">'), false);
   assert.equal(nav.includes('<Link href="/corrections">'), false);
 });

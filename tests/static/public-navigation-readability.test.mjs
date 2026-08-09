@@ -8,10 +8,17 @@ const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
 const profilesSearch = fs.readFileSync('components/ProfilesSearch.tsx', 'utf8');
 const caseCard = fs.readFileSync('components/CaseCard.tsx', 'utf8');
 
-test('top navigation uses the public-first MMIPS order without a separate Map link', () => {
-  const navStart = layout.indexOf('<div className="nav-links">');
+function unitedStatesNav() {
+  const headerStart = layout.indexOf('function UnitedStatesHeader()');
+  assert.ok(headerStart >= 0, 'United States header should exist');
+  const navStart = layout.indexOf('<div className="nav-links">', headerStart);
   const navEnd = layout.indexOf('</div>', navStart);
-  const nav = layout.slice(navStart, navEnd);
+  assert.ok(navStart >= headerStart && navEnd > navStart, 'United States navigation should exist');
+  return layout.slice(navStart, navEnd);
+}
+
+test('United States top navigation uses the public-first MMIPS order without a separate Map link', () => {
+  const nav = unitedStatesNav();
   const expected = [
     'href="/how-it-works">How it works',
     'href="/profiles">Search Profiles',
@@ -25,15 +32,16 @@ test('top navigation uses the public-first MMIPS order without a separate Map li
     assert.ok(index > previous, `${item} should appear in the requested order`);
     previous = index;
   }
+  assert.match(nav, /United States · Change country/);
   assert.equal(nav.includes('href="/map"'), false);
   assert.equal(nav.includes('href="/corrections"'), false);
 });
 
-test('corrections stays available in footer and How It Works while Map is removed from navigation', () => {
+test('corrections stays available in the U.S. footer and How It Works while Map is removed from navigation', () => {
   assert.match(layout, /href="\/corrections">Correction\/removal requests/);
   assert.match(howItWorks, /href="\/corrections"/);
-  assert.doesNotMatch(layout, /href="\/map"/);
-  assert.match(layout, /href="\/resources">Family Resources/);
+  assert.doesNotMatch(unitedStatesNav(), /href="\/map"/);
+  assert.match(unitedStatesNav(), /href="\/resources">Family Resources/);
 });
 
 test('helper and placeholder text are forced to readable warm neutral colors', () => {
