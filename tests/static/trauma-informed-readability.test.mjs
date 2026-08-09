@@ -13,8 +13,10 @@ const css = fs.readFileSync('app/readability-overrides.css', 'utf8');
 test('alerts use plain required-field guidance without visible asterisk markers', () => {
   assert.doesNotMatch(alerts, /aria-hidden="true">\*<\/span>/);
   assert.match(alerts, /Email and ZIP code are required/);
-  assert.match(alerts, /id="alert-email"[^>]+required/);
-  assert.match(alerts, /id="alert-zip"[^>]+required/);
+  assert.match(alerts, /id="alert-email"/);
+  assert.match(alerts, /id="alert-zip"/);
+  assert.match(alerts, /required autoComplete="email"/);
+  assert.match(alerts, /required aria-describedby="alert-zip-help"/);
   assert.match(alerts, /We use this to match nearby alerts, not to find your home address/);
 });
 
