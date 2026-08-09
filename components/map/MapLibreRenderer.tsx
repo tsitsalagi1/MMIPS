@@ -22,9 +22,17 @@ type ActiveMarker = {
   clickHandler: () => void;
 };
 
+export type MapFocusTarget = {
+  latitude: number;
+  longitude: number;
+  zoom?: number;
+  requestId: number;
+};
+
 interface Props {
   points: PublicMapPoint[];
   onSelect: (publicId: string) => void;
+  focusTarget?: MapFocusTarget | null;
 }
 
 function reportMapFailure(code: MapFailureCode) {
@@ -87,7 +95,7 @@ function createMarkers(map: MapLibreMap, geoJson: PublicMapFeatureCollection, on
   });
 }
 
-export default function MapLibreRenderer({ points, onSelect }: Props) {
+export default function MapLibreRenderer({ points, onSelect, focusTarget }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<ActiveMarker[]>([]);
@@ -209,7 +217,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     } else {
       markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
     }
-    updateMapCamera(map, geoJson);
+    if (!focusTarget) updateMapCamera(map, geoJson);
 
     return () => {
       clearMarkers(markersRef.current);
@@ -217,17 +225,27 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
       clusterCleanupRef.current?.();
       clusterCleanupRef.current = null;
     };
-  }, [geoJson, attempt]);
+  }, [geoJson, focusTarget, attempt]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusTarget) return;
+    map.flyTo({
+      center: [focusTarget.longitude, focusTarget.latitude],
+      zoom: focusTarget.zoom ?? 9,
+      duration: 0
+    });
+  }, [focusTarget, attempt]);
 
   return <div className={styles.frame} data-map-state={failure ? "fallback" : loadingSlowly ? "loading-slowly" : "interactive"} data-point-mode={points.length > CLUSTER_THRESHOLD ? "clustered" : "markers"}>
     <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Optional visual map of approved approximate public-awareness areas" />
     {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
     {!failure && loadingSlowly ? <div className={styles.loadingNotice} role="status">
-      <p><strong>Map is taking longer than expected to load.</strong> MMIPS public locations remain available in the accessible results while background map tiles continue loading.</p>
+      <p><strong>Map is taking longer than expected to load.</strong> Public profiles remain available through Search Profiles while background map tiles continue loading.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
     {failure ? <div className={styles.fallback} role="status" data-map-failure-code={failure}>
-      <p><strong>Visual map unavailable.</strong> The accessible public profile results remain available below.</p>
+      <p><strong>Visual map unavailable.</strong> Use Search Profiles to browse public profiles without the map.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
   </div>;

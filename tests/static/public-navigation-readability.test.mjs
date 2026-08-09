@@ -6,6 +6,7 @@ const layout = fs.readFileSync('app/layout.tsx', 'utf8');
 const howItWorks = fs.readFileSync('app/how-it-works/page.tsx', 'utf8');
 const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
 const mapStyles = fs.readFileSync('components/map/PublicMapExperience.module.css', 'utf8');
+const mapExperience = fs.readFileSync('components/map/PublicMapExperience.tsx', 'utf8');
 const caseCard = fs.readFileSync('components/CaseCard.tsx', 'utf8');
 
 test('top navigation follows the public-first MMIPS order with Map between Alerts and Family Resources', () => {
@@ -47,9 +48,10 @@ test('helper and placeholder text are forced to readable warm neutral colors', (
   assert.doesNotMatch(readability, /#[0-9a-f]{0,2}46748d/i);
 });
 
-test('map selection and accessible-list cards stay on dark MMIPS surfaces', () => {
+test('map ZIP controls and selected-profile summary stay on MMIPS surfaces', () => {
+  assert.match(mapStyles, /\.zipSearch\{[^}]*background:var\(--surface\)/);
   assert.match(mapStyles, /\.selection\{[^}]*background:var\(--surface-2,var\(--surface\)\)/);
-  assert.match(mapStyles, /\.item\{[^}]*background:var\(--surface\)/);
+  assert.match(mapExperience, /Prefer a list or need a non-map view\? Search public profiles/);
   assert.doesNotMatch(mapStyles, /background:#fff(?:fff)?\b/i);
 });
 
