@@ -4,6 +4,7 @@ import AdminMfaPanel from "./AdminMfaPanel";
 import AdminOfficialSourceDrafts from "./AdminOfficialSourceDrafts";
 import AdminMapPoints from "./AdminMapPoints";
 import AdminUrgentAlerts from "./AdminUrgentAlerts";
+import AdminSyntheticScale from "./AdminSyntheticScale";
 
 export const metadata: Metadata = { robots: { index: false, follow: false, noarchive: true } };
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default function AdminPage() {
       <AdminOfficialSourceDrafts />
       <AdminMapPoints />
       <AdminUrgentAlerts />
+      <AdminSyntheticScale />
     </>
   );
 }
