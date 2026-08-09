@@ -112,7 +112,7 @@ create table case_verifications (
   verification_type text not null,
   source_label text,
   source_url text,
-  notes text,
+  private_notes text,
   is_public boolean not null default false
 );
 
@@ -196,17 +196,14 @@ alter table cases force row level security;
 alter table public_case_map_points force row level security;
 alter table alert_subscribers force row level security;
 
--- There are intentionally NO anonymous insert policies. Real family/case intake
--- stays fail-closed until the Canadian release gate is explicitly implemented.
+-- Start from explicit least privilege. There are intentionally NO anonymous
+-- insert/update/delete grants or policies while Canadian real intake is locked.
+revoke all on persons, person_indigenous_affiliations, submissions,
+  submission_indigenous_affiliations, cases, official_case_references,
+  case_verifications, public_case_map_points, profile_photos,
+  correction_requests, alert_subscribers, audit_log
+from anon, authenticated;
 
-create policy public_read_published_cases on cases
-for select using (review_status = 'approved' and published_at is not null and hidden is distinct from true);
-
--- `cases` has no `hidden` column by design; public hiding is controlled through
--- publication state and the map-point hidden flag. Replace the policy above with
--- the final release policy before executing this schema in production.
-
-drop policy if exists public_read_published_cases on cases;
 create policy public_read_published_cases on cases
 for select using (review_status = 'approved' and published_at is not null);
 
@@ -276,6 +273,33 @@ for select using (
       and c.published_at is not null
   )
 );
+
+-- Column grants prevent exact/private case coordinates, family-liaison details,
+-- affiliation permission flags, and private verification notes from becoming
+-- readable merely because a row satisfies an RLS public-read policy.
+grant select (id, full_name, age, public_notes) on persons to anon, authenticated;
+grant select (
+  id, person_id, affiliation_type, preferred_people_or_nation_name,
+  preferred_community_name, inuit_region, metis_government_or_community
+) on person_indigenous_affiliations to anon, authenticated;
+grant select (
+  id, person_id, slug, status, public_summary, last_seen_date,
+  last_seen_locality, last_seen_province_territory, last_seen_area_public,
+  lead_police_service, official_tip_contact, last_public_update,
+  published_at, synthetic
+) on cases to anon, authenticated;
+grant select (
+  id, case_id, reference_type, agency_or_registry_name,
+  reference_number, source_url, created_at
+) on official_case_references to anon, authenticated;
+grant select (
+  id, case_id, created_at, verification_type, source_label, source_url
+) on case_verifications to anon, authenticated;
+grant select (
+  id, case_id, public_latitude, public_longitude, public_area_label,
+  province_territory, created_at, updated_at
+) on public_case_map_points to anon, authenticated;
+grant select (id, case_id, storage_path, alt_text, created_at) on profile_photos to anon, authenticated;
 
 create or replace view public_case_map_projection
 with (security_invoker = true)
