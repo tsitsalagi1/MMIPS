@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPublishedCases } from "@/lib/cases";
-import { getPublicMapPointsNear } from "@/lib/public-map";
+import { getPublicMapPointsNear, searchPublicProfileIds } from "@/lib/public-map";
 import { lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
 
 export const dynamic = "force-dynamic";
-
-function includesText(value: unknown, query: string) {
-  return typeof value === "string" && value.toLowerCase().includes(query);
-}
 
 export async function POST(request: NextRequest) {
   let body: { q?: unknown; status?: unknown; state?: unknown; zip?: unknown; radiusMiles?: unknown };
@@ -19,15 +14,13 @@ export async function POST(request: NextRequest) {
   const zipInput = typeof body.zip === "string" ? body.zip.trim() : "";
   const radiusInput = body.radiusMiles;
 
-  let profiles = await getPublishedCases();
-  let mapFocus: { latitude: number; longitude: number; zoom: number } | null = null;
-
-  if (q) {
-    profiles = profiles.filter((item) => [item.fullName, item.tribalAffiliation, item.lastSeenLocation, item.leadAgency, item.namusNumber]
-      .some((value) => includesText(value, q)));
+  const searchResult = await searchPublicProfileIds({ q, status, state });
+  if (searchResult.availability !== "available") {
+    return NextResponse.json({ ok: false, message: "Public profile search is temporarily unavailable. Please try again." }, { status: 503 });
   }
-  if (status !== "all") profiles = profiles.filter((item) => item.status === status);
-  if (state) profiles = profiles.filter((item) => includesText(item.lastSeenLocation, state));
+
+  let matchingIds = searchResult.ids;
+  let mapFocus: { latitude: number; longitude: number; zoom: number } | null = null;
 
   if (zipInput || radiusInput !== undefined) {
     const zip = normalizeZip(zipInput);
@@ -39,12 +32,12 @@ export async function POST(request: NextRequest) {
     const mapResult = await getPublicMapPointsNear(zcta.latitude, zcta.longitude, radiusMiles);
     if (mapResult.availability !== "available") return NextResponse.json({ ok: false, message: "ZIP-distance search is temporarily unavailable. You can still search by name, status, Tribe, agency, or state." }, { status: 503 });
     const nearbyCaseIds = new Set(mapResult.points.map((point) => point.caseId));
-    profiles = profiles.filter((item) => nearbyCaseIds.has(item.id));
+    matchingIds = matchingIds.filter((id) => nearbyCaseIds.has(id));
     mapFocus = { latitude: zcta.latitude, longitude: zcta.longitude, zoom: radiusMiles <= 25 ? 9 : radiusMiles <= 100 ? 7 : 5 };
   }
 
   return NextResponse.json(
-    { ok: true, count: profiles.length, profiles, mapFocus },
+    { ok: true, count: matchingIds.length, profiles: matchingIds.map((id) => ({ id })), mapFocus },
     { headers: { "Cache-Control": "private, no-store" } }
   );
 }

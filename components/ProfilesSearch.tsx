@@ -8,6 +8,7 @@ import { mapCategoryLabel } from "@/lib/status";
 import type { MapFocusTarget } from "./map/MapLibreRenderer";
 
 const MapLibreRenderer = dynamic(() => import("./map/MapLibreRenderer"), { ssr: false });
+const TEXT_RESULTS_PAGE_SIZE = 50;
 
 type SearchProfile = { id: string };
 type SearchResponse = {
@@ -23,6 +24,10 @@ type MapDataResponse = {
   points?: PublicMapPoint[];
 };
 
+function isSyntheticPoint(point: PublicMapPoint) {
+  return point.slug.startsWith("mmips-test-scale-") || point.slug.startsWith("mmips-test-");
+}
+
 export default function ProfilesSearch() {
   const [allPoints, setAllPoints] = useState<PublicMapPoint[]>([]);
   const [visiblePoints, setVisiblePoints] = useState<PublicMapPoint[]>([]);
@@ -37,15 +42,22 @@ export default function ProfilesSearch() {
   const [radiusMiles, setRadiusMiles] = useState("50");
   const [message, setMessage] = useState("Loading the national public map…");
   const [loading, setLoading] = useState(false);
+  const [textViewOpen, setTextViewOpen] = useState(false);
+  const [textPage, setTextPage] = useState(0);
 
   const selected = useMemo(
     () => visiblePoints.find((point) => point.caseId === selectedId) ?? null,
     [visiblePoints, selectedId]
   );
-  const hasSyntheticScaleData = useMemo(
-    () => allPoints.some((point) => point.slug.startsWith("mmips-test-scale-") || point.slug.startsWith("mmips-test-")),
-    [allPoints]
+  const syntheticCount = useMemo(() => allPoints.filter(isSyntheticPoint).length, [allPoints]);
+  const visibleSyntheticCount = useMemo(() => visiblePoints.filter(isSyntheticPoint).length, [visiblePoints]);
+  const textPageCount = Math.max(1, Math.ceil(visiblePoints.length / TEXT_RESULTS_PAGE_SIZE));
+  const textResults = useMemo(
+    () => visiblePoints.slice(textPage * TEXT_RESULTS_PAGE_SIZE, (textPage + 1) * TEXT_RESULTS_PAGE_SIZE),
+    [visiblePoints, textPage]
   );
+
+  useEffect(() => { setTextPage(0); }, [visiblePoints]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +80,7 @@ export default function ProfilesSearch() {
       } catch {
         if (cancelled) return;
         setMapAvailability("error");
+        setTextViewOpen(true);
         setMessage("Public map information is temporarily unavailable. Please try again later.");
       } finally {
         if (!cancelled) setMapLoading(false);
@@ -190,21 +203,52 @@ export default function ProfilesSearch() {
 
       <section className="card" aria-labelledby="national-map-heading" style={{ marginTop: "22px" }}>
         <h2 id="national-map-heading">National MMIPS public profile map</h2>
-        <p className="text-measure">The map begins with every approved public-awareness point available to MMIPS so people can see how widely cases affect Indigenous communities. Nearby points are grouped into numbered clusters; select a cluster to zoom in.</p>
+        <p className="text-measure">The map begins with every approved public-awareness point available to MMIPS so people can see the full public dataset. Nearby points are grouped into numbered clusters; select a cluster to zoom in.</p>
         <p className="text-measure"><strong>Map context:</strong> MMIPS is a public-awareness resource, not a complete statistical census. Cluster totals are counts of approved MMIPS public profiles in that area, not population-adjusted rates.</p>
-        {hasSyntheticScaleData ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA IS PRESENT.</strong> Test clusters are for load testing and must not be interpreted as real case prevalence.</p> : null}
+        {syntheticCount > 0 ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA IS PRESENT.</strong> {syntheticCount.toLocaleString()} of {allPoints.length.toLocaleString()} currently loaded map points are synthetic test records. They remain visible for full-scale testing and must not be interpreted as real case prevalence.</p> : null}
         {mapAvailability === "unconfigured" ? <p className="status-message">Public map data is not configured.</p> : null}
         {mapAvailability === "error" ? <p className="status-message">Public map information is temporarily unavailable.</p> : null}
-        <MapLibreRenderer points={visiblePoints} onSelect={setSelectedId} focusTarget={mapFocus} />
+
+        <div className="button-row" style={{ marginBottom: "14px" }}>
+          <button
+            type="button"
+            className="secondary"
+            aria-expanded={textViewOpen}
+            aria-controls="public-map-text-results"
+            onClick={() => setTextViewOpen((value) => !value)}
+          >
+            {textViewOpen ? "Hide text results" : `View all ${visiblePoints.length.toLocaleString()} current results as text`}
+          </button>
+        </div>
+
+        <MapLibreRenderer points={visiblePoints} onSelect={setSelectedId} focusTarget={mapFocus} onFailure={() => setTextViewOpen(true)} />
         <div className="card calm-panel" style={{ marginTop: "16px" }} aria-live="polite" aria-atomic="true">
           {selected ? <>
             <h3>Selected public profile</h3>
-            {selected.slug.startsWith("mmips-test-") ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — Not a real person or real case.</p> : null}
+            {isSyntheticPoint(selected) ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — Not a real person or real case.</p> : null}
             <p><strong>{selected.publicName}</strong> · {mapCategoryLabel(selected.profileType, selected.publicStatus)}</p>
             <p>{selected.publicMapLabel}. Approximate public-awareness area; not an exact location.</p>
             <Link href={`/profiles/${selected.slug}`}>Open selected public profile</Link>
           </> : visiblePoints.length === 0 && !mapLoading ? <p>No approved map points match the current search. Change or reset the search to see other areas.</p> : <p>Select a map point to see its public profile summary here.</p>}
         </div>
+
+        {textViewOpen ? <section id="public-map-text-results" className="card calm-panel stack" aria-labelledby="public-map-text-heading" style={{ marginTop: "16px" }}>
+          <h3 id="public-map-text-heading">Current map results as text</h3>
+          <p>{visiblePoints.length.toLocaleString()} approved public map point{visiblePoints.length === 1 ? "" : "s"}. {visibleSyntheticCount > 0 ? `${visibleSyntheticCount.toLocaleString()} are clearly labeled synthetic test records.` : ""}</p>
+          {textResults.length ? <ol start={textPage * TEXT_RESULTS_PAGE_SIZE + 1}>
+            {textResults.map((point) => <li key={point.caseId} style={{ marginBottom: "12px" }}>
+              <Link href={`/profiles/${point.slug}`}><strong>{point.publicName}</strong></Link>
+              {isSyntheticPoint(point) ? <> — <strong>SYNTHETIC TEST DATA</strong></> : null}
+              <br />
+              {mapCategoryLabel(point.profileType, point.publicStatus)} · {point.publicMapLabel}. Approximate public-awareness area; not an exact location.
+            </li>)}
+          </ol> : <p>No approved public map points match the current search.</p>}
+          {visiblePoints.length > TEXT_RESULTS_PAGE_SIZE ? <div className="button-row" aria-label="Text result pages">
+            <button type="button" className="secondary" onClick={() => setTextPage((page) => Math.max(0, page - 1))} disabled={textPage === 0}>Previous results</button>
+            <span>Page {textPage + 1} of {textPageCount}</span>
+            <button type="button" className="secondary" onClick={() => setTextPage((page) => Math.min(textPageCount - 1, page + 1))} disabled={textPage >= textPageCount - 1}>Next results</button>
+          </div> : null}
+        </section> : null}
       </section>
     </section>
   );

@@ -57,16 +57,16 @@ export async function requireAdmin(request: Request) {
     };
   }
 
-  const hasVerifiedMfa = Boolean(data.user.factors?.some((factor) => factor.status === "verified"));
-  if (hasVerifiedMfa) {
-    const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
-    const aal = claimData?.claims?.aal;
-    if (claimError || aal !== "aal2") {
-      return {
-        ok: false as const,
-        response: NextResponse.json({ ok: false, code: "admin_mfa_required", message: "Authenticator verification is required for this admin account." }, { status: 403 })
-      };
-    }
+  // Every privileged MMIPS admin API request requires an AAL2 access token.
+  // MFA enrollment/challenge happens through Supabase Auth in the admin client UI,
+  // outside this service-role authorization boundary.
+  const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
+  const aal = claimData?.claims?.aal;
+  if (claimError || aal !== "aal2") {
+    return {
+      ok: false as const,
+      response: NextResponse.json({ ok: false, code: "admin_mfa_required", message: "Authenticator verification is required before using MMIPS admin actions." }, { status: 403 })
+    };
   }
 
   return { ok: true as const, supabase, user: data.user, email };

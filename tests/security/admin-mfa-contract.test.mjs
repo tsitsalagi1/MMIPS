@@ -6,11 +6,13 @@ const adminBoundary = fs.readFileSync("lib/supabase/admin.ts", "utf8");
 const panel = fs.readFileSync("app/admin/AdminMfaPanel.tsx", "utf8");
 const page = fs.readFileSync("app/admin/page.tsx", "utf8");
 
-test("admin API boundary requires AAL2 whenever the account has a verified MFA factor", () => {
-  assert.match(adminBoundary, /factors\?\.some\(\(factor\) => factor\.status === "verified"\)/);
+test("admin API boundary always requires AAL2 after allowlist authorization", () => {
   assert.match(adminBoundary, /auth\.getClaims\(token\)/);
   assert.match(adminBoundary, /aal !== "aal2"/);
   assert.match(adminBoundary, /admin_mfa_required/);
+  assert.match(adminBoundary, /Every privileged MMIPS admin API request requires an AAL2 access token/);
+  assert.doesNotMatch(adminBoundary, /if \(hasVerifiedMfa\)/);
+  assert.doesNotMatch(adminBoundary, /factors\?\.some/);
 });
 
 test("admin access-denied audit does not persist the denied email address", () => {
@@ -29,7 +31,9 @@ test("admin page provides TOTP enrollment and challenge-and-verify flow", () => 
   assert.match(page, /AdminMfaPanel/);
 });
 
-test("MFA UI warns operators not to expose the enrollment secret", () => {
+test("MFA UI makes clear that password-only sessions cannot use protected admin actions", () => {
+  assert.match(panel, /Password sign-in alone cannot use protected MMIPS administration/);
+  assert.match(panel, /Authenticator setup is required for admin actions/);
   assert.match(panel, /Treat it like a password and do not share or save it in screenshots/);
   assert.match(panel, /MFA verified for this admin session/);
 });
