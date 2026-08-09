@@ -35,9 +35,12 @@ test("national and nearby loaders page until exhaustion instead of silently trun
   assert.doesNotMatch(loader, /MAP_POINT_SAFETY_LIMIT|LOCAL_MAP_POINT_LIMIT|\.limit\(LOCAL_MAP_POINT_LIMIT\)/);
 });
 
-test("public map omits photos and private coordinates", () => {
+test("public projection selects omit photos and private coordinate fields while precision denylist remains explicit", () => {
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
-  assert.doesNotMatch(loader, /exact_address|raw_last_known_coordinate/);
+  const mapSelect = loader.match(/const MAP_POINT_SELECT = "([^"]+)"/)?.[1] || "";
+  const searchSelect = loader.match(/const SEARCH_PROJECTION_SELECT = "([^"]+)"/)?.[1] || "";
+  assert.doesNotMatch(mapSelect + searchSelect, /exact_address|raw_last_known_coordinate|last_known_location_private|latitude\b(?!.*public_latitude)|longitude\b(?!.*public_longitude)/);
+  assert.match(loader, /FORBIDDEN_PRECISIONS[\s\S]*raw_last_known_coordinate/);
 });
 
 test("Search Profiles owns the public map and provides a complete text alternative", () => {
