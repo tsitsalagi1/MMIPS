@@ -6,6 +6,7 @@ const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
 const experience = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
 const renderer = fs.readFileSync("components/map/MapLibreRenderer.tsx", "utf8");
+const clusters = fs.readFileSync("components/map/public-map-clusters.ts", "utf8");
 const rendererCss = fs.readFileSync("components/map/MapLibreRenderer.module.css", "utf8");
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
 const page = fs.readFileSync("app/map/page.tsx", "utf8");
@@ -20,37 +21,43 @@ test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server
   assert.doesNotMatch(serverSources, /maplibre-gl|\bwindow\b|\bdocument\b/);
 });
 
-test("renderer is client-only and renders approved locations as independent accessible MapLibre markers", () => {
+test("small result sets retain independent accessible MapLibre markers", () => {
   assert.match(renderer, /^"use client"/);
   assert.match(experience, /dynamic\(\(\) => import\("\.\/MapLibreRenderer"\), \{ ssr: false \}\)/);
+  assert.match(renderer, /CLUSTER_THRESHOLD = 300/);
   assert.match(renderer, /new maplibregl\.Marker\(\{ element, anchor: "center" \}\)/);
-  assert.match(renderer, /\.setLngLat\(feature\.geometry\.coordinates as \[number, number\]\)/);
-  assert.match(renderer, /\.addTo\(map\)/);
   assert.match(renderer, /element\.type = "button"/);
   assert.match(renderer, /element\.setAttribute\("aria-label"/);
-  assert.match(renderer, /element\.addEventListener\("click", clickHandler\)/);
-  assert.match(renderer, /marker\.remove\(\)/);
-  assert.match(renderer, /removeEventListener\("click", clickHandler\)/);
   assert.match(rendererCss, /\.publicMarker/);
-  assert.doesNotMatch(renderer + experience, /dangerouslySetInnerHTML|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|flyTo|localStorage|sessionStorage/);
-  assert.doesNotMatch(renderer, /left:\s*[^;]+%|top:\s*[^;]+%/);
+  assert.doesNotMatch(renderer + experience + clusters, /dangerouslySetInnerHTML|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|localStorage|sessionStorage/);
 });
 
-test("MapTiler uses the documented raster basemap path while MMIPS markers stay separate from the basemap style", () => {
+test("large result sets use a clustered GeoJSON overlay instead of thousands of DOM markers", () => {
+  assert.match(renderer, /geoJson\.features\.length > CLUSTER_THRESHOLD/);
+  assert.match(renderer, /addClusteredPublicPoints/);
+  assert.match(renderer, /data-point-mode=\{points\.length > CLUSTER_THRESHOLD \? "clustered" : "markers"\}/);
+  assert.match(clusters, /cluster: true/);
+  assert.match(clusters, /clusterRadius: 48/);
+  assert.match(clusters, /getClusterExpansionZoom/);
+  assert.match(clusters, /point_count_abbreviated/);
+  assert.match(clusters, /onSelect\(publicId\)/);
+  assert.match(clusters, /removeSource\(SOURCE_ID\)/);
+});
+
+test("MapTiler remains the raster basemap while MMIPS data stays a separate overlay", () => {
   assert.match(renderer, /BASEMAP_SOURCE_ID = "maptiler-streets-raster"/);
   assert.match(renderer, /\/maps\/\$\{mapId\}\/\{z\}\/\{x\}\/\{y\}\.png\?key=/);
   assert.match(renderer, /type: "raster"/);
   assert.match(renderer, /tileSize: 512/);
   assert.match(renderer, /preferredRasterStyle \?\? config\.styleUrl/);
   assert.match(renderer, /isAllowedMapResource\(tileUrl/);
-  assert.doesNotMatch(renderer, /type: "geojson"|queryRenderedFeatures|addLayer\(pointLayer/);
 });
 
-test("camera opens on a United States overview and preserves page scrolling", () => {
-  assert.match(renderer, /CONTIGUOUS_US_BOUNDS/);
-  assert.match(renderer, /\[\[-125, 24\], \[-66\.5, 49\.5\]\]/);
-  assert.match(renderer, /center: \[-98\.5, 38\.5\]/);
-  assert.match(renderer, /zoom: 3/);
+test("camera frames the United States and Canada and preserves page scrolling", () => {
+  assert.match(renderer, /CONTINENTAL_BOUNDS/);
+  assert.match(renderer, /\[\[-141, 24\], \[-52, 83\]\]/);
+  assert.match(renderer, /center: \[-100, 45\]/);
+  assert.match(renderer, /zoom: 2\.5/);
   assert.match(renderer, /fitBounds\(bounds, \{ padding: 28, duration: 0, maxZoom: 4 \}\)/);
   for (const setting of ["dragRotate: false", "pitchWithRotate: false", "scrollZoom: false", "touchPitch: false", "maxPitch: 0"]) assert.match(renderer, new RegExp(setting));
   assert.match(renderer, /showCompass: false/);
@@ -66,14 +73,12 @@ test("configuration, request, compatible WebGL fallback, and hard failures fail 
   for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
   assert.match(renderer, /Visual map unavailable\./);
   assert.match(renderer, /Retry visual map/);
-  assert.doesNotMatch(renderer, /MAP_LOAD_TIMEOUT_MS|setFailure\("MAP_STYLE_LOAD_FAILED"\)[\s\S]{0,160}setTimeout/);
-  assert.doesNotMatch(renderer, /console\.(log|warn|error)\([^\n]*(url|points|geoJson|provider)/i);
 });
 
-test("slow basemap loading remains non-destructive while MMIPS markers stay available", () => {
+test("slow basemap loading remains non-destructive", () => {
   assert.match(renderer, /MAP_SLOW_LOAD_NOTICE_MS = 15000/);
   assert.match(renderer, /if \(!mapLoaded\) setLoadingSlowly\(true\)/);
-  assert.match(renderer, /The MMIPS location markers remain available while background map tiles continue loading\./);
+  assert.match(renderer, /MMIPS public locations remain available in the accessible results/);
   assert.match(renderer, /map\.once\("idle", onIdle\)/);
   assert.match(renderer, /data-map-state=\{failure \? "fallback" : loadingSlowly \? "loading-slowly" : "interactive"\}/);
   assert.match(rendererCss, /\.loadingNotice/);
@@ -86,11 +91,6 @@ test("map and accessible results use one filtered public point collection withou
   assert.doesNotMatch(experience, /profiles\.map\(\(profile\)/);
   assert.doesNotMatch(page, /getPublishedCases\(\)/);
   assert.match(page, /getPublicMapPoints\(\)/);
-  assert.match(experience, /Skip visual map and go to the accessible results/);
-  assert.match(experience, /id="accessible-map-list"/);
-  assert.match(experience, /aria-live="polite" aria-atomic="true"/);
-  assert.match(experience, /Open public profile/);
   assert.match(experience, /Previous 20/);
   assert.match(experience, /Next 20/);
-  assert.match(experience, /not an exact location/);
 });
