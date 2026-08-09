@@ -13,12 +13,12 @@ const migration = fs.readFileSync("supabase/add_public_request_references_202608
 test("submission has an explicit review-before-submit gate that invalidates after edits", () => {
   assert.match(submitPage, /SubmissionReviewGate/);
   assert.doesNotMatch(submitPage, />Submit for review<\/button>/);
-  assert.match(gate, /Review submission/);
-  assert.match(gate, /Confirm and submit for review/);
+  assert.match(gate, /Review what I entered/);
+  assert.match(gate, /Send to MMIPS for review/);
   assert.match(gate, /form\.reportValidity\(\)/);
   assert.match(gate, /form\.addEventListener\("input", invalidate\)/);
   assert.match(gate, /form\.addEventListener\("change", invalidate\)/);
-  assert.match(gate, /Private moderator-only fields are not repeated/);
+  assert.match(gate, /Private review-only details are not repeated here/);
 });
 
 test("receipts use dedicated non-secret public tracking references rather than primary UUIDs", () => {
