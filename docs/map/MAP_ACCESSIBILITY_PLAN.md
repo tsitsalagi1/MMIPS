@@ -4,7 +4,9 @@
 
 The map has an accessible label, approximate-location instructions, functional 44-by-44-pixel keyboard zoom buttons, no focus stealing, and no forced scrolling. Marker selection updates a polite React live region outside the canvas using public-safe text fields. Category/status and approved location precision are conveyed in text, never color alone. Scroll zoom, rotation, and pitch are disabled to prevent page-scroll capture and disorientation.
 
-A 5-digit U.S. ZIP search may move the map to a general area. The browser sends the ZIP to a same-origin MMIPS endpoint with a POST request and no-store caching; the server uses the existing U.S. Census TIGERweb ZCTA lookup helper and returns only the ZIP centroid needed to focus the map. The ZIP search is not written into case data and must not be treated as an incident, home, shelter, recovery, witness, family, or investigative location.
+A 5-digit U.S. ZIP search moves the map to a general area and loads only approved public map points nearby. The browser sends the ZIP to a same-origin MMIPS endpoint with a POST request and no-store caching. The server uses the existing U.S. Census TIGERweb ZCTA lookup helper, resolves the ZIP centroid, and returns a bounded public-safe collection of approved map points within about 100 miles. The ZIP search is not written into case data and must not be treated as an incident, home, shelter, recovery, witness, family, or investigative location.
+
+The initial map page does not download the national public case collection. Until a ZIP is entered, the public map displays the basemap and an accessible instruction to enter a ZIP. After a ZIP lookup, local filters operate only on the nearby result collection and do not reset the ZIP camera position.
 
 All automatic camera changes use zero duration. ZIP focus uses an instantaneous zero-duration camera move rather than an animated trip across the map. CSS continues to honor `prefers-reduced-motion`; there are no initial animations, pulses, or continuous animations. Generic inline fallbacks link people to Search Profiles when configuration, JavaScript/WebGL, initialization, style, provider, or context fails.
 
