@@ -32,16 +32,27 @@ test("small result sets retain independent accessible MapLibre markers", () => {
   assert.doesNotMatch(renderer + experience + clusters, /dangerouslySetInnerHTML|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|localStorage|sessionStorage/);
 });
 
-test("large result sets use a clustered GeoJSON overlay instead of thousands of DOM markers", () => {
+test("large result sets use viewport-bounded DOM clustering instead of fragile style layers", () => {
   assert.match(renderer, /geoJson\.features\.length > CLUSTER_THRESHOLD/);
   assert.match(renderer, /addClusteredPublicPoints/);
   assert.match(renderer, /data-point-mode=\{points\.length > CLUSTER_THRESHOLD \? "clustered" : "markers"\}/);
-  assert.match(clusters, /cluster: true/);
-  assert.match(clusters, /clusterRadius: 48/);
-  assert.match(clusters, /getClusterExpansionZoom/);
-  assert.match(clusters, /point_count_abbreviated/);
-  assert.match(clusters, /onSelect\(publicId\)/);
-  assert.match(clusters, /removeSource\(SOURCE_ID\)/);
+  assert.match(clusters, /CELL_SIZE_PX = 56/);
+  assert.match(clusters, /inViewport\(map, coordinates\)/);
+  assert.match(clusters, /map\.project\(coordinates\)/);
+  assert.match(clusters, /Math\.floor\(projected\.x \/ CELL_SIZE_PX\)/);
+  assert.match(clusters, /new maplibregl\.Marker/);
+  assert.match(clusters, /mmipsClusterMarker/);
+  assert.match(clusters, /mmipsClusterPointMarker/);
+  assert.match(clusters, /map\.on\("moveend", render\)/);
+  assert.match(clusters, /map\.on\("resize", render\)/);
+  assert.doesNotMatch(clusters, /addSource|addLayer|cluster:\s*true|getClusterExpansionZoom/);
+  assert.match(rendererCss, /mmipsClusterMarker/);
+});
+
+test("large cluster rendering no longer waits for MapLibre style load", () => {
+  assert.match(renderer, /clusterCleanupRef\.current = addClusteredPublicPoints/);
+  assert.doesNotMatch(renderer, /pendingClusterLoadRef/);
+  assert.doesNotMatch(renderer, /if \(geoJson\.features\.length > CLUSTER_THRESHOLD && !map\.isStyleLoaded\(\)\)/);
 });
 
 test("MapTiler remains the raster basemap while MMIPS data stays a separate overlay", () => {

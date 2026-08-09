@@ -12,9 +12,13 @@
 .publicMarker{width:22px;height:22px;min-width:22px;min-height:22px;padding:0;border:3px solid #fff5e8;border-radius:50%;background:#b3263b;box-shadow:0 2px 7px rgba(0,0,0,.4);cursor:pointer}
 .publicMarker:hover{transform:scale(1.12)}
 .publicMarker:focus-visible{outline:3px solid #111;outline-offset:3px;box-shadow:0 0 0 6px #f3bd55}
+:global(.mmipsClusterPointMarker){width:22px;height:22px;min-width:22px;min-height:22px;padding:0;border:3px solid #fff5e8;border-radius:50%;background:#b3263b;box-shadow:0 2px 7px rgba(0,0,0,.4);cursor:pointer}
+:global(.mmipsClusterMarker){display:grid;place-items:center;min-width:38px;height:38px;padding:0 9px;border:3px solid #fff5e8;border-radius:999px;background:#8f201b;color:#fff8ef;font:700 13px/1 system-ui,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.42);cursor:pointer}
+:global(.mmipsClusterPointMarker:hover),:global(.mmipsClusterMarker:hover){transform:scale(1.08)}
+:global(.mmipsClusterPointMarker:focus-visible),:global(.mmipsClusterMarker:focus-visible){outline:3px solid #111;outline-offset:3px;box-shadow:0 0 0 6px #f3bd55}
 .frame :global(.maplibregl-map){font:inherit}
 .frame :global(.maplibregl-ctrl button){min-width:44px;min-height:44px}
 .frame :global(.maplibregl-ctrl-attrib){color:#1f1a16}
 .frame :global(.maplibregl-ctrl-attrib a){color:#4f3512}
-@media(max-width:680px){.loadingNotice{align-items:flex-start;flex-direction:column}.publicMarker{width:26px;height:26px;min-width:26px;min-height:26px}}
+@media(max-width:680px){.loadingNotice{align-items:flex-start;flex-direction:column}.publicMarker,:global(.mmipsClusterPointMarker){width:26px;height:26px;min-width:26px;min-height:26px}}
 @media(prefers-reduced-motion:reduce){.frame *{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}

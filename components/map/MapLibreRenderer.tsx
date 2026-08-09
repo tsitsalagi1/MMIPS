@@ -92,7 +92,6 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<ActiveMarker[]>([]);
   const clusterCleanupRef = useRef<null | (() => void)>(null);
-  const pendingClusterLoadRef = useRef<null | (() => void)>(null);
   const onSelectRef = useRef(onSelect);
   const [failure, setFailure] = useState<MapFailureCode | null>(null);
   const [loadingSlowly, setLoadingSlowly] = useState(false);
@@ -185,8 +184,6 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
       map.off("error", onError);
       map.off("load", onLoad);
       map.off("idle", onIdle);
-      if (pendingClusterLoadRef.current) map.off("load", pendingClusterLoadRef.current);
-      pendingClusterLoadRef.current = null;
       clearMarkers(markersRef.current);
       markersRef.current = [];
       clusterCleanupRef.current?.();
@@ -202,33 +199,19 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     const map = mapRef.current;
     if (!map) return;
 
-    if (pendingClusterLoadRef.current) map.off("load", pendingClusterLoadRef.current);
-    pendingClusterLoadRef.current = null;
     clearMarkers(markersRef.current);
     markersRef.current = [];
     clusterCleanupRef.current?.();
     clusterCleanupRef.current = null;
 
-    const renderOverlay = () => {
-      pendingClusterLoadRef.current = null;
-      if (geoJson.features.length > CLUSTER_THRESHOLD) {
-        clusterCleanupRef.current = addClusteredPublicPoints(map, geoJson, (publicId) => onSelectRef.current(publicId));
-      } else {
-        markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
-      }
-      updateMapCamera(map, geoJson);
-    };
-
-    if (geoJson.features.length > CLUSTER_THRESHOLD && !map.isStyleLoaded()) {
-      pendingClusterLoadRef.current = renderOverlay;
-      map.once("load", renderOverlay);
+    if (geoJson.features.length > CLUSTER_THRESHOLD) {
+      clusterCleanupRef.current = addClusteredPublicPoints(map, geoJson, (publicId) => onSelectRef.current(publicId));
     } else {
-      renderOverlay();
+      markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
     }
+    updateMapCamera(map, geoJson);
 
     return () => {
-      if (pendingClusterLoadRef.current) map.off("load", pendingClusterLoadRef.current);
-      pendingClusterLoadRef.current = null;
       clearMarkers(markersRef.current);
       markersRef.current = [];
       clusterCleanupRef.current?.();
