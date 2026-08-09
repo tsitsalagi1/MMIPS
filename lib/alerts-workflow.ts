@@ -72,7 +72,7 @@ export function validatedSiteUrl(value: string) {
   return url.origin;
 }
 
-function confirmationEmail(confirmationUrl: string, alertsUrl: string) {
+function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscribeUrl?: string) {
   const text = [
     "Thank you for choosing to help your community and support Indigenous families.",
     "",
@@ -80,6 +80,11 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string) {
     "",
     "CONFIRM YOUR SUBSCRIPTION",
     confirmationUrl,
+    ...(unsubscribeUrl ? [
+      "",
+      "UNSUBSCRIBE / CANCEL THIS REQUEST",
+      unsubscribeUrl
+    ] : []),
     "",
     "WHAT YOU WILL RECEIVE",
     "• Urgent MMIPS community alerts that match the ZIP code and distance you selected.",
@@ -98,7 +103,9 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string) {
     "PRIVACY AND OPTING OUT",
     "Your ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.",
     "",
-    "If you did not request these alerts, do not confirm this subscription. If you confirm and later change your mind, every urgent alert includes a one-click unsubscribe option. No explanation is required."
+    unsubscribeUrl
+      ? "If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required."
+      : "If you did not request these alerts, do not confirm this subscription. No explanation is required."
   ].join("\n");
 
   const html = [
@@ -106,6 +113,10 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string) {
     "<p>Your attention matters. Responsible sharing of verified, moderator-approved information can help a missing or murdered Indigenous person’s case reach people who may recognize a person, vehicle, area, or circumstance — without spreading rumors or exposing private information.</p>",
     "<h2>Confirm your subscription</h2>",
     `<p>${htmlLink(confirmationUrl, "Confirm MMIPS urgent community alerts")}</p>`,
+    ...(unsubscribeUrl ? [
+      "<h2>Unsubscribe / cancel this request</h2>",
+      `<p>${htmlLink(unsubscribeUrl, "Unsubscribe / cancel this alert request")}</p>`
+    ] : []),
     "<h2>What you will receive</h2>",
     listHtml([
       "Urgent MMIPS community alerts that match the ZIP code and distance you selected.",
@@ -122,7 +133,9 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string) {
     `<p>Encourage trusted people in your community to subscribe: ${htmlLink(alertsUrl, alertsUrl)}</p>`,
     "<h2>Privacy and opting out</h2>",
     "<p>Your ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.</p>",
-    "<p>If you did not request these alerts, do not confirm this subscription. If you confirm and later change your mind, every urgent alert includes a one-click unsubscribe option. No explanation is required.</p>"
+    unsubscribeUrl
+      ? "<p>If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required.</p>"
+      : "<p>If you did not request these alerts, do not confirm this subscription. No explanation is required.</p>"
   ].join("\n");
 
   return { text, html };
@@ -159,12 +172,26 @@ export async function requestAlertSubscription(
 
   const origin = validatedSiteUrl(dependencies.siteUrl);
   const confirmationUrl = `${origin}/alerts/confirm?token=${encodeURIComponent(confirmation.token)}`;
-  const content = confirmationEmail(confirmationUrl, `${origin}/alerts`);
+  const signingKey = dependencies.signingKeys?.find((key) => key.length >= 32);
+  const unsubscribeToken = signingKey ? signUnsubscribeToken(subscriber.unsubscribe_token_id, signingKey) : null;
+  const unsubscribePageUrl = unsubscribeToken
+    ? `${origin}/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
+    : undefined;
+  const unsubscribeApiUrl = unsubscribeToken
+    ? `${origin}/api/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
+    : undefined;
+  const content = confirmationEmail(confirmationUrl, `${origin}/alerts`, unsubscribePageUrl);
   const result = await dependencies.mailer.send({
     to: email,
     subject: "Confirm MMIPS urgent community alerts — thank you for helping",
     text: content.text,
-    html: content.html
+    html: content.html,
+    ...(unsubscribeApiUrl ? {
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeApiUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+      }
+    } : {})
   });
   if (result.ok) await store.markConfirmationSent(subscriber.id, now.toISOString());
   return { ok: true as const, code: "accepted" as const };
