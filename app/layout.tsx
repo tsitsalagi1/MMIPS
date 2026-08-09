@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { mmipsSiteMode } from "../lib/site-mode";
+import { globalSiteUrl, mmipsSiteMode } from "../lib/site-mode";
 import "./globals.css";
 import "./theme-overrides.css";
 import "./readability-overrides.css";
 
 export function generateMetadata(): Metadata {
-  const isGlobal = mmipsSiteMode() === "global";
-  // Keep the currently deployed apex canonical until a country project explicitly
-  // configures its own production URL during the verified domain cutover.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com";
-  const title = isGlobal
+  const mode = mmipsSiteMode();
+  // Keep production URLs explicit per Vercel project. A Canada build defaults to
+  // its own country hostname rather than the Global or United States domain.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (mode === "ca" ? "https://ca.mmips.com" : "https://mmips.com");
+
+  const title = mode === "global"
     ? "MMIPS — Choose your country or region"
-    : "MMIPS United States — Missing & Murdered Indigenous People Search";
-  const description = isGlobal
+    : mode === "ca"
+      ? "MMIPS Canada — Missing & Murdered Indigenous People Search"
+      : "MMIPS United States — Missing & Murdered Indigenous People Search";
+
+  const description = mode === "global"
     ? "Choose a country-specific MMIPS system. MMIPS Global is a gateway to separate Indigenous missing-person public-awareness systems and does not hold a worldwide case database."
-    : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
+    : mode === "ca"
+      ? "A separate Canadian MMIPS public-awareness system being built around First Nations, Inuit and Métis communities, Canadian reporting, privacy, geography, and moderation."
+      : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -38,14 +44,14 @@ export function generateMetadata(): Metadata {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const isGlobal = mmipsSiteMode() === "global";
+  const mode = mmipsSiteMode();
 
   return (
-    <html lang="en">
+    <html lang={mode === "ca" ? "en-CA" : "en"}>
       <body>
-        {isGlobal ? <GlobalHeader /> : <UnitedStatesHeader />}
+        {mode === "global" ? <GlobalHeader /> : mode === "ca" ? <CanadaHeader /> : <UnitedStatesHeader />}
         {children}
-        {isGlobal ? <GlobalFooter /> : <UnitedStatesFooter />}
+        {mode === "global" ? <GlobalFooter /> : mode === "ca" ? <CanadaFooter /> : <UnitedStatesFooter />}
       </body>
     </html>
   );
@@ -61,6 +67,23 @@ function GlobalHeader() {
         </Link>
         <div className="nav-links">
           <span>Global country gateway</span>
+        </div>
+      </nav>
+    </header>
+  );
+}
+
+function CanadaHeader() {
+  return (
+    <header className="site-header">
+      <nav className="container nav" aria-label="Canada MMIPS navigation">
+        <Link href="/" className="brand" aria-label="MMIPS Canada home">
+          <img className="brand-icon" src="/mmips-hand-transparent.png" alt="" aria-hidden="true" />
+          <span>MMIPS Canada</span>
+        </Link>
+        <div className="nav-links">
+          <span>Canada · Preparing</span>
+          <a href={globalSiteUrl()}>Change country</a>
         </div>
       </nav>
     </header>
@@ -99,6 +122,22 @@ function GlobalFooter() {
         </div>
         <div className="footer-contact" aria-label="MMIPS Global contact email address">
           <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function CanadaFooter() {
+  return (
+    <footer className="site-footer">
+      <div className="container footer-grid">
+        <div className="footer-mission">
+          <p><strong>MMIPS Canada</strong> is being prepared as a separate Canadian system for First Nations, Inuit and Métis families and communities. It is not law enforcement and is not accepting Canadian case submissions yet.</p>
+        </div>
+        <div className="footer-contact" aria-label="MMIPS Canada contact and country navigation">
+          <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>
+          <span><a href={globalSiteUrl()}>Return to MMIPS Global</a></span>
         </div>
       </div>
     </footer>
