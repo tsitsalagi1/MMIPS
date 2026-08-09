@@ -83,13 +83,16 @@ test("profile searches narrow the map and ZIP searches may provide a bounded cam
   assert.match(renderer, /if \(!focusTarget\) updateMapCamera\(map, geoJson\)/);
 });
 
-test("configuration, WebGL, resource, and context failures fail safely", () => {
+test("configuration, WebGL, resource, and context failures fail safely with a text equivalent", () => {
   assert.match(boundary, /styleUrl\.protocol !== "https:"/);
   assert.match(boundary, /origin\.includes\("\*"\)/);
   assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
   assert.match(boundary, /getContext\("webgl2"\) \|\| canvas\.getContext\("webgl"\)/);
   for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
-  assert.match(renderer, /Search controls remain available/);
+  assert.match(renderer, /Search controls and the text results view remain available/);
+  assert.match(renderer, /same current results are available in the text view on this page/);
+  assert.match(renderer, /onFailureRef\.current\?\.\(\)/);
+  assert.match(explorer, /onFailure=\{\(\) => setTextViewOpen\(true\)\}/);
   assert.match(renderer, /Retry visual map/);
 });
 
@@ -98,8 +101,10 @@ test("legacy standalone map URL permanently redirects to Search Profiles", () =>
   assert.doesNotMatch(mapRedirect, /PublicMapExperience|MapLibreRenderer/);
 });
 
-test("complete national public map loader remains bounded", () => {
+test("complete national public map loader pages every public-cleared row without a silent cap", () => {
   assert.match(publicMap, /MAP_POINT_PAGE_SIZE = 1000/);
-  assert.match(publicMap, /MAP_POINT_SAFETY_LIMIT = 10000/);
-  assert.match(publicMap, /CASE_ID_CHUNK_SIZE = 200/);
+  assert.match(publicMap, /for \(let from = 0; ; from \+= MAP_POINT_PAGE_SIZE\)/);
+  assert.match(publicMap, /\.range\(from, from \+ MAP_POINT_PAGE_SIZE - 1\)/);
+  assert.match(publicMap, /if \(page\.length < MAP_POINT_PAGE_SIZE\) break/);
+  assert.doesNotMatch(publicMap, /MAP_POINT_SAFETY_LIMIT|CASE_ID_CHUNK_SIZE/);
 });
