@@ -18,8 +18,8 @@ export function CaseCard({ item }: { item: MmipsCase }) {
             <h2>{item.fullName}</h2>
             <div className="badge-stack"><ProfileTypeBadge profileType={item.profileType} /><CaseStatusBadge status={item.status} /></div>
           </div>
-          <p><strong>{locationLabel}:</strong> {item.lastSeenLocation}</p>
-          <p>{item.summary}</p>
+          <p className="case-card-location"><strong>{locationLabel}:</strong> {item.lastSeenLocation}</p>
+          <p className="case-card-summary">{item.summary}</p>
           {item.profileType === "urgent_missing" && item.notificationAreaRequested ? <p className="muted"><strong>Public awareness area:</strong> {item.notificationAreaRequested}</p> : null}
           <div className="badge-row">
             {item.verification.map((status) => <VerificationBadge key={status} status={status} />)}
