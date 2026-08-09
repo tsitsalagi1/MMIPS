@@ -102,6 +102,26 @@ h3 {
   max-width: 66ch;
 }
 
+/* Keep key family-facing pages separated into obvious reading blocks. */
+.plain-language-page > h2,
+.plain-language-page > .plain-language-section {
+  margin-top: 1.5rem;
+}
+
+.plain-language-section {
+  display: grid;
+  gap: .45rem;
+}
+
+.plain-language-section > :last-child,
+.safety-notice > :last-child {
+  margin-bottom: 0;
+}
+
+.safety-notice p {
+  max-width: 72ch;
+}
+
 /* Public profile search cards should scan as separate facts, not one text block. */
 .case-card {
   padding: clamp(20px, 3vw, 28px);
