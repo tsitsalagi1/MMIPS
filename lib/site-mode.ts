@@ -1,7 +1,9 @@
-export type MmipsSiteMode = "us" | "global";
+export type MmipsSiteMode = "us" | "global" | "ca";
 
 export function mmipsSiteMode(): MmipsSiteMode {
-  return process.env.MMIPS_SITE_MODE === "global" ? "global" : "us";
+  if (process.env.MMIPS_SITE_MODE === "global") return "global";
+  if (process.env.MMIPS_SITE_MODE === "ca") return "ca";
+  return "us";
 }
 
 export function globalSiteUrl() {
@@ -10,4 +12,12 @@ export function globalSiteUrl() {
 
 export function usSiteUrl() {
   return process.env.NEXT_PUBLIC_US_SITE_URL || "https://us.mmips.com";
+}
+
+export function canadaSiteUrl() {
+  return process.env.NEXT_PUBLIC_CA_SITE_URL || "https://ca.mmips.com";
+}
+
+export function canadaPortalIsActive() {
+  return process.env.MMIPS_CA_PORTAL_ACTIVE === "true" && Boolean(process.env.NEXT_PUBLIC_CA_SITE_URL);
 }
