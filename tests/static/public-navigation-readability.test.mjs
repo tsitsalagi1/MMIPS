@@ -47,6 +47,7 @@ test('Search Profiles owns the national map and keeps data context visible', () 
   assert.match(profilesSearch, /National MMIPS public profile map/);
   assert.match(profilesSearch, /Map context:/);
   assert.match(profilesSearch, /SYNTHETIC TEST DATA IS PRESENT/);
+  assert.match(profilesSearch, /Show all map points/);
   assert.doesNotMatch(profilesSearch, /CaseCard|Previous 20|Next 20|profile-pagination/);
 });
 
