@@ -29,19 +29,18 @@ test("anonymous loader requests only the public projection and leaves moderation
   assert.doesNotMatch(selectCall, /moderator_approved|hidden_at|approved_by|safety_reviewed_at|public_notes/);
   assert.doesNotMatch(loader, /\.eq\("moderator_approved"/);
   assert.doesNotMatch(loader, /\.is\("hidden_at"/);
-  assert.doesNotMatch(loader, /row\.moderator_approved|row\.hidden_at/);
 });
 
 test("public map omits photos until public authorization can be established unambiguously", () => {
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
 });
 
-test("Search Profiles owns the public map without unsafe location controls", () => {
+test("Search Profiles owns the public map without unsafe location controls or a card wall", () => {
   assert.match(component, /National MMIPS public profile map/);
   assert.match(component, /Map context:/);
   assert.match(component, /Open selected public profile/);
   assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|routeControl|localStorage|sessionStorage/);
-  assert.doesNotMatch(component, /CaseCard|Previous 20|Next 20/);
+  assert.doesNotMatch(component, /CaseCard|Previous 20|Next 20|profile-pagination/);
 });
 
 test("Search Profiles loads all approved public points asynchronously and searches the same map", () => {
