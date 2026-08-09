@@ -38,13 +38,15 @@ The global gateway application code rejects `/api/*` and redirects country appli
 
 1. Deploy this branch to Preview and run the complete CI suite.
 2. On the existing MMIPS Vercel project, add `us.mmips.com` while leaving `mmips.com` attached.
-3. Set `MMIPS_SITE_MODE=us`, `NEXT_PUBLIC_SITE_URL=https://us.mmips.com`, and `NEXT_PUBLIC_GLOBAL_SITE_URL=https://mmips.com` on the existing country project.
-4. Deploy and verify `https://us.mmips.com` before changing the apex domain.
-5. Verify on the U.S. portal:
+3. In the Cloudflare Turnstile widget used by the U.S. public forms, add `us.mmips.com` to the allowed production hostnames before testing forms on the new domain. The MMIPS server verifier already recognizes `us.mmips.com`, but the widget/provider configuration must also permit it.
+4. Set `MMIPS_SITE_MODE=us`, `NEXT_PUBLIC_SITE_URL=https://us.mmips.com`, and `NEXT_PUBLIC_GLOBAL_SITE_URL=https://mmips.com` on the existing country project.
+5. Deploy and verify `https://us.mmips.com` before changing the apex domain.
+6. Verify on the U.S. portal:
    - homepage;
    - `/profiles` full public map/data;
    - search and text fallback;
    - `/alerts`;
+   - Turnstile challenge and server-side hostname validation on every protected public form;
    - `/submit` remains release-locked as intended;
    - corrections/removal;
    - admin MFA/AAL2;
@@ -52,20 +54,21 @@ The global gateway application code rejects `/api/*` and redirects country appli
    - public/private database separation;
    - current U.S. synthetic-data labeling;
    - no new runtime errors.
-6. Create the separate Vercel gateway project from the same repository.
-7. Configure only the gateway environment values shown above. Do not copy U.S. Supabase secrets into the gateway.
-8. Verify the gateway on its `vercel.app` production URL:
+7. Create the separate Vercel gateway project from the same repository.
+8. Configure only the gateway environment values shown above. Do not copy U.S. Supabase secrets into the gateway.
+9. Verify the gateway on its `vercel.app` production URL:
    - homepage renders country cards;
    - United States points to `https://us.mmips.com`;
    - Canada/Australia/Aotearoa remain `preparing`;
    - `/profiles`, `/submit`, `/alerts`, `/admin`, and other country routes redirect to `/`;
    - `/api/*` returns 404;
    - sitemap lists only the gateway root;
+   - gateway CSP contains no U.S. Supabase, MapTiler, or Turnstile form origins;
    - gateway build/runtime has no database dependency.
-9. Reassign `mmips.com` from the existing U.S. Vercel project to the new global gateway project.
-10. Confirm TLS/DNS and test `https://mmips.com` from an unauthenticated browser.
-11. Keep `us.mmips.com` as the canonical U.S. portal.
-12. Update external U.S. links gradually or preserve redirects where appropriate. Do not create a redirect loop between `mmips.com` and `us.mmips.com`.
+10. Reassign `mmips.com` from the existing U.S. Vercel project to the new global gateway project.
+11. Confirm TLS/DNS and test `https://mmips.com` from an unauthenticated browser.
+12. Keep `us.mmips.com` as the canonical U.S. portal.
+13. Update external U.S. links gradually or preserve redirects where appropriate. Do not create a redirect loop between `mmips.com` and `us.mmips.com`.
 
 ## Rollback
 
