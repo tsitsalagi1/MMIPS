@@ -11,17 +11,10 @@ const US_LAYER = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/
 const CANADA_LAYER = "https://services.sac-isc.gc.ca/geomatics/rest/services/AGOL_FEATURE_SERVICES/First_Nations_Aboriginal_Lands_E/FeatureServer/2/query";
 
 type SourceName = "us" | "ca";
-type SourceRecord = {
-  source: SourceName;
-  sourceId: string;
-  geographyName: string;
-  affiliation: string;
-  regionCode: string | null;
-  latitude: number;
-  longitude: number;
-};
+type SourceRecord = { source: SourceName; sourceId: string; geographyName: string; affiliation: string; regionCode: string | null; latitude: number; longitude: number };
 
-type Admin = Awaited<ReturnType<typeof requireAdmin>> & { ok: true };
+function authorizeScaleAdmin(request: NextRequest) { return requireAdmin(request); }
+type Admin = Awaited<ReturnType<typeof authorizeScaleAdmin>> & { ok: true };
 
 function safeInteger(value: unknown, fallback = 0) {
   const number = Number(value);
@@ -120,37 +113,9 @@ async function stageBatch(admin: Admin, source: SourceName, offset: number) {
     const caseId = randomUUID();
     const slug = slugFor(record);
     const category = syntheticStatus(offset + index);
-    personRows.push({
-      id: personId,
-      full_name: `MMIPS SYNTHETIC SCALE TEST ${record.source.toUpperCase()} ${record.sourceId} — NOT A REAL PERSON`,
-      tribal_affiliation: `${record.affiliation} — official geography name used for synthetic load testing only`,
-      public_notes: "SYNTHETIC LOAD TEST ONLY — NOT A REAL PERSON OR CASE."
-    });
-    caseRows.push({
-      id: caseId,
-      person_id: personId,
-      slug,
-      status: category.status,
-      profile_type: category.profile_type,
-      urgency_level: "standard",
-      review_status: "pending_review",
-      public_summary: "SYSTEM LOAD TEST ONLY — NOT A REAL PERSON. Fictional MMIPS profile used to test national-scale search, pagination, mapping, accessibility, filtering, and performance.",
-      last_seen_area_public: `${record.geographyName} — SYNTHETIC TEST GEOGRAPHY`,
-      last_seen_state: record.regionCode,
-      location_precision: "approximate",
-      lead_agency: "MMIPS SYNTHETIC LOAD TEST — NOT REAL",
-      official_tip_contact: "SYNTHETIC TEST ONLY — DO NOT SEND REAL TIPS",
-      official_info_pending: false
-    });
-    pointRows.push({
-      case_id: caseId,
-      public_label: `${record.geographyName} — SYNTHETIC TEST GEOGRAPHY`,
-      public_latitude: record.latitude,
-      public_longitude: record.longitude,
-      precision: "tribal_region",
-      region_type: record.source === "us" ? "federal_reservation_scale_test" : "canadian_reserve_scale_test",
-      moderator_approved: false
-    });
+    personRows.push({ id: personId, full_name: `MMIPS SYNTHETIC SCALE TEST ${record.source.toUpperCase()} ${record.sourceId} — NOT A REAL PERSON`, tribal_affiliation: `${record.affiliation} — official geography name used for synthetic load testing only`, public_notes: "SYNTHETIC LOAD TEST ONLY — NOT A REAL PERSON OR CASE." });
+    caseRows.push({ id: caseId, person_id: personId, slug, status: category.status, profile_type: category.profile_type, urgency_level: "standard", review_status: "pending_review", public_summary: "SYSTEM LOAD TEST ONLY — NOT A REAL PERSON. Fictional MMIPS profile used to test national-scale search, pagination, mapping, accessibility, filtering, and performance.", last_seen_area_public: `${record.geographyName} — SYNTHETIC TEST GEOGRAPHY`, last_seen_state: record.regionCode, location_precision: "approximate", lead_agency: "MMIPS SYNTHETIC LOAD TEST — NOT REAL", official_tip_contact: "SYNTHETIC TEST ONLY — DO NOT SEND REAL TIPS", official_info_pending: false });
+    pointRows.push({ case_id: caseId, public_label: `${record.geographyName} — SYNTHETIC TEST GEOGRAPHY`, public_latitude: record.latitude, public_longitude: record.longitude, precision: "tribal_region", region_type: record.source === "us" ? "federal_reservation_scale_test" : "canadian_reserve_scale_test", moderator_approved: false });
   });
 
   if (personRows.length) {
@@ -158,36 +123,17 @@ async function stageBatch(admin: Admin, source: SourceName, offset: number) {
     if (personError) throw personError;
     const personIds = personRows.map((row) => row.id);
     const { error: caseError } = await admin.supabase.from("cases").insert(caseRows);
-    if (caseError) {
-      await admin.supabase.from("persons").delete().in("id", personIds);
-      throw caseError;
-    }
+    if (caseError) { await admin.supabase.from("persons").delete().in("id", personIds); throw caseError; }
     const caseIds = caseRows.map((row) => row.id);
     const { error: pointError } = await admin.supabase.from("public_case_map_points").insert(pointRows);
-    if (pointError) {
-      await admin.supabase.from("cases").delete().in("id", caseIds);
-      await admin.supabase.from("persons").delete().in("id", personIds);
-      throw pointError;
-    }
-    await admin.supabase.from("audit_log").insert({
-      actor_id: admin.user.id,
-      action: "synthetic_scale_batch_staged",
-      entity_type: "synthetic_scale_rehearsal",
-      reason: "Admin staged a national synthetic geography batch for load testing.",
-      metadata: { source, offset, inserted: newRecords.length, staged_at: now }
-    });
+    if (pointError) { await admin.supabase.from("cases").delete().in("id", caseIds); await admin.supabase.from("persons").delete().in("id", personIds); throw pointError; }
+    await admin.supabase.from("audit_log").insert({ actor_id: admin.user.id, action: "synthetic_scale_batch_staged", entity_type: "synthetic_scale_rehearsal", reason: "Admin staged a national synthetic geography batch for load testing.", metadata: { source, offset, inserted: newRecords.length, staged_at: now } });
   }
-
   return { inserted: newRecords.length, nextOffset: offset + BATCH_SIZE, done: page.done };
 }
 
 async function publishBatch(admin: Admin) {
-  const { data: rows, error } = await admin.supabase
-    .from("cases")
-    .select("id")
-    .like("slug", `${PREFIX}%`)
-    .eq("review_status", "pending_review")
-    .limit(BATCH_SIZE);
+  const { data: rows, error } = await admin.supabase.from("cases").select("id").like("slug", `${PREFIX}%`).eq("review_status", "pending_review").limit(BATCH_SIZE);
   if (error) throw error;
   const ids = (rows || []).map((row: any) => row.id);
   if (!ids.length) return { processed: 0, done: true };
@@ -209,10 +155,7 @@ async function removeBatch(admin: Admin) {
   if (!ids.length) return { processed: 0, done: true };
   const { error: caseError } = await admin.supabase.from("cases").delete().in("id", ids);
   if (caseError) throw caseError;
-  if (personIds.length) {
-    const { error: personError } = await admin.supabase.from("persons").delete().in("id", personIds);
-    if (personError) throw personError;
-  }
+  if (personIds.length) { const { error: personError } = await admin.supabase.from("persons").delete().in("id", personIds); if (personError) throw personError; }
   await admin.supabase.from("audit_log").insert({ actor_id: admin.user.id, action: "synthetic_scale_batch_removed", entity_type: "synthetic_scale_rehearsal", reason: "Admin removed a national synthetic load-test batch.", metadata: { processed: ids.length } });
   return { processed: ids.length, done: ids.length < BATCH_SIZE };
 }
@@ -228,22 +171,19 @@ async function counts(admin: Admin) {
 
 export async function GET(request: NextRequest) {
   try {
-    const admin = await requireAdmin(request);
+    const admin = await authorizeScaleAdmin(request);
     if (!admin.ok) return admin.response;
     return NextResponse.json({ ok: true, prefix: PREFIX, batchSize: BATCH_SIZE, counts: await counts(admin) }, { headers: { "Cache-Control": "private, no-store" } });
-  } catch {
-    return safeApiError({ code: "synthetic_scale_status_failed", message: "Could not load synthetic scale-test status." });
-  }
+  } catch { return safeApiError({ code: "synthetic_scale_status_failed", message: "Could not load synthetic scale-test status." }); }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const admin = await requireAdmin(request);
+    const admin = await authorizeScaleAdmin(request);
     if (!admin.ok) return admin.response;
     const body = await request.json().catch(() => ({}));
     const action = typeof body.action === "string" ? body.action : "";
     const confirmation = typeof body.confirmation === "string" ? body.confirmation.trim() : "";
-
     if (action === "stage") {
       if (confirmation !== "STAGE NATIONAL SYNTHETIC TEST") return NextResponse.json({ ok: false, message: "Type STAGE NATIONAL SYNTHETIC TEST to stage fictional load-test records." }, { status: 400 });
       const source: SourceName | null = body.source === "us" ? "us" : body.source === "ca" ? "ca" : null;
@@ -251,19 +191,14 @@ export async function POST(request: NextRequest) {
       const offset = safeInteger(body.offset);
       return NextResponse.json({ ok: true, action, source, ...(await stageBatch(admin, source, offset)), counts: await counts(admin) });
     }
-
     if (action === "publish") {
       if (confirmation !== "PUBLISH NATIONAL SYNTHETIC TEST") return NextResponse.json({ ok: false, message: "Type PUBLISH NATIONAL SYNTHETIC TEST to publish fictional load-test records." }, { status: 400 });
       return NextResponse.json({ ok: true, action, ...(await publishBatch(admin)), counts: await counts(admin) });
     }
-
     if (action === "remove") {
       if (confirmation !== "REMOVE NATIONAL SYNTHETIC TEST") return NextResponse.json({ ok: false, message: "Type REMOVE NATIONAL SYNTHETIC TEST to delete the national fictional load-test records." }, { status: 400 });
       return NextResponse.json({ ok: true, action, ...(await removeBatch(admin)), counts: await counts(admin) });
     }
-
     return NextResponse.json({ ok: false, message: "Choose a supported synthetic scale-test action." }, { status: 400 });
-  } catch {
-    return safeApiError({ code: "synthetic_scale_action_failed", message: "Could not complete the synthetic scale-test action." });
-  }
+  } catch { return safeApiError({ code: "synthetic_scale_action_failed", message: "Could not complete the synthetic scale-test action." }); }
 }
