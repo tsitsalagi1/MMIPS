@@ -5,6 +5,7 @@ import test from 'node:test';
 const mapExperience = fs.readFileSync('components/map/PublicMapExperience.tsx', 'utf8');
 const mapPage = fs.readFileSync('app/map/page.tsx', 'utf8');
 const publicMap = fs.readFileSync('lib/public-map.ts', 'utf8');
+const publicCases = fs.readFileSync('lib/cases.ts', 'utf8');
 const profilesPage = fs.readFileSync('app/profiles/page.tsx', 'utf8');
 const profilesSearch = fs.readFileSync('components/ProfilesSearch.tsx', 'utf8');
 const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
@@ -24,8 +25,12 @@ test('public map loader no longer silently truncates at 250 points', () => {
   assert.match(publicMap, /CASE_ID_CHUNK_SIZE = 200/);
 });
 
-test('profile browsing limits initial DOM and paginates explicit search results', () => {
+test('profile browsing uses bounded reads and paginates visible results', () => {
   assert.match(profilesPage, /INITIAL_PROFILE_LIMIT = 24/);
+  assert.match(profilesPage, /getPublishedCases\(\{ limit: INITIAL_PROFILE_LIMIT \}\)/);
+  assert.match(publicCases, /PUBLIC_CASE_PAGE_SIZE = 500/);
+  assert.match(publicCases, /PUBLIC_CASE_SAFETY_LIMIT = 10000/);
+  assert.match(publicCases, /\.range\(from, from \+ PUBLIC_CASE_PAGE_SIZE - 1\)/);
   assert.match(profilesSearch, /RESULTS_PER_PAGE = 20/);
   assert.match(profilesSearch, /Previous 20/);
   assert.match(profilesSearch, /Next 20/);
