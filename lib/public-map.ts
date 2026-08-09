@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CaseStatus, ProfileType } from "./types";
+import { distanceMiles } from "./zip-geo";
 
 export const PUBLIC_MAP_PRECISIONS = ["state", "broad_region", "tribal_region", "county", "city_centroid"] as const;
 export type PublicMapPrecision = typeof PUBLIC_MAP_PRECISIONS[number];
@@ -28,6 +29,8 @@ const FORBIDDEN_PRECISIONS = new Set(["exact", "address", "street", "building", 
 const MAP_POINT_PAGE_SIZE = 1000;
 const MAP_POINT_SAFETY_LIMIT = 10000;
 const CASE_ID_CHUNK_SIZE = 200;
+const LOCAL_MAP_POINT_LIMIT = 1000;
+export const PUBLIC_MAP_ZIP_RADIUS_MILES = 100;
 
 export function isPublicMapPrecision(value: unknown): value is PublicMapPrecision {
   return typeof value === "string" && (PUBLIC_MAP_PRECISIONS as readonly string[]).includes(value) && !FORBIDDEN_PRECISIONS.has(value);
@@ -86,6 +89,24 @@ async function loadAllPointRows(client: PublicMapClient) {
   return { rows, error: null };
 }
 
+async function loadNearbyPointRows(client: PublicMapClient, latitude: number, longitude: number, radiusMiles: number) {
+  const latitudeDelta = radiusMiles / 69.0;
+  const longitudeScale = Math.max(0.2, Math.cos(latitude * Math.PI / 180));
+  const longitudeDelta = radiusMiles / (69.0 * longitudeScale);
+
+  const { data, error } = await client
+    .from("public_case_map_points")
+    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at")
+    .gte("public_latitude", latitude - latitudeDelta)
+    .lte("public_latitude", latitude + latitudeDelta)
+    .gte("public_longitude", longitude - longitudeDelta)
+    .lte("public_longitude", longitude + longitudeDelta)
+    .order("updated_at", { ascending: false })
+    .limit(LOCAL_MAP_POINT_LIMIT);
+
+  return { rows: data || [], error };
+}
+
 async function loadPublishedMapCases(client: PublicMapClient, caseIds: string[]) {
   const rows: any[] = [];
   for (let index = 0; index < caseIds.length; index += CASE_ID_CHUNK_SIZE) {
@@ -102,19 +123,7 @@ async function loadPublishedMapCases(client: PublicMapClient, caseIds: string[])
   return { rows, error: null };
 }
 
-export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
-  /*
-    The map may eventually hold thousands of approved public-awareness points.
-    Load them in bounded pages rather than silently truncating the public map at
-    250 rows. Case lookups are also chunked to keep PostgREST URLs bounded.
-  */
-  const pointResult = await loadAllPointRows(client);
-  if (pointResult.error) {
-    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
-    return { points: [], availability: "error" };
-  }
-
-  const pointRows = pointResult.rows;
+async function mergePointRowsWithPublicCases(client: PublicMapClient, pointRows: any[]): Promise<PublicMapResult> {
   if (!pointRows.length) return { points: [], availability: "available" };
 
   const caseIds = [...new Set(pointRows.map((row: any) => row.case_id).filter(Boolean))] as string[];
@@ -131,10 +140,56 @@ export async function loadPublicMapPoints(client: PublicMapClient): Promise<Publ
   return { points: sanitizePublicMapRows(mergedRows), availability: "available" };
 }
 
+export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
+  /*
+    Retained for administrative/testing uses that require the complete public
+    collection. The public /map page no longer calls this on initial load.
+  */
+  const pointResult = await loadAllPointRows(client);
+  if (pointResult.error) {
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
+    return { points: [], availability: "error" };
+  }
+  return mergePointRowsWithPublicCases(client, pointResult.rows);
+}
+
 export async function getPublicMapPoints(): Promise<PublicMapResult> {
   const supabase = createPublicSupabaseClient();
   if (!supabase) return { points: [], availability: "unconfigured" };
   return loadPublicMapPoints(supabase);
+}
+
+export async function getPublicMapPointsNear(
+  latitude: number,
+  longitude: number,
+  radiusMiles = PUBLIC_MAP_ZIP_RADIUS_MILES
+): Promise<PublicMapResult> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return { points: [], availability: "error" };
+  }
+  if (!Number.isFinite(radiusMiles) || radiusMiles <= 0 || radiusMiles > 250) {
+    return { points: [], availability: "error" };
+  }
+
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return { points: [], availability: "unconfigured" };
+
+  const pointResult = await loadNearbyPointRows(supabase, latitude, longitude, radiusMiles);
+  if (pointResult.error) {
+    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
+    return { points: [], availability: "error" };
+  }
+
+  const merged = await mergePointRowsWithPublicCases(supabase, pointResult.rows);
+  if (merged.availability !== "available") return merged;
+
+  return {
+    availability: "available",
+    points: merged.points.filter((point) => distanceMiles(
+      { latitude, longitude },
+      { latitude: point.publicLatitude, longitude: point.publicLongitude }
+    ) <= radiusMiles)
+  };
 }
 
 export interface PublicMapFilters { profileType: string; status: string; region: string; }
