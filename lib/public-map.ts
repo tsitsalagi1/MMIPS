@@ -25,6 +25,9 @@ export interface PublicMapResult {
 }
 
 const FORBIDDEN_PRECISIONS = new Set(["exact", "address", "street", "building", "shelter", "home", "gps_device", "raw_last_known_coordinate"]);
+const MAP_POINT_PAGE_SIZE = 1000;
+const MAP_POINT_SAFETY_LIMIT = 10000;
+const CASE_ID_CHUNK_SIZE = 200;
 
 export function isPublicMapPrecision(value: unknown): value is PublicMapPrecision {
   return typeof value === "string" && (PUBLIC_MAP_PRECISIONS as readonly string[]).includes(value) && !FORBIDDEN_PRECISIONS.has(value);
@@ -66,46 +69,64 @@ export function sanitizePublicMapRows(rows: unknown[] | null | undefined): Publi
 
 type PublicMapClient = Pick<SupabaseClient, "from">;
 
+async function loadAllPointRows(client: PublicMapClient) {
+  const rows: any[] = [];
+  for (let from = 0; from < MAP_POINT_SAFETY_LIMIT; from += MAP_POINT_PAGE_SIZE) {
+    const { data, error } = await client
+      .from("public_case_map_points")
+      .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at")
+      .order("updated_at", { ascending: false })
+      .range(from, from + MAP_POINT_PAGE_SIZE - 1);
+
+    if (error) return { rows: [] as any[], error };
+    const page = data || [];
+    rows.push(...page);
+    if (page.length < MAP_POINT_PAGE_SIZE) break;
+  }
+  return { rows, error: null };
+}
+
+async function loadPublishedMapCases(client: PublicMapClient, caseIds: string[]) {
+  const rows: any[] = [];
+  for (let index = 0; index < caseIds.length; index += CASE_ID_CHUNK_SIZE) {
+    const chunk = caseIds.slice(index, index + CASE_ID_CHUNK_SIZE);
+    const { data, error } = await client
+      .from("cases")
+      .select("id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name)")
+      .in("id", chunk)
+      .eq("review_status", "approved")
+      .not("published_at", "is", null);
+    if (error) return { rows: [] as any[], error };
+    rows.push(...(data || []));
+  }
+  return { rows, error: null };
+}
+
 export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
   /*
-    Read the dedicated public map relation first, without requiring PostgREST to
-    resolve the case relationship. A legitimately empty relation must be an
-    available/empty state, not an application error. Matching approved public
-    case/person fields are loaded only when public map points actually exist.
+    The map may eventually hold thousands of approved public-awareness points.
+    Load them in bounded pages rather than silently truncating the public map at
+    250 rows. Case lookups are also chunked to keep PostgREST URLs bounded.
   */
-  const { data: pointRows, error: pointError } = await client
-    .from("public_case_map_points")
-    .select("case_id, public_label, public_latitude, public_longitude, precision, region_type, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(250);
-
-  if (pointError) {
+  const pointResult = await loadAllPointRows(client);
+  if (pointResult.error) {
     console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
     return { points: [], availability: "error" };
   }
 
-  if (!pointRows?.length) {
-    return { points: [], availability: "available" };
-  }
+  const pointRows = pointResult.rows;
+  if (!pointRows.length) return { points: [], availability: "available" };
 
-  const caseIds = [...new Set(pointRows.map((row: any) => row.case_id).filter(Boolean))];
-  if (!caseIds.length) {
-    return { points: [], availability: "available" };
-  }
+  const caseIds = [...new Set(pointRows.map((row: any) => row.case_id).filter(Boolean))] as string[];
+  if (!caseIds.length) return { points: [], availability: "available" };
 
-  const { data: caseRows, error: caseError } = await client
-    .from("cases")
-    .select("id, slug, status, profile_type, review_status, published_at, last_public_update, persons(full_name)")
-    .in("id", caseIds)
-    .eq("review_status", "approved")
-    .not("published_at", "is", null);
-
-  if (caseError) {
+  const caseResult = await loadPublishedMapCases(client, caseIds);
+  if (caseResult.error) {
     console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
     return { points: [], availability: "error" };
   }
 
-  const casesById = new Map((caseRows || []).map((row: any) => [row.id, row]));
+  const casesById = new Map(caseResult.rows.map((row: any) => [row.id, row]));
   const mergedRows = pointRows.map((row: any) => ({ ...row, cases: casesById.get(row.case_id) }));
   return { points: sanitizePublicMapRows(mergedRows), availability: "available" };
 }

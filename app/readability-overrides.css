@@ -66,6 +66,15 @@ h1 {
   letter-spacing: -.035em;
 }
 
+/* The homepage hero is intentionally calmer than generic page headings. */
+.calm-hero .hero-copy h1 {
+  font-size: clamp(42px, 5.25vw, 64px);
+  line-height: 1.09;
+  letter-spacing: -.024em;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+
 h2 {
   line-height: 1.14;
   letter-spacing: -.02em;
@@ -252,6 +261,11 @@ h3 {
 
   .case-card-grid > div:last-child {
     gap: .9rem;
+  }
+
+  .calm-hero .hero-copy h1 {
+    font-size: clamp(38px, 12vw, 52px);
+    max-width: none;
   }
 }
 

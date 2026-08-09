@@ -79,17 +79,18 @@ test("slow basemap loading remains non-destructive while MMIPS markers stay avai
   assert.match(rendererCss, /\.loadingNotice/);
 });
 
-test("map uses filtered points while the complete list uses published profiles", () => {
+test("map and accessible results use one filtered public point collection without rendering an endless list", () => {
   assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
-  assert.match(experience, /profiles\.map\(\(profile\)/);
-  assert.doesNotMatch(experience, /filtered\.map\(\(point\)/);
-  assert.match(page, /getPublishedCases\(\)/);
+  assert.match(experience, /ACCESSIBLE_PAGE_SIZE = 20/);
+  assert.match(experience, /accessiblePoints\.map\(\(point\)/);
+  assert.doesNotMatch(experience, /profiles\.map\(\(profile\)/);
+  assert.doesNotMatch(page, /getPublishedCases\(\)/);
   assert.match(page, /getPublicMapPoints\(\)/);
-  assert.match(page, /profiles=\{profiles\}/);
-  assert.match(experience, /Skip visual map and go to the complete accessible list/);
+  assert.match(experience, /Skip visual map and go to the accessible results/);
   assert.match(experience, /id="accessible-map-list"/);
   assert.match(experience, /aria-live="polite" aria-atomic="true"/);
   assert.match(experience, /Open public profile/);
-  assert.match(experience, /complete accessible list/);
+  assert.match(experience, /Previous 20/);
+  assert.match(experience, /Next 20/);
   assert.match(experience, /not an exact location/);
 });
