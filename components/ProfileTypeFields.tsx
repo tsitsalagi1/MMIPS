@@ -16,68 +16,69 @@ export function ProfileTypeFields() {
   const isMurdered = profileType === "murdered_info_needed";
 
   const helpText = useMemo(() => {
-    if (isUrgent) return "Use this when time matters and public awareness may need to move before every official number is available. MMIPS still requires official-contact routing and admin review.";
-    if (isMurdered) return "Use this for remembrance and renewed visibility when the public can share official information to help generate new information for the listed official contact.";
-    if (profileType === "unidentified") return "Use broad, non-graphic public information only. Do not upload graphic images or sensitive location details.";
-    return "Use this for a missing-person public profile when more official information is already available.";
+    if (isUrgent) return "Choose this when a person is missing now and approved public awareness may need to move quickly. MMIPS still reviews the information before anything becomes public.";
+    if (isMurdered) return "Choose this to remember a loved one and share approved information when the public may be able to help the official investigating agency.";
+    if (profileType === "unidentified") return "Choose this for an unidentified person. Share only non-graphic information that is safe for the public.";
+    return "Choose this for a missing-person public profile when the case is not using the urgent alert path.";
   }, [isUrgent, isMurdered, profileType]);
 
   return (
     <section className="profile-type-panel">
-      <h2>Profile type</h2>
-      <p className="muted">Choose the path that best fits the situation. The public profile and flyer will change tone based on this choice.</p>
+      <h2>What kind of public profile do you need?</h2>
+      <p className="muted reading-measure">Choose the option that best fits the situation. This helps MMIPS use the right wording and safety review.</p>
       <div className="check-grid">
         <label>
-          What are you submitting?
+          Profile type
           <select
             name="profile_type"
             required
             value={profileType}
             onChange={(event) => setProfileType(event.currentTarget.value as ProfileType)}
           >
-            <option value="urgent_missing">Urgent missing-person public awareness</option>
-            <option value="missing">Missing-person public profile</option>
-            <option value="murdered_info_needed">Murdered loved one / information needed</option>
-            <option value="unidentified">Unidentified person public profile</option>
+            <option value="urgent_missing">Missing now — urgent public awareness</option>
+            <option value="missing">Missing person — public profile</option>
+            <option value="murdered_info_needed">Murdered loved one — information needed</option>
+            <option value="unidentified">Unidentified person — public profile</option>
           </select>
         </label>
         <input type="hidden" name="status" value={statusFor(profileType)} />
         <input type="hidden" name="urgency_level" value={isUrgent ? "urgent_public_awareness" : isMurdered ? "renewed_visibility" : "standard"} />
         <label>
-          Public status label
+          Public label
           <input value={isUrgent ? "Urgent public awareness" : isMurdered ? "Remembering / information needed" : profileType === "missing" ? "Missing" : "Unidentified"} readOnly aria-readonly="true" />
         </label>
       </div>
       <div className={isUrgent ? "notice urgent-soft" : "notice soft"}>
-        <strong>{isUrgent ? "Urgent path" : isMurdered ? "Information-needed path" : "Public-awareness path"}</strong>
+        <strong>{isUrgent ? "Urgent missing-person profile" : isMurdered ? "Remembering / information-needed profile" : "Public-awareness profile"}</strong>
         <p>{helpText}</p>
       </div>
 
       {isUrgent ? (
         <div className="urgent-fields card inset-card">
-          <h3>Urgent public-awareness planning</h3>
-          <p className="muted">This helps MMIPS decide what broad area may need public awareness after admin review. It is not a prediction, a search plan, or a place to send tips.</p>
+          <h3>Helpful details for an urgent alert</h3>
+          <p className="muted reading-measure">These details help MMIPS decide what broad area may need public awareness after review. They are not a search plan or a place to send tips.</p>
           <div className="check-grid">
             <label>Last known date and time<input name="last_known_datetime" type="datetime-local" /></label>
-            <label>Time zone<input name="last_known_time_zone" placeholder="Example: America/Chicago or Central time" defaultValue="America/Chicago" /></label>
-            <label>Likely travel mode<select name="likely_travel_mode" defaultValue="unknown"><option value="unknown">Unknown</option><option value="walking">Walking</option><option value="vehicle">Vehicle</option><option value="public_transit">Public transit</option><option value="bicycle">Bicycle</option><option value="other">Other</option></select></label>
-            <label>Possible direction of travel<input name="possible_direction" placeholder="Example: possibly toward Hulbert / unknown" /></label>
-            <label>Vehicle description, if already public/authorized<input name="vehicle_description" placeholder="Only if safe and authorized to publish or review" /></label>
-            <label>Requested notification area<textarea name="notification_area_requested" placeholder="Example: Tahlequah, Park Hill, Hulbert, Cherokee County, bordering counties if no contact within 6 hours"></textarea></label>
+            <label>Time zone<input name="last_known_time_zone" placeholder="Example: Central time" defaultValue="America/Chicago" /></label>
+            <label>How the person may be traveling<select name="likely_travel_mode" defaultValue="unknown"><option value="unknown">Unknown</option><option value="walking">Walking</option><option value="vehicle">Vehicle</option><option value="public_transit">Public transit</option><option value="bicycle">Bicycle</option><option value="other">Other</option></select></label>
+            <label>Possible direction, if known<input name="possible_direction" placeholder="Example: possibly toward Hulbert, or unknown" /></label>
+            <label>Vehicle description, if safe to share<input name="vehicle_description" placeholder="Include only information approved for public review" /></label>
+            <label>Broad area that may need the alert<textarea name="notification_area_requested" placeholder="Example: Tahlequah, Park Hill, Hulbert, and nearby Cherokee County areas"></textarea></label>
           </div>
-          <label>Private last-known details, admin-only optional<textarea name="last_known_location_private" placeholder="Exact/private details for admin review only. Do not include if unsafe or not authorized."></textarea></label>
-          <label className="checkbox urgent-checkbox"><input type="checkbox" required name="confirm_report_first" /> I have contacted 911, Tribal law enforcement, local law enforcement, or another official agency, or I understand I must do so immediately.</label>
-          <label className="checkbox urgent-checkbox"><input type="checkbox" required name="confirm_mmips_no_tips" /> I understand MMIPS does not collect or investigate tips. Any information should go to 911 or the listed official contact.</label>
-          <label className="checkbox urgent-checkbox"><input type="checkbox" name="official_info_pending" /> Official report/NamUs/NCIC information may be added later.</label>
+          <label>Private last-known details, optional<textarea name="last_known_location_private" placeholder="Only include exact/private details if MMIPS needs them for review and it is safe and authorized to share them privately."></textarea></label>
+          <p className="field-help">Private last-known details are for MMIPS review only and must never be copied into a public profile unless they are separately approved as safe public information.</p>
+          <label className="checkbox urgent-checkbox"><input type="checkbox" required name="confirm_report_first" /> I have contacted an official agency, or I understand I must do that immediately.</label>
+          <label className="checkbox urgent-checkbox"><input type="checkbox" required name="confirm_mmips_no_tips" /> I understand MMIPS is not a tip line. Tips go to 911 or the official contact.</label>
+          <label className="checkbox urgent-checkbox"><input type="checkbox" name="official_info_pending" /> Some official case information may be added later.</label>
         </div>
       ) : null}
 
       {isMurdered ? (
         <div className="murdered-fields card inset-card">
-          <h3>Remembering / information-needed profile</h3>
-          <p className="muted">This profile type is for respectful visibility, official contact information, and public map trend awareness. It should not use urgent missing-person alert language.</p>
-          <label>Public map area<textarea name="notification_area_requested" placeholder="Example: county, city, Tribal Nation area, or highway corridor for broad map/trend display"></textarea></label>
-          <label className="checkbox"><input type="checkbox" name="official_info_pending" /> Official public information may be added later.</label>
+          <h3>Remembering and information needed</h3>
+          <p className="muted reading-measure">This profile is for respectful public awareness and official information sharing. It does not use urgent missing-person alert language.</p>
+          <label>Broad public area<textarea name="notification_area_requested" placeholder="Example: city, county, Tribal Nation area, or highway corridor"></textarea></label>
+          <label className="checkbox"><input type="checkbox" name="official_info_pending" /> Some official public information may be added later.</label>
         </div>
       ) : null}
     </section>
