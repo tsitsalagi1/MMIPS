@@ -1,6 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CaseStatus, ProfileType } from "./types";
-import { distanceMiles } from "./zip-geo";
 
 export const PUBLIC_MAP_PRECISIONS = ["state", "broad_region", "tribal_region", "county", "city_centroid"] as const;
 export type PublicMapPrecision = typeof PUBLIC_MAP_PRECISIONS[number];
@@ -41,6 +40,17 @@ function createPublicSupabaseClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) return null;
   return createClient(url, anonKey, { auth: { persistSession: false } });
+}
+
+function distanceMiles(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const toRadians = (degrees: number) => degrees * Math.PI / 180;
+  const earthRadiusMiles = 3958.7613;
+  const lat1 = toRadians(a.latitude);
+  const lat2 = toRadians(b.latitude);
+  const deltaLat = toRadians(b.latitude - a.latitude);
+  const deltaLon = toRadians(b.longitude - a.longitude);
+  const h = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+  return 2 * earthRadiusMiles * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
 export function sanitizePublicMapRows(rows: unknown[] | null | undefined): PublicMapPoint[] {
