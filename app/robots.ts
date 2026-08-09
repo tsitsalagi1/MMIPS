@@ -3,7 +3,7 @@ import { mmipsSiteMode } from "../lib/site-mode";
 
 export default function robots(): MetadataRoute.Robots {
   const isGlobal = mmipsSiteMode() === "global";
-  const base = process.env.NEXT_PUBLIC_SITE_URL || (isGlobal ? "https://mmips.com" : "https://us.mmips.com");
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com";
 
   return {
     rules: isGlobal
