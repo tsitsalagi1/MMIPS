@@ -9,6 +9,7 @@ const home = fs.readFileSync("app/page.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const proxy = fs.readFileSync("proxy.ts", "utf8");
 const sitemap = fs.readFileSync("app/sitemap.ts", "utf8");
+const robots = fs.readFileSync("app/robots.ts", "utf8");
 const nextConfig = fs.readFileSync("next.config.ts", "utf8");
 const turnstile = fs.readFileSync("lib/security/turnstile.ts", "utf8");
 const architecture = fs.readFileSync("docs/GLOBAL_FEDERATION_ARCHITECTURE.md", "utf8");
@@ -47,6 +48,14 @@ test("global and United States deployment surfaces are distinct", () => {
   assert.match(layout, /UnitedStatesFooter/);
   assert.match(layout, /United States · Change country/);
   assert.match(layout, /MMIPS Global[\s\S]*does not maintain a worldwide family, subscriber, or case database/);
+});
+
+test("domain cutover is explicit and merging alone cannot silently change the canonical host", () => {
+  assert.match(layout, /NEXT_PUBLIC_SITE_URL \|\| "https:\/\/mmips\.com"/);
+  assert.match(sitemap, /NEXT_PUBLIC_SITE_URL \|\| "https:\/\/mmips\.com"/);
+  assert.match(robots, /NEXT_PUBLIC_SITE_URL \|\| "https:\/\/mmips\.com"/);
+  assert.match(layout, /const globalUrl = process\.env\.NEXT_PUBLIC_GLOBAL_SITE_URL/);
+  assert.match(layout, /\{globalUrl \? <a href=\{globalUrl\}>United States · Change country<\/a> : null\}/);
 });
 
 test("global gateway gets a narrower browser security surface than the United States portal", () => {
