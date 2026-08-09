@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { globalSiteUrl, mmipsSiteMode } from "../lib/site-mode";
+import { mmipsSiteMode } from "../lib/site-mode";
 import "./globals.css";
 import "./theme-overrides.css";
 import "./readability-overrides.css";
 
 export function generateMetadata(): Metadata {
   const isGlobal = mmipsSiteMode() === "global";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (isGlobal ? "https://mmips.com" : "https://us.mmips.com");
+  // Keep the currently deployed apex canonical until a country project explicitly
+  // configures its own production URL during the verified domain cutover.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com";
   const title = isGlobal
     ? "MMIPS — Choose your country or region"
     : "MMIPS United States — Missing & Murdered Indigenous People Search";
@@ -66,6 +68,8 @@ function GlobalHeader() {
 }
 
 function UnitedStatesHeader() {
+  const globalUrl = process.env.NEXT_PUBLIC_GLOBAL_SITE_URL;
+
   return (
     <header className="site-header">
       <nav className="container nav" aria-label="United States MMIPS navigation">
@@ -79,7 +83,7 @@ function UnitedStatesHeader() {
           <Link href="/alerts">Alerts</Link>
           <Link href="/resources">Family Resources</Link>
           <Link href="/submit">Submit Information</Link>
-          <a href={globalSiteUrl()}>United States · Change country</a>
+          {globalUrl ? <a href={globalUrl}>United States · Change country</a> : null}
         </div>
       </nav>
     </header>
