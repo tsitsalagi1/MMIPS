@@ -23,7 +23,39 @@ function adminContentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+function isGlobalGatewayAsset(pathname: string) {
+  return pathname.startsWith("/_next/") ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    /\.(?:png|jpe?g|svg|webp|gif|ico)$/i.test(pathname);
+}
+
+function globalGatewayIsolation(request: NextRequest) {
+  if (process.env.MMIPS_SITE_MODE !== "global") return null;
+
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/" || isGlobalGatewayAsset(pathname)) return NextResponse.next();
+
+  // The global gateway intentionally has no country case/search/submission/admin API surface.
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "Choose a country-specific MMIPS system." },
+      { status: 404, headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
+  const gatewayUrl = request.nextUrl.clone();
+  gatewayUrl.pathname = "/";
+  gatewayUrl.search = "";
+  return NextResponse.redirect(gatewayUrl, 307);
+}
+
 export function proxy(request: NextRequest) {
+  const globalResponse = globalGatewayIsolation(request);
+  if (globalResponse) return globalResponse;
+
+  if (!request.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
+
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const csp = adminContentSecurityPolicy(nonce);
   const requestHeaders = new Headers(request.headers);
@@ -47,6 +79,7 @@ export const config = {
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" }
       ]
-    }
+    },
+    { source: "/:path*" }
   ]
 };
