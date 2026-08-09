@@ -11,13 +11,13 @@ const fields: Array<[string, string]> = [
   ["last_seen_date", "Public date"],
   ["last_seen_location", "Public location"],
   ["lead_agency", "Lead agency"],
-  ["agency_case_number", "Agency report/case #"],
+  ["agency_case_number", "Agency case number"],
   ["namus_number", "NamUs"],
   ["tip_contact", "Official tip contact"],
-  ["summary", "Verified public summary"],
-  ["submitter_name", "Submitter"],
-  ["submitter_email", "Submitter email"],
-  ["relationship", "Relationship"]
+  ["summary", "Public facts"],
+  ["submitter_name", "Your name"],
+  ["submitter_email", "Your email"],
+  ["relationship", "Your relationship"]
 ];
 
 function textValue(data: FormData, name: string) {
@@ -61,23 +61,24 @@ export function SubmissionReviewGate() {
       {!reviewed ? (
         <div className="notice">
           <strong>Review before sending.</strong>
-          <p>Nothing is submitted yet. Use the review step to catch spelling, public-location, agency-contact, photo, or consent mistakes before MMIPS receives the information.</p>
-          <button type="button" onClick={review}>Review submission</button>
+          <p>Nothing has been sent yet. Review the information so you can catch spelling, location, contact, photo, or permission mistakes first.</p>
+          <button type="button" onClick={review}>Review what I entered</button>
         </div>
       ) : (
         <section className="card" aria-labelledby="submission-review-heading">
           <p className="eyebrow">Final review</p>
-          <h2 id="submission-review-heading">Check what you are about to send</h2>
-          <p className="muted">Private moderator-only fields are not repeated in this summary. You can still scroll up and edit anything. Any edit will require a fresh review.</p>
+          <h2 id="submission-review-heading">Check the information before you send it</h2>
+          <p className="muted reading-measure">Private review-only details are not repeated here. If anything is wrong, choose “Go back and edit.” Any change will require another review before sending.</p>
           <dl className="review-list">
             {items.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
             <div><dt>Photos selected</dt><dd>{photoNames.length ? photoNames.join(", ") : "None"}</dd></div>
           </dl>
           <div className="notice warning">
-            <strong>One last safety check:</strong> do not submit suspect accusations, rumors, exact private addresses, shelter/family locations, graphic details, or information that could endanger a person, family, witness, or investigation.
+            <strong>One last safety check</strong>
+            <p>Do not send rumors, public accusations, exact private addresses, shelter or family locations, graphic details, or anything that could put a person, family, witness, or investigation at risk.</p>
           </div>
           <div className="button-row">
-            <button type="submit">Confirm and submit for review</button>
+            <button type="submit">Send to MMIPS for review</button>
             <button type="button" className="button secondary" onClick={() => setReviewed(false)}>Go back and edit</button>
           </div>
         </section>
