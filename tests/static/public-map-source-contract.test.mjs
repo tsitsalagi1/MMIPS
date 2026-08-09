@@ -39,7 +39,12 @@ test("public projection selects omit photos and private coordinate fields while 
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
   const mapSelect = loader.match(/const MAP_POINT_SELECT = "([^"]+)"/)?.[1] || "";
   const searchSelect = loader.match(/const SEARCH_PROJECTION_SELECT = "([^"]+)"/)?.[1] || "";
-  assert.doesNotMatch(mapSelect + searchSelect, /exact_address|raw_last_known_coordinate|last_known_location_private|latitude\b(?!.*public_latitude)|longitude\b(?!.*public_longitude)/);
+  const selectedFields = `${mapSelect},${searchSelect}`.split(",").map((field) => field.trim()).filter(Boolean);
+  for (const forbidden of ["exact_address", "raw_last_known_coordinate", "last_known_location_private", "latitude", "longitude"]) {
+    assert.equal(selectedFields.includes(forbidden), false, forbidden);
+  }
+  assert.equal(selectedFields.includes("public_latitude"), true);
+  assert.equal(selectedFields.includes("public_longitude"), true);
   assert.match(loader, /FORBIDDEN_PRECISIONS[\s\S]*raw_last_known_coordinate/);
 });
 
