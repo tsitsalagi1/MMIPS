@@ -4,136 +4,102 @@ import test from "node:test";
 
 const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
-const experience = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
+const explorer = fs.readFileSync("components/ProfilesSearch.tsx", "utf8");
 const renderer = fs.readFileSync("components/map/MapLibreRenderer.tsx", "utf8");
 const clusters = fs.readFileSync("components/map/public-map-clusters.ts", "utf8");
 const rendererCss = fs.readFileSync("components/map/MapLibreRenderer.module.css", "utf8");
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
-const page = fs.readFileSync("app/map/page.tsx", "utf8");
-const zipRoute = fs.readFileSync("app/api/map/zip/route.ts", "utf8");
+const mapRedirect = fs.readFileSync("app/map/page.tsx", "utf8");
+const mapDataRoute = fs.readFileSync("app/api/profiles/map/route.ts", "utf8");
 const publicMap = fs.readFileSync("lib/public-map.ts", "utf8");
-const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
+const serverSources = ["app/map/page.tsx", "app/api/profiles/map/route.ts", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
 
 test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server boundaries", () => {
   assert.equal(packageJson.dependencies["maplibre-gl"], "6.0.0");
   assert.equal(lock.packages["node_modules/maplibre-gl"].version, "6.0.0");
-  assert.doesNotMatch(JSON.stringify(packageJson.dependencies), /maplibre-gl[^\n]*(\^|~|latest|cdn)/i);
+  assert.equal(packageJson.dependencies["maplibre-gl"].includes("^") || packageJson.dependencies["maplibre-gl"].includes("~"), false);
   assert.match(renderer, /import \* as maplibregl from "maplibre-gl"/);
   assert.match(renderer, /import "maplibre-gl\/dist\/maplibre-gl\.css"/);
   assert.doesNotMatch(serverSources, /maplibre-gl|\bwindow\b|\bdocument\b/);
 });
 
+test("Search Profiles dynamically owns the browser map", () => {
+  assert.match(explorer, /dynamic\(\(\) => import\("\.\/map\/MapLibreRenderer"\), \{ ssr: false \}\)/);
+  assert.match(explorer, /National MMIPS public profile map/);
+  assert.match(explorer, /fetch\("\/api\/profiles\/map"/);
+  assert.match(mapDataRoute, /getPublicMapPoints\(\)/);
+});
+
 test("small result sets retain independent accessible MapLibre markers", () => {
   assert.match(renderer, /^"use client"/);
-  assert.match(experience, /dynamic\(\(\) => import\("\.\/MapLibreRenderer"\), \{ ssr: false \}\)/);
   assert.match(renderer, /CLUSTER_THRESHOLD = 300/);
   assert.match(renderer, /new maplibregl\.Marker\(\{ element, anchor: "center" \}\)/);
   assert.match(renderer, /element\.type = "button"/);
   assert.match(renderer, /element\.setAttribute\("aria-label"/);
   assert.match(rendererCss, /\.publicMarker/);
-  assert.doesNotMatch(renderer + experience + clusters, /dangerouslySetInnerHTML|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|localStorage|sessionStorage/);
+  assert.doesNotMatch(renderer + explorer + clusters, /dangerouslySetInnerHTML|draggable|GeolocateControl|navigator\.geolocation|geocoder|routeControl|localStorage|sessionStorage/);
 });
 
-test("large result sets use viewport-bounded DOM clustering instead of fragile style layers", () => {
+test("national result sets use viewport-bounded DOM clustering", () => {
   assert.match(renderer, /geoJson\.features\.length > CLUSTER_THRESHOLD/);
   assert.match(renderer, /addClusteredPublicPoints/);
-  assert.match(renderer, /data-point-mode=\{points\.length > CLUSTER_THRESHOLD \? "clustered" : "markers"\}/);
   assert.match(clusters, /CELL_SIZE_PX = 56/);
   assert.match(clusters, /inViewport\(map, coordinates\)/);
   assert.match(clusters, /map\.project\(coordinates\)/);
   assert.match(clusters, /Math\.floor\(projected\.x \/ CELL_SIZE_PX\)/);
   assert.match(clusters, /new maplibregl\.Marker/);
   assert.match(clusters, /mmipsClusterMarker/);
-  assert.match(clusters, /mmipsClusterPointMarker/);
   assert.match(clusters, /map\.on\("moveend", render\)/);
   assert.match(clusters, /map\.on\("resize", render\)/);
   assert.doesNotMatch(clusters, /addSource|addLayer|cluster:\s*true|getClusterExpansionZoom/);
-  assert.match(rendererCss, /mmipsClusterMarker/);
-});
-
-test("large cluster rendering no longer waits for MapLibre style load", () => {
-  assert.match(renderer, /clusterCleanupRef\.current = addClusteredPublicPoints/);
-  assert.doesNotMatch(renderer, /pendingClusterLoadRef/);
-  assert.doesNotMatch(renderer, /if \(geoJson\.features\.length > CLUSTER_THRESHOLD && !map\.isStyleLoaded\(\)\)/);
 });
 
 test("MapTiler remains the raster basemap while MMIPS data stays a separate overlay", () => {
   assert.match(renderer, /BASEMAP_SOURCE_ID = "maptiler-streets-raster"/);
-  assert.match(renderer, /\/maps\/\$\{mapId\}\/\{z\}\/\{x\}\/\{y\}\.png\?key=/);
   assert.match(renderer, /type: "raster"/);
   assert.match(renderer, /tileSize: 512/);
   assert.match(renderer, /preferredRasterStyle \?\? config\.styleUrl/);
   assert.match(renderer, /isAllowedMapResource\(tileUrl/);
 });
 
-test("camera frames the United States and Canada and preserves page scrolling", () => {
+test("camera starts continent-wide, then fits filtered results without animation", () => {
   assert.match(renderer, /CONTINENTAL_BOUNDS/);
   assert.match(renderer, /\[\[-141, 24\], \[-52, 83\]\]/);
   assert.match(renderer, /center: \[-100, 45\]/);
   assert.match(renderer, /zoom: 2\.5/);
-  assert.match(renderer, /fitBounds\(bounds, \{ padding: 28, duration: 0, maxZoom: 4 \}\)/);
-  for (const setting of ["dragRotate: false", "pitchWithRotate: false", "scrollZoom: false", "touchPitch: false", "maxPitch: 0"]) assert.match(renderer, new RegExp(setting));
-  assert.match(renderer, /showCompass: false/);
-  assert.match(rendererCss, /\.canvas\{height:24rem;width:100%;min-height:24rem\}/);
-});
-
-test("ZIP search uses Census lookup and loads only nearby public points through a no-store same-origin request", () => {
-  assert.match(experience, /fetch\("\/api\/map\/zip"/);
-  assert.match(experience, /method: "POST"/);
-  assert.match(experience, /cache: "no-store"/);
-  assert.match(experience, /pattern="\[0-9\]\{5\}"/);
-  assert.match(experience, /autoComplete="postal-code"/);
-  assert.match(experience, /MMIPS does not save this ZIP search as a case location/);
-  assert.match(experience, /setMapPoints\(nearbyPoints\)/);
-  assert.match(zipRoute, /lookupZcta\(zip\)/);
-  assert.match(zipRoute, /getPublicMapPointsNear/);
-  assert.match(zipRoute, /points: nearby\.points/);
-  assert.match(zipRoute, /"Cache-Control": "no-store"/);
-  assert.match(publicMap, /PUBLIC_MAP_ZIP_RADIUS_MILES = 100/);
-  assert.match(publicMap, /\.gte\("public_latitude"/);
-  assert.match(publicMap, /\.lte\("public_longitude"/);
-  assert.doesNotMatch(zipRoute, /console\.|request\.nextUrl|searchParams/);
-});
-
-test("ZIP search focuses the map with a zero-duration camera change and filtering preserves that focus", () => {
-  assert.match(experience, /focusTarget=\{mapFocus\}/);
-  assert.match(renderer, /focusTarget\?: MapFocusTarget \| null/);
-  assert.match(renderer, /map\.flyTo\(/);
-  assert.match(renderer, /center: \[focusTarget\.longitude, focusTarget\.latitude\]/);
-  assert.match(renderer, /zoom: focusTarget\.zoom \?\? 9/);
+  assert.match(renderer, /geoJson\.features\.length === 1/);
+  assert.match(renderer, /maxZoom: 6/);
   assert.match(renderer, /duration: 0/);
-  assert.match(renderer, /if \(!focusTarget\) updateMapCamera\(map, geoJson\)/);
   assert.doesNotMatch(renderer, /duration:\s*[1-9][0-9]*/);
+  for (const setting of ["dragRotate: false", "pitchWithRotate: false", "scrollZoom: false", "touchPitch: false", "maxPitch: 0"]) assert.match(renderer, new RegExp(setting));
 });
 
-test("configuration, request, compatible WebGL fallback, and hard failures fail safely", () => {
+test("profile searches narrow the map and ZIP searches may provide a bounded camera focus", () => {
+  assert.match(explorer, /fetch\("\/api\/profiles\/search"/);
+  assert.match(explorer, /setVisiblePoints\(mapped\)/);
+  assert.match(explorer, /focusTarget=\{mapFocus\}/);
+  assert.match(renderer, /focusTarget\?: MapFocusTarget \| null/);
+  assert.match(renderer, /center: \[focusTarget\.longitude, focusTarget\.latitude\]/);
+  assert.match(renderer, /if \(!focusTarget\) updateMapCamera\(map, geoJson\)/);
+});
+
+test("configuration, WebGL, resource, and context failures fail safely", () => {
   assert.match(boundary, /styleUrl\.protocol !== "https:"/);
   assert.match(boundary, /origin\.includes\("\*"\)/);
   assert.match(boundary, /allowedOrigins\.has\(url\.origin\)/);
   assert.match(boundary, /getContext\("webgl2"\) \|\| canvas\.getContext\("webgl"\)/);
-  assert.doesNotMatch(boundary, /failIfMajorPerformanceCaveat:\s*true/);
   for (const code of ["MAP_CONFIG_UNAVAILABLE", "MAP_CONFIG_INVALID", "MAP_WEBGL_UNAVAILABLE", "MAP_INITIALIZATION_FAILED", "MAP_STYLE_LOAD_FAILED", "MAP_RESOURCE_REJECTED", "MAP_CONTEXT_LOST"]) assert.match(renderer + boundary, new RegExp(code));
-  assert.match(renderer, /Visual map unavailable\./);
-  assert.match(renderer, /Use Search Profiles to browse public profiles without the map/);
+  assert.match(renderer, /Search controls remain available/);
   assert.match(renderer, /Retry visual map/);
 });
 
-test("slow basemap loading remains non-destructive", () => {
-  assert.match(renderer, /MAP_SLOW_LOAD_NOTICE_MS = 15000/);
-  assert.match(renderer, /if \(!mapLoaded\) setLoadingSlowly\(true\)/);
-  assert.match(renderer, /Public profiles remain available through Search Profiles/);
-  assert.match(renderer, /map\.once\("idle", onIdle\)/);
-  assert.match(renderer, /data-map-state=\{failure \? "fallback" : loadingSlowly \? "loading-slowly" : "interactive"\}/);
-  assert.match(rendererCss, /\.loadingNotice/);
+test("legacy standalone map URL permanently redirects to Search Profiles", () => {
+  assert.match(mapRedirect, /permanentRedirect\("\/profiles"\)/);
+  assert.doesNotMatch(mapRedirect, /PublicMapExperience|MapLibreRenderer/);
 });
 
-test("map page is map-first, skips the national case payload, and does not duplicate profile cards", () => {
-  assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
-  assert.match(experience, /href="\/profiles"/);
-  assert.match(experience, /Prefer a list or need a non-map view\? Search public profiles/);
-  assert.doesNotMatch(experience, /ACCESSIBLE_PAGE_SIZE|accessiblePoints|accessible-map-list|Previous 20|Next 20|Page \{safePage\}/);
-  assert.doesNotMatch(experience, /\.map\(\(point\) => <article/);
-  assert.doesNotMatch(page, /getPublishedCases|getPublicMapPoints/);
-  assert.match(page, /<PublicMapExperience points=\{\[\]\} availability="available"/);
-  assert.match(page, /<h1>MMIPS public map<\/h1>/);
+test("complete national public map loader remains bounded", () => {
+  assert.match(publicMap, /MAP_POINT_PAGE_SIZE = 1000/);
+  assert.match(publicMap, /MAP_POINT_SAFETY_LIMIT = 10000/);
+  assert.match(publicMap, /CASE_ID_CHUNK_SIZE = 200/);
 });

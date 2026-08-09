@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedCases } from "@/lib/cases";
-import { getPublicMapPoints } from "@/lib/public-map";
-import { distanceMiles, lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
+import { getPublicMapPointsNear } from "@/lib/public-map";
+import { lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
   const radiusInput = body.radiusMiles;
 
   let profiles = await getPublishedCases();
+  let mapFocus: { latitude: number; longitude: number; zoom: number } | null = null;
 
   if (q) {
     profiles = profiles.filter((item) => [item.fullName, item.tribalAffiliation, item.lastSeenLocation, item.leadAgency, item.namusNumber]
@@ -35,18 +36,15 @@ export async function POST(request: NextRequest) {
     const zcta = await lookupZcta(zip);
     if (!zcta) return NextResponse.json({ ok: false, message: "We could not verify that ZIP code right now. Check it and try again." }, { status: 400 });
 
-    const mapResult = await getPublicMapPoints();
+    const mapResult = await getPublicMapPointsNear(zcta.latitude, zcta.longitude, radiusMiles);
     if (mapResult.availability !== "available") return NextResponse.json({ ok: false, message: "ZIP-distance search is temporarily unavailable. You can still search by name, status, Tribe, agency, or state." }, { status: 503 });
-    const points = new Map(mapResult.points.map((point) => [point.caseId, point]));
-    profiles = profiles.filter((item) => {
-      const point = points.get(item.id);
-      if (!point) return false;
-      return distanceMiles(
-        { latitude: zcta.latitude, longitude: zcta.longitude },
-        { latitude: point.publicLatitude, longitude: point.publicLongitude }
-      ) <= radiusMiles;
-    });
+    const nearbyCaseIds = new Set(mapResult.points.map((point) => point.caseId));
+    profiles = profiles.filter((item) => nearbyCaseIds.has(item.id));
+    mapFocus = { latitude: zcta.latitude, longitude: zcta.longitude, zoom: radiusMiles <= 25 ? 9 : radiusMiles <= 100 ? 7 : 5 };
   }
 
-  return NextResponse.json({ ok: true, count: profiles.length, profiles }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json(
+    { ok: true, count: profiles.length, profiles, mapFocus },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }

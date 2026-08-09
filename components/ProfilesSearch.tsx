@@ -1,30 +1,93 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
-import { CaseCard } from "./CaseCard";
-import type { MmipsCase } from "@/lib/types";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { PublicMapAvailability, PublicMapPoint } from "@/lib/public-map";
+import { mapCategoryLabel } from "@/lib/status";
+import type { MapFocusTarget } from "./map/MapLibreRenderer";
 
-const RESULTS_PER_PAGE = 20;
+const MapLibreRenderer = dynamic(() => import("./map/MapLibreRenderer"), { ssr: false });
 
-export default function ProfilesSearch({ initialProfiles }: { initialProfiles: MmipsCase[] }) {
-  const [profiles, setProfiles] = useState(initialProfiles);
+type SearchProfile = { id: string };
+type SearchResponse = {
+  ok?: boolean;
+  count?: number;
+  profiles?: SearchProfile[];
+  message?: string;
+  mapFocus?: { latitude: number; longitude: number; zoom?: number } | null;
+};
+type MapDataResponse = {
+  ok?: boolean;
+  availability?: PublicMapAvailability;
+  points?: PublicMapPoint[];
+};
+
+export default function ProfilesSearch() {
+  const [allPoints, setAllPoints] = useState<PublicMapPoint[]>([]);
+  const [visiblePoints, setVisiblePoints] = useState<PublicMapPoint[]>([]);
+  const [mapAvailability, setMapAvailability] = useState<PublicMapAvailability>("available");
+  const [mapLoading, setMapLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<MapFocusTarget | null>(null);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
   const [radiusMiles, setRadiusMiles] = useState("50");
-  const [message, setMessage] = useState(initialProfiles.length ? `Showing the ${initialProfiles.length} most recently published profiles. Use search to narrow the list.` : "");
+  const [message, setMessage] = useState("Loading the national public map…");
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(profiles.length / RESULTS_PER_PAGE));
-  const safePage = Math.min(page, totalPages);
-  const visibleProfiles = useMemo(() => profiles.slice((safePage - 1) * RESULTS_PER_PAGE, safePage * RESULTS_PER_PAGE), [profiles, safePage]);
+
+  const selected = useMemo(
+    () => visiblePoints.find((point) => point.caseId === selectedId) ?? null,
+    [visiblePoints, selectedId]
+  );
+  const hasSyntheticScaleData = useMemo(
+    () => allPoints.some((point) => point.slug.startsWith("mmips-test-scale-") || point.slug.startsWith("mmips-test-")),
+    [allPoints]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadNationalMap() {
+      setMapLoading(true);
+      try {
+        const response = await fetch("/api/profiles/map", { headers: { Accept: "application/json" } });
+        const data = await response.json().catch(() => ({})) as MapDataResponse;
+        if (cancelled) return;
+        const points = Array.isArray(data.points) ? data.points : [];
+        const availability = data.availability || (response.ok ? "available" : "error");
+        setMapAvailability(availability);
+        setAllPoints(points);
+        setVisiblePoints(points);
+        setMessage(
+          availability === "available"
+            ? `${points.length} approved public map point${points.length === 1 ? "" : "s"} shown across the national map.`
+            : "Public map information is temporarily unavailable."
+        );
+      } catch {
+        if (cancelled) return;
+        setMapAvailability("error");
+        setMessage("Public map information is temporarily unavailable. Please try again later.");
+      } finally {
+        if (!cancelled) setMapLoading(false);
+      }
+    }
+    loadNationalMap();
+    return () => { cancelled = true; };
+  }, []);
 
   async function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const hasFilters = Boolean(q.trim() || state.trim() || zip.trim() || status !== "all");
+    if (!hasFilters) {
+      reset();
+      return;
+    }
+
     setLoading(true);
-    setMessage("");
-    setPage(1);
+    setMessage("Searching approved public profiles…");
+    setSelectedId(null);
     try {
       const response = await fetch("/api/profiles/search", {
         method: "POST",
@@ -35,15 +98,30 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
           state: state.trim(),
           zip: zip.trim() || undefined,
           radiusMiles: zip.trim() ? Number(radiusMiles) : undefined
-        })
+        }),
+        cache: "no-store"
       });
-      const data = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({})) as SearchResponse;
       if (!response.ok) {
         setMessage(typeof data.message === "string" ? data.message : "Search is temporarily unavailable.");
         return;
       }
-      setProfiles(Array.isArray(data.profiles) ? data.profiles : []);
-      setMessage(`${Number(data.count || 0)} public profile${Number(data.count || 0) === 1 ? "" : "s"} found. Results are shown 20 at a time.`);
+
+      const ids = new Set((Array.isArray(data.profiles) ? data.profiles : []).map((profile) => profile.id));
+      const mapped = allPoints.filter((point) => ids.has(point.caseId));
+      setVisiblePoints(mapped);
+      if (data.mapFocus && Number.isFinite(data.mapFocus.latitude) && Number.isFinite(data.mapFocus.longitude)) {
+        setMapFocus({
+          latitude: data.mapFocus.latitude,
+          longitude: data.mapFocus.longitude,
+          zoom: data.mapFocus.zoom ?? 7,
+          requestId: Date.now()
+        });
+      } else {
+        setMapFocus(null);
+      }
+      const profileCount = Number(data.count || 0);
+      setMessage(`${profileCount} public profile${profileCount === 1 ? "" : "s"} matched. ${mapped.length} approved map point${mapped.length === 1 ? "" : "s"} shown.`);
     } catch {
       setMessage("Search is temporarily unavailable. Please try again.");
     } finally {
@@ -57,13 +135,14 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
     setState("");
     setZip("");
     setRadiusMiles("50");
-    setProfiles(initialProfiles);
-    setPage(1);
-    setMessage(initialProfiles.length ? `Showing the ${initialProfiles.length} most recently published profiles. Use search to narrow the list.` : "");
+    setVisiblePoints(allPoints);
+    setSelectedId(null);
+    setMapFocus(null);
+    setMessage(`${allPoints.length} approved public map point${allPoints.length === 1 ? "" : "s"} shown across the national map.`);
   }
 
   return (
-    <>
+    <section aria-label="Search and map approved MMIPS public profiles">
       <div className="card" style={{ margin: "20px 0" }}>
         <form className="form" onSubmit={search}>
           <label>Search by name, city, Tribe, agency, or NamUs number
@@ -85,7 +164,7 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
           </div>
           <fieldset className="field-group">
             <legend>Search near a U.S. ZIP code</legend>
-            <p className="field-help">Optional. Enter a U.S. ZIP code to find public profiles with an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
+            <p className="field-help">Optional. Enter a U.S. ZIP code to focus the map on an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
             <div className="check-grid">
               <label>ZIP code
                 <input inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="74464" />
@@ -102,26 +181,31 @@ export default function ProfilesSearch({ initialProfiles }: { initialProfiles: M
             </div>
           </fieldset>
           <div className="button-row">
-            <button type="submit" disabled={loading}>{loading ? "Searching…" : "Search profiles"}</button>
-            <button type="button" className="secondary" onClick={reset}>Reset search</button>
+            <button type="submit" disabled={loading || mapLoading}>{loading ? "Searching…" : "Search map"}</button>
+            <button type="button" className="secondary" onClick={reset} disabled={mapLoading}>Show all map points</button>
           </div>
-          {message ? <p className="status-message" role="status" aria-live="polite">{message}</p> : null}
+          <p className="status-message" role="status" aria-live="polite">{message}</p>
         </form>
       </div>
 
-      {visibleProfiles.length ? <>
-        {visibleProfiles.map((item) => <CaseCard key={item.id} item={item} />)}
-        {totalPages > 1 ? <nav className="profile-pagination" aria-label="Public profile result pages">
-          <button type="button" className="secondary" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous 20</button>
-          <span>Page {safePage} of {totalPages}</span>
-          <button type="button" className="secondary" disabled={safePage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next 20</button>
-        </nav> : null}
-      </> : (
-        <div className="card calm-panel" style={{ marginTop: "22px" }}>
-          <h2>No matching public profiles.</h2>
-          <p className="text-measure">Try fewer search words, a larger distance, or clear one of the filters. ZIP-distance results include only profiles that have an approved public awareness area.</p>
+      <section className="card" aria-labelledby="national-map-heading" style={{ marginTop: "22px" }}>
+        <h2 id="national-map-heading">National MMIPS public profile map</h2>
+        <p className="text-measure">The map begins with every approved public-awareness point available to MMIPS so people can see how widely cases affect Indigenous communities. Nearby points are grouped into numbered clusters; select a cluster to zoom in.</p>
+        <p className="text-measure"><strong>Map context:</strong> MMIPS is a public-awareness resource, not a complete statistical census. Cluster totals are counts of approved MMIPS public profiles in that area, not population-adjusted rates.</p>
+        {hasSyntheticScaleData ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA IS PRESENT.</strong> Test clusters are for load testing and must not be interpreted as real case prevalence.</p> : null}
+        {mapAvailability === "unconfigured" ? <p className="status-message">Public map data is not configured.</p> : null}
+        {mapAvailability === "error" ? <p className="status-message">Public map information is temporarily unavailable.</p> : null}
+        <MapLibreRenderer points={visiblePoints} onSelect={setSelectedId} focusTarget={mapFocus} />
+        <div className="card calm-panel" style={{ marginTop: "16px" }} aria-live="polite" aria-atomic="true">
+          {selected ? <>
+            <h3>Selected public profile</h3>
+            {selected.slug.startsWith("mmips-test-") ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — Not a real person or real case.</p> : null}
+            <p><strong>{selected.publicName}</strong> · {mapCategoryLabel(selected.profileType, selected.publicStatus)}</p>
+            <p>{selected.publicMapLabel}. Approximate public-awareness area; not an exact location.</p>
+            <Link href={`/profiles/${selected.slug}`}>Open selected public profile</Link>
+          </> : visiblePoints.length === 0 && !mapLoading ? <p>No approved map points match the current search. Change or reset the search to see other areas.</p> : <p>Select a map point to see its public profile summary here.</p>}
         </div>
-      )}
-    </>
+      </section>
+    </section>
   );
 }

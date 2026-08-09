@@ -1,19 +1,13 @@
 import { SafetyNotice } from "../../components/SafetyNotice";
 import ProfilesSearch from "../../components/ProfilesSearch";
-import { getPublishedCases } from "../../lib/cases";
 
-export const dynamic = "force-dynamic";
-const INITIAL_PROFILE_LIMIT = 24;
-
-export default async function ProfilesPage() {
-  const profiles = await getPublishedCases({ limit: INITIAL_PROFILE_LIMIT });
-
+export default function ProfilesPage() {
   return (
     <main className="container section">
       <h1>Search public profiles</h1>
-      <p className="lead">Search approved missing, murdered/unsolved, unidentified, and resolved Indigenous person public profiles by name, Tribe, agency, state or province, or distance from a U.S. ZIP code.</p>
+      <p className="lead">See approved MMIPS public-awareness points across the United States and Canada, then search by name, Tribe, agency, status, state or province, or distance from a U.S. ZIP code.</p>
       <SafetyNotice />
-      <ProfilesSearch initialProfiles={profiles} />
+      <ProfilesSearch />
     </main>
   );
 }

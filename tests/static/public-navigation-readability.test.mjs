@@ -5,11 +5,10 @@ import test from 'node:test';
 const layout = fs.readFileSync('app/layout.tsx', 'utf8');
 const howItWorks = fs.readFileSync('app/how-it-works/page.tsx', 'utf8');
 const readability = fs.readFileSync('app/readability-overrides.css', 'utf8');
-const mapStyles = fs.readFileSync('components/map/PublicMapExperience.module.css', 'utf8');
-const mapExperience = fs.readFileSync('components/map/PublicMapExperience.tsx', 'utf8');
+const profilesSearch = fs.readFileSync('components/ProfilesSearch.tsx', 'utf8');
 const caseCard = fs.readFileSync('components/CaseCard.tsx', 'utf8');
 
-test('top navigation follows the public-first MMIPS order with Map between Alerts and Family Resources', () => {
+test('top navigation uses the public-first MMIPS order without a separate Map link', () => {
   const navStart = layout.indexOf('<div className="nav-links">');
   const navEnd = layout.indexOf('</div>', navStart);
   const nav = layout.slice(navStart, navEnd);
@@ -17,7 +16,6 @@ test('top navigation follows the public-first MMIPS order with Map between Alert
     'href="/how-it-works">How it works',
     'href="/profiles">Search Profiles',
     'href="/alerts">Alerts',
-    'href="/map">Map',
     'href="/resources">Family Resources',
     'href="/submit">Submit Information'
   ];
@@ -27,18 +25,15 @@ test('top navigation follows the public-first MMIPS order with Map between Alert
     assert.ok(index > previous, `${item} should appear in the requested order`);
     previous = index;
   }
+  assert.equal(nav.includes('href="/map"'), false);
   assert.equal(nav.includes('href="/corrections"'), false);
 });
 
-test('corrections stays available in footer and How It Works', () => {
+test('corrections stays available in footer and How It Works while Map is removed from navigation', () => {
   assert.match(layout, /href="\/corrections">Correction\/removal requests/);
   assert.match(howItWorks, /href="\/corrections"/);
-});
-
-test('family resources and public map remain discoverable in navigation and footer', () => {
+  assert.doesNotMatch(layout, /href="\/map"/);
   assert.match(layout, /href="\/resources">Family Resources/);
-  assert.match(layout, /href="\/map">Map/);
-  assert.match(layout, /href="\/map">Public Map/);
 });
 
 test('helper and placeholder text are forced to readable warm neutral colors', () => {
@@ -48,14 +43,15 @@ test('helper and placeholder text are forced to readable warm neutral colors', (
   assert.doesNotMatch(readability, /#[0-9a-f]{0,2}46748d/i);
 });
 
-test('map ZIP controls and selected-profile summary stay on MMIPS surfaces', () => {
-  assert.match(mapStyles, /\.zipSearch\{[^}]*background:var\(--surface\)/);
-  assert.match(mapStyles, /\.selection\{[^}]*background:var\(--surface-2,var\(--surface\)\)/);
-  assert.match(mapExperience, /Prefer a list or need a non-map view\? Search public profiles/);
-  assert.doesNotMatch(mapStyles, /background:#fff(?:fff)?\b/i);
+test('Search Profiles owns the national map and keeps data context visible', () => {
+  assert.match(profilesSearch, /National MMIPS public profile map/);
+  assert.match(profilesSearch, /Map context:/);
+  assert.match(profilesSearch, /SYNTHETIC TEST DATA IS PRESENT/);
+  assert.match(profilesSearch, /Show all map points/);
+  assert.doesNotMatch(profilesSearch, /CaseCard|Previous 20|Next 20|profile-pagination/);
 });
 
-test('synthetic public cards are explicitly labeled as test data', () => {
+test('synthetic public cards remain explicitly labeled wherever cards are still used elsewhere', () => {
   assert.match(caseCard, /item\.slug\.startsWith\("mmips-test-"\)/);
   assert.match(caseCard, /SYNTHETIC TEST DATA/);
   assert.match(caseCard, /not a real person or real case/i);

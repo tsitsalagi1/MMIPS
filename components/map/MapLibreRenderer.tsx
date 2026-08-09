@@ -238,21 +238,33 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
   }, [focusTarget, attempt]);
 
   return <div className={styles.frame} data-map-state={failure ? "fallback" : loadingSlowly ? "loading-slowly" : "interactive"} data-point-mode={points.length > CLUSTER_THRESHOLD ? "clustered" : "markers"}>
-    <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Optional visual map of approved approximate public-awareness areas" />
+    <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Visual map of approved approximate public-awareness areas" />
     {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
     {!failure && loadingSlowly ? <div className={styles.loadingNotice} role="status">
-      <p><strong>Map is taking longer than expected to load.</strong> Public profiles remain available through Search Profiles while background map tiles continue loading.</p>
+      <p><strong>Map is taking longer than expected to load.</strong> Search controls remain available while background map tiles continue loading.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
     {failure ? <div className={styles.fallback} role="status" data-map-failure-code={failure}>
-      <p><strong>Visual map unavailable.</strong> Use Search Profiles to browse public profiles without the map.</p>
+      <p><strong>Visual map unavailable.</strong> Search controls remain available above.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
   </div>;
 }
 
 function updateMapCamera(map: MapLibreMap, geoJson: PublicMapFeatureCollection) {
-  const bounds = new maplibregl.LngLatBounds(CONTINENTAL_BOUNDS[0], CONTINENTAL_BOUNDS[1]);
-  geoJson.features.forEach((feature) => bounds.extend(feature.geometry.coordinates as [number, number]));
-  map.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 4 });
+  if (!geoJson.features.length) {
+    const bounds = new maplibregl.LngLatBounds(CONTINENTAL_BOUNDS[0], CONTINENTAL_BOUNDS[1]);
+    map.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 4 });
+    return;
+  }
+
+  if (geoJson.features.length === 1) {
+    map.flyTo({ center: geoJson.features[0].geometry.coordinates as [number, number], zoom: 7, duration: 0 });
+    return;
+  }
+
+  const first = geoJson.features[0].geometry.coordinates as [number, number];
+  const bounds = new maplibregl.LngLatBounds(first, first);
+  geoJson.features.slice(1).forEach((feature) => bounds.extend(feature.geometry.coordinates as [number, number]));
+  map.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 6 });
 }
