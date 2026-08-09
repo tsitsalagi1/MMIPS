@@ -35,13 +35,13 @@ test("Map V1 omits photos until public authorization can be established unambigu
 
 test("renderer entry does not simulate geography or expose inert controls", () => {
   assert.match(component, /Optional visual map/);
-  assert.match(component, /complete accessible list/);
+  assert.match(component, /accessible results/);
   assert.doesNotMatch(component, /markerLayer|zoomControls|left:|top:/);
   assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|geocod/i);
 });
 
-test("configuration failures preserve the complete labelled accessible profile list", () => {
-  assert.match(component, /Accessible public profile list/);
+test("configuration failures preserve labelled, paginated accessible profile results", () => {
+  assert.match(component, /Accessible public profile results/);
   assert.match(component, /Public map data is not configured/);
   assert.match(component, /temporarily unavailable/);
   assert.match(component, /role="status" aria-live="polite"/);
@@ -49,11 +49,12 @@ test("configuration failures preserve the complete labelled accessible profile l
   assert.match(component, /Public status<select/);
   assert.match(component, /Approved area<select/);
   assert.match(component, /Open public profile/);
-  assert.match(component, /profiles\.length === 0/);
-  assert.match(component, /profiles\.map\(\(profile\)/);
-  assert.doesNotMatch(component, /filtered\.map\(\(point\)/);
-  assert.match(page, /getPublishedCases/);
-  assert.match(page, /profiles=\{profiles\}/);
+  assert.match(component, /ACCESSIBLE_PAGE_SIZE = 20/);
+  assert.match(component, /accessiblePoints\.map\(\(point\)/);
+  assert.match(component, /Previous 20/);
+  assert.match(component, /Next 20/);
+  assert.doesNotMatch(component, /profiles\.map\(\(profile\)/);
+  assert.doesNotMatch(page, /getPublishedCases/);
 });
 
 test("migration grants exactly the public map columns and keeps moderation state private", () => {
