@@ -4,8 +4,9 @@ import test from "node:test";
 const loader = fs.readFileSync("lib/public-map.ts", "utf8");
 const component = fs.readFileSync("components/map/PublicMapExperience.tsx", "utf8");
 const page = fs.readFileSync("app/map/page.tsx", "utf8");
+const zipRoute = fs.readFileSync("app/api/map/zip/route.ts", "utf8");
 const migration = fs.readFileSync("supabase/public_case_map_points_20260805.sql", "utf8");
-const productionMapSources = [loader, component, page].join("\n");
+const productionMapSources = [loader, component, page, zipRoute].join("\n");
 
 test("production map uses a dedicated allowlist and no synthetic runtime fixture", () => {
   assert.match(loader, /from\("public_case_map_points"\)/);
@@ -33,28 +34,37 @@ test("Map V1 omits photos until public authorization can be established unambigu
   assert.doesNotMatch(loader, /profile_photos|storage_path|thumbnailUrl|thumbnailAlt|publicStorageUrl/);
 });
 
-test("renderer entry does not simulate geography or expose inert controls", () => {
-  assert.match(component, /Optional visual map/);
-  assert.match(component, /accessible results/);
+test("renderer entry does not simulate geography or expose unsafe location controls", () => {
+  assert.match(component, /<h2 id="visual-map-heading">Public map<\/h2>/);
+  assert.match(component, /Search public profiles/);
   assert.doesNotMatch(component, /markerLayer|zoomControls|left:|top:/);
-  assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|geocod/i);
+  assert.doesNotMatch(component, /navigator\.geolocation|GeolocateControl|routeControl|localStorage|sessionStorage/);
 });
 
-test("configuration failures preserve labelled, paginated accessible profile results", () => {
-  assert.match(component, /Accessible public profile results/);
+test("map page is ZIP-first while Search Profiles remains the non-map fallback", () => {
+  assert.match(component, /Zoom map to a ZIP code/);
+  assert.match(component, /fetch\("\/api\/map\/zip"/);
+  assert.match(component, /method: "POST"/);
+  assert.match(component, /cache: "no-store"/);
+  assert.match(component, /href="\/profiles"/);
   assert.match(component, /Public map data is not configured/);
   assert.match(component, /temporarily unavailable/);
   assert.match(component, /role="status" aria-live="polite"/);
   assert.match(component, /Profile type<select/);
   assert.match(component, /Public status<select/);
   assert.match(component, /Approved area<select/);
-  assert.match(component, /Open public profile/);
-  assert.match(component, /ACCESSIBLE_PAGE_SIZE = 20/);
-  assert.match(component, /accessiblePoints\.map\(\(point\)/);
-  assert.match(component, /Previous 20/);
-  assert.match(component, /Next 20/);
-  assert.doesNotMatch(component, /profiles\.map\(\(profile\)/);
+  assert.match(component, /Open selected public profile/);
+  assert.doesNotMatch(component, /Accessible public profile results|ACCESSIBLE_PAGE_SIZE|accessiblePoints|Previous 20|Next 20/);
+  assert.doesNotMatch(component, /\.map\(\(point\) => <article/);
   assert.doesNotMatch(page, /getPublishedCases/);
+});
+
+test("ZIP lookup validates input, uses existing Census helper, and does not persist or log searches", () => {
+  assert.match(zipRoute, /normalizeZip/);
+  assert.match(zipRoute, /lookupZcta\(zip\)/);
+  assert.match(zipRoute, /"Cache-Control": "no-store"/);
+  assert.match(zipRoute, /export async function POST/);
+  assert.doesNotMatch(zipRoute, /console\.|insert\(|update\(|upsert\(|localStorage|sessionStorage|searchParams/);
 });
 
 test("migration grants exactly the public map columns and keeps moderation state private", () => {
