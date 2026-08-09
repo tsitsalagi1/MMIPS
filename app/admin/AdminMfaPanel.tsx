@@ -90,7 +90,7 @@ export default function AdminMfaPanel() {
       setCode("");
       setEnrollment(null);
       await refresh();
-      setMessage("Authenticator verification succeeded. This admin session now has MFA protection.");
+      setMessage("Authenticator verification succeeded. This admin session can now use protected MMIPS admin actions.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Authenticator verification failed. Check the code and try again.");
     } finally {
@@ -110,12 +110,12 @@ export default function AdminMfaPanel() {
         {currentLevel === "aal2" ? (
           <div className="notice" role="status">
             <strong>MFA verified for this admin session.</strong>
-            <p>Administrative API requests are protected by the second-factor assurance level for this enrolled account.</p>
+            <p>Protected administrative API requests require and now have the second-factor assurance level.</p>
           </div>
         ) : needsChallenge ? (
           <div className="notice warning">
             <strong>Authenticator verification required.</strong>
-            <p>This admin account has MFA enrolled. Enter the current six-digit code before using protected admin actions.</p>
+            <p>Protected MMIPS admin actions are locked until this session reaches AAL2. Enter the current six-digit code from your authenticator app.</p>
             <label>Authenticator code
               <input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} />
             </label>
@@ -138,8 +138,8 @@ export default function AdminMfaPanel() {
           </div>
         ) : (
           <div className="notice warning">
-            <strong>Protect this admin account before public launch.</strong>
-            <p>Password-only admin access is still available because no authenticator factor is enrolled yet. Enroll TOTP now; once verified, MMIPS will require AAL2 for this account’s admin API requests.</p>
+            <strong>Authenticator setup is required for admin actions.</strong>
+            <p>Password sign-in alone cannot use protected MMIPS administration. Enroll a TOTP authenticator and verify it to reach AAL2.</p>
             <button type="button" onClick={startEnrollment} disabled={busy}>{busy ? "Starting..." : "Set up authenticator MFA"}</button>
           </div>
         )}
