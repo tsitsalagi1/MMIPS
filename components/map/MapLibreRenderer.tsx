@@ -2,19 +2,23 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import type { Map as MapLibreMap, MapMouseEvent, RequestParameters, StyleSpecification } from "maplibre-gl";
+import type { Map as MapLibreMap, RequestParameters, StyleSpecification } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PublicMapPoint } from "../../lib/public-map";
 import styles from "./MapLibreRenderer.module.css";
 import { hasUsableWebGL, isAllowedMapResource, readPublicMapConfig, toPublicGeoJson, type MapFailureCode, type PublicMapConfig, type PublicMapFeatureCollection } from "./public-map-renderer";
 
-const SOURCE_ID = "approved-public-areas";
-const LAYER_ID = "approved-public-areas-circles";
 const BASEMAP_SOURCE_ID = "maptiler-streets-raster";
 const BASEMAP_LAYER_ID = "maptiler-streets-raster-layer";
 const MAPTILER_ORIGIN = "https://api.maptiler.com";
 const MAP_SLOW_LOAD_NOTICE_MS = 15000;
 const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [[-125, 24], [-66.5, 49.5]];
+
+type ActiveMarker = {
+  marker: maplibregl.Marker;
+  element: HTMLButtonElement;
+  clickHandler: () => void;
+};
 
 interface Props {
   points: PublicMapPoint[];
@@ -49,22 +53,7 @@ function mapTilerRasterTileUrl(styleUrl: string) {
   }
 }
 
-function pointLayer(): maplibregl.CircleLayerSpecification {
-  return {
-    id: LAYER_ID,
-    type: "circle",
-    source: SOURCE_ID,
-    paint: {
-      "circle-radius": 10,
-      "circle-color": "#b3263b",
-      "circle-stroke-color": "#fff5e8",
-      "circle-stroke-width": 3,
-      "circle-opacity": 0.92
-    }
-  };
-}
-
-function rasterStyle(config: PublicMapConfig, geoJson: PublicMapFeatureCollection): StyleSpecification | null {
+function rasterStyle(config: PublicMapConfig): StyleSpecification | null {
   const tileUrl = mapTilerRasterTileUrl(config.styleUrl);
   if (!tileUrl || !isAllowedMapResource(tileUrl.replace("{z}", "3").replace("{x}", "2").replace("{y}", "3"), config.allowedOrigins)) return null;
   return {
@@ -74,10 +63,6 @@ function rasterStyle(config: PublicMapConfig, geoJson: PublicMapFeatureCollectio
         type: "raster",
         tiles: [tileUrl],
         tileSize: 512
-      },
-      [SOURCE_ID]: {
-        type: "geojson",
-        data: geoJson
       }
     },
     layers: [
@@ -90,15 +75,42 @@ function rasterStyle(config: PublicMapConfig, geoJson: PublicMapFeatureCollectio
         id: BASEMAP_LAYER_ID,
         type: "raster",
         source: BASEMAP_SOURCE_ID
-      },
-      pointLayer()
+      }
     ]
   };
+}
+
+function clearMarkers(markers: ActiveMarker[]) {
+  markers.forEach(({ marker, element, clickHandler }) => {
+    element.removeEventListener("click", clickHandler);
+    marker.remove();
+  });
+}
+
+function createMarkers(map: MapLibreMap, geoJson: PublicMapFeatureCollection, onSelect: (publicId: string) => void): ActiveMarker[] {
+  return geoJson.features.map((feature) => {
+    const element = document.createElement("button");
+    element.type = "button";
+    element.className = styles.publicMarker;
+    const name = feature.properties.publicName || "MMIPS public profile";
+    const area = feature.properties.publicMapLabel || "approved approximate public-awareness area";
+    element.setAttribute("aria-label", `${name}. ${area}. Show public profile summary.`);
+    element.title = `${name} — ${area}`;
+    const clickHandler = () => onSelect(feature.properties.publicId);
+    element.addEventListener("click", clickHandler);
+
+    const marker = new maplibregl.Marker({ element, anchor: "center" })
+      .setLngLat(feature.geometry.coordinates as [number, number])
+      .addTo(map);
+
+    return { marker, element, clickHandler };
+  });
 }
 
 export default function MapLibreRenderer({ points, onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const markersRef = useRef<ActiveMarker[]>([]);
   const onSelectRef = useRef(onSelect);
   const [failure, setFailure] = useState<MapFailureCode | null>(null);
   const [loadingSlowly, setLoadingSlowly] = useState(false);
@@ -131,23 +143,10 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     if (!containerRef.current) return;
 
     const config = configResult.value;
-    const preferredRasterStyle = rasterStyle(config, geoJson);
+    const preferredRasterStyle = rasterStyle(config);
     let map: MapLibreMap;
     let mapLoaded = false;
-    let pointListenersBound = false;
     let slowLoadTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const onPointClick = (event: MapMouseEvent) => {
-      const feature = map.queryRenderedFeatures(event.point, { layers: [LAYER_ID] })[0];
-      const publicId = feature?.properties?.publicId;
-      if (typeof publicId === "string") onSelectRef.current(publicId);
-    };
-    const onPointEnter = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const onPointLeave = () => {
-      map.getCanvas().style.cursor = "";
-    };
 
     try {
       map = new maplibregl.Map({
@@ -179,21 +178,20 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     map.addControl(new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ customAttribution: config.attribution, compact: true }));
 
-    const onLoad = () => {
+    // Public MMIPS points are DOM markers, not basemap style layers. MapLibre supports
+    // adding markers immediately after Map construction, so approved locations remain
+    // visible/clickable even while raster tiles are still finishing in the background.
+    markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
+    updateMapCamera(map, geoJson);
+
+    const markUsable = () => {
       mapLoaded = true;
       if (slowLoadTimer) clearTimeout(slowLoadTimer);
       setLoadingSlowly(false);
-      if (!map.getSource(SOURCE_ID)) map.addSource(SOURCE_ID, { type: "geojson", data: geoJson });
-      if (!map.getLayer(LAYER_ID)) map.addLayer(pointLayer());
-      if (!pointListenersBound) {
-        map.on("click", LAYER_ID, onPointClick);
-        map.on("mouseenter", LAYER_ID, onPointEnter);
-        map.on("mouseleave", LAYER_ID, onPointLeave);
-        pointListenersBound = true;
-      }
-      updateMapDataAndCamera(map, geoJson);
       map.resize();
     };
+    const onLoad = () => markUsable();
+    const onIdle = () => markUsable();
     const onError = () => {
       if (!mapLoaded) reportMapFailure("MAP_STYLE_LOAD_FAILED");
     };
@@ -204,6 +202,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     };
     const canvas = map.getCanvas();
     map.once("load", onLoad);
+    map.once("idle", onIdle);
     map.on("error", onError);
     canvas.addEventListener("webglcontextlost", onContextLost);
     slowLoadTimer = setTimeout(() => {
@@ -214,11 +213,10 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
       if (slowLoadTimer) clearTimeout(slowLoadTimer);
       canvas.removeEventListener("webglcontextlost", onContextLost);
       map.off("error", onError);
-      if (pointListenersBound) {
-        map.off("click", LAYER_ID, onPointClick);
-        map.off("mouseenter", LAYER_ID, onPointEnter);
-        map.off("mouseleave", LAYER_ID, onPointLeave);
-      }
+      map.off("load", onLoad);
+      map.off("idle", onIdle);
+      clearMarkers(markersRef.current);
+      markersRef.current = [];
       map.remove();
       mapRef.current = null;
     };
@@ -228,15 +226,17 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
-    updateMapDataAndCamera(map, geoJson);
+    if (!map) return;
+    clearMarkers(markersRef.current);
+    markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
+    updateMapCamera(map, geoJson);
   }, [geoJson]);
 
   return <div className={styles.frame} data-map-state={failure ? "fallback" : loadingSlowly ? "loading-slowly" : "interactive"}>
     <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Optional visual map of approved approximate public-awareness areas" />
     {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
     {!failure && loadingSlowly ? <div className={styles.loadingNotice} role="status">
-      <p><strong>Map is taking longer than expected to load.</strong> You can keep waiting; the map will continue loading, or you can retry it.</p>
+      <p><strong>Map is taking longer than expected to load.</strong> The MMIPS location markers remain available while background map tiles continue loading.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
     </div> : null}
     {failure ? <div className={styles.fallback} role="status" data-map-failure-code={failure}>
@@ -246,9 +246,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
   </div>;
 }
 
-function updateMapDataAndCamera(map: MapLibreMap, geoJson: PublicMapFeatureCollection) {
-  const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-  source?.setData(geoJson);
+function updateMapCamera(map: MapLibreMap, geoJson: PublicMapFeatureCollection) {
   const bounds = new maplibregl.LngLatBounds(CONTIGUOUS_US_BOUNDS[0], CONTIGUOUS_US_BOUNDS[1]);
   geoJson.features.forEach((feature) => bounds.extend(feature.geometry.coordinates as [number, number]));
   map.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 4 });
