@@ -164,7 +164,7 @@ export default function ProfilesSearch() {
           </div>
           <fieldset className="field-group">
             <legend>Search near a U.S. ZIP code</legend>
-            <p className="field-help">Optional. Enter a U.S. ZIP code to focus the map on approved public-awareness areas nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
+            <p className="field-help">Optional. Enter a U.S. ZIP code to focus the map on an approved awareness area nearby. MMIPS does not use private home, family, shelter, or incident locations for this search.</p>
             <div className="check-grid">
               <label>ZIP code
                 <input inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{5}" maxLength={5} value={zip} onChange={(event) => setZip(event.target.value.replace(/\D/g, "").slice(0, 5))} placeholder="74464" />
