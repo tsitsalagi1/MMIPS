@@ -2,18 +2,19 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import * as maplibregl from "maplibre-gl";
-import type { Map as MapLibreMap, MapMouseEvent, RequestParameters } from "maplibre-gl";
+import type { Map as MapLibreMap, MapMouseEvent, RequestParameters, StyleSpecification } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PublicMapPoint } from "../../lib/public-map";
 import styles from "./MapLibreRenderer.module.css";
-import { hasUsableWebGL, isAllowedMapResource, readPublicMapConfig, toPublicGeoJson, type MapFailureCode } from "./public-map-renderer";
+import { hasUsableWebGL, isAllowedMapResource, readPublicMapConfig, toPublicGeoJson, type MapFailureCode, type PublicMapConfig, type PublicMapFeatureCollection } from "./public-map-renderer";
 
 const SOURCE_ID = "approved-public-areas";
 const LAYER_ID = "approved-public-areas-circles";
-const MAX_FIT_ZOOM = 7;
-const SINGLE_POINT_ZOOM = 5;
+const BASEMAP_SOURCE_ID = "maptiler-streets-raster";
+const BASEMAP_LAYER_ID = "maptiler-streets-raster-layer";
 const MAPTILER_ORIGIN = "https://api.maptiler.com";
 const MAP_SLOW_LOAD_NOTICE_MS = 15000;
+const CONTIGUOUS_US_BOUNDS: [[number, number], [number, number]] = [[-125, 24], [-66.5, 49.5]];
 
 interface Props {
   points: PublicMapPoint[];
@@ -31,6 +32,68 @@ function usesMapTiler(styleUrl: string | undefined) {
   } catch {
     return false;
   }
+}
+
+function mapTilerRasterTileUrl(styleUrl: string) {
+  try {
+    const url = new URL(styleUrl);
+    if (url.origin !== MAPTILER_ORIGIN) return null;
+    const match = /^\/maps\/([^/]+)\/style\.json$/.exec(url.pathname);
+    const key = url.searchParams.get("key");
+    if (!match || !key) return null;
+    const mapId = decodeURIComponent(match[1]);
+    if (!/^[a-z0-9-]+$/i.test(mapId)) return null;
+    return `${MAPTILER_ORIGIN}/maps/${mapId}/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}`;
+  } catch {
+    return null;
+  }
+}
+
+function pointLayer(): maplibregl.CircleLayerSpecification {
+  return {
+    id: LAYER_ID,
+    type: "circle",
+    source: SOURCE_ID,
+    paint: {
+      "circle-radius": 10,
+      "circle-color": "#b3263b",
+      "circle-stroke-color": "#fff5e8",
+      "circle-stroke-width": 3,
+      "circle-opacity": 0.92
+    }
+  };
+}
+
+function rasterStyle(config: PublicMapConfig, geoJson: PublicMapFeatureCollection): StyleSpecification | null {
+  const tileUrl = mapTilerRasterTileUrl(config.styleUrl);
+  if (!tileUrl || !isAllowedMapResource(tileUrl.replace("{z}", "3").replace("{x}", "2").replace("{y}", "3"), config.allowedOrigins)) return null;
+  return {
+    version: 8,
+    sources: {
+      [BASEMAP_SOURCE_ID]: {
+        type: "raster",
+        tiles: [tileUrl],
+        tileSize: 512
+      },
+      [SOURCE_ID]: {
+        type: "geojson",
+        data: geoJson
+      }
+    },
+    layers: [
+      {
+        id: "mmips-map-background",
+        type: "background",
+        paint: { "background-color": "#f3eee3" }
+      },
+      {
+        id: BASEMAP_LAYER_ID,
+        type: "raster",
+        source: BASEMAP_SOURCE_ID
+      },
+      pointLayer()
+    ]
+  };
 }
 
 export default function MapLibreRenderer({ points, onSelect }: Props) {
@@ -68,6 +131,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     if (!containerRef.current) return;
 
     const config = configResult.value;
+    const preferredRasterStyle = rasterStyle(config, geoJson);
     let map: MapLibreMap;
     let mapLoaded = false;
     let pointListenersBound = false;
@@ -88,7 +152,9 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: config.styleUrl,
+        style: preferredRasterStyle ?? config.styleUrl,
+        center: [-98.5, 38.5],
+        zoom: 3,
         attributionControl: false,
         dragRotate: false,
         pitchWithRotate: false,
@@ -118,19 +184,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
       if (slowLoadTimer) clearTimeout(slowLoadTimer);
       setLoadingSlowly(false);
       if (!map.getSource(SOURCE_ID)) map.addSource(SOURCE_ID, { type: "geojson", data: geoJson });
-      if (!map.getLayer(LAYER_ID)) {
-        map.addLayer({
-          id: LAYER_ID,
-          type: "circle",
-          source: SOURCE_ID,
-          paint: {
-            "circle-radius": 9,
-            "circle-color": "#b3263b",
-            "circle-stroke-color": "#fff5e8",
-            "circle-stroke-width": 3
-          }
-        });
-      }
+      if (!map.getLayer(LAYER_ID)) map.addLayer(pointLayer());
       if (!pointListenersBound) {
         map.on("click", LAYER_ID, onPointClick);
         map.on("mouseenter", LAYER_ID, onPointEnter);
@@ -192,15 +246,10 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
   </div>;
 }
 
-function updateMapDataAndCamera(map: MapLibreMap, geoJson: ReturnType<typeof toPublicGeoJson>) {
+function updateMapDataAndCamera(map: MapLibreMap, geoJson: PublicMapFeatureCollection) {
   const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
   source?.setData(geoJson);
-  if (geoJson.features.length === 0) return;
-  if (geoJson.features.length === 1) {
-    map.jumpTo({ center: geoJson.features[0].geometry.coordinates as [number, number], zoom: SINGLE_POINT_ZOOM });
-    return;
-  }
-  const bounds = new maplibregl.LngLatBounds();
+  const bounds = new maplibregl.LngLatBounds(CONTIGUOUS_US_BOUNDS[0], CONTIGUOUS_US_BOUNDS[1]);
   geoJson.features.forEach((feature) => bounds.extend(feature.geometry.coordinates as [number, number]));
-  map.fitBounds(bounds, { padding: 56, duration: 0, maxZoom: MAX_FIT_ZOOM });
+  map.fitBounds(bounds, { padding: 28, duration: 0, maxZoom: 4 });
 }

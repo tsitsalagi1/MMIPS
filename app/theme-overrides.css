@@ -237,6 +237,23 @@ input[type="radio"] {
   justify-self: start;
 }
 
+/* Confirmation/unsubscribe actions use the same centered alerts column. */
+.alert-action-page {
+  min-height: 52vh;
+  align-content: start;
+  justify-items: center;
+  padding-top: 58px;
+}
+
+.alert-action-card {
+  width: min(760px, 100%) !important;
+  margin: 0 auto;
+}
+
+.alert-action-card button {
+  justify-self: start;
+}
+
 @media (max-width: 640px) {
   .alerts-page {
     width: min(100% - 24px, 880px);
@@ -250,5 +267,10 @@ input[type="radio"] {
 
   .alerts-page h1 {
     font-size: clamp(38px, 12vw, 52px);
+  }
+
+  .alert-action-page {
+    min-height: auto;
+    padding-top: 30px;
   }
 }

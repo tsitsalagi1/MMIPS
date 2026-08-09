@@ -6,6 +6,7 @@ type FlyerExportProps = {
   title: string;
   statusLabel: string;
   profileUrl: string;
+  alertsUrl: string;
   imageUrl?: string | null;
   galleryImages?: { url: string; caption?: string | null }[];
   lastSeenLocation: string;
@@ -57,7 +58,7 @@ export function FlyerActions(props: FlyerExportProps) {
     setStatus("Preparing flyer image…");
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
-    canvas.height = 1600;
+    canvas.height = 1660;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       setStatus("Could not create image on this browser.");
@@ -171,8 +172,9 @@ export function FlyerActions(props: FlyerExportProps) {
     const tipsTop = detailImages.length ? 840 : 610;
     const summaryTop = detailImages.length ? 1040 : 830;
     const linkTop = detailImages.length ? 1286 : 1202;
-    const footerTop = detailImages.length ? 1452 : 1430;
-    const contactTop = detailImages.length ? 1542 : 1525;
+    const linkHeight = detailImages.length ? 178 : 190;
+    const footerTop = detailImages.length ? 1492 : 1430;
+    const contactTop = detailImages.length ? 1588 : 1568;
 
     drawBox("Tips / emergency information", props.tipPhone || "Call 911 for emergencies. Use only the official tip line listed by the investigating agency.", tipsTop, 180);
     drawBox("Public summary", props.summary || "No public summary listed.", summaryTop, detailImages.length ? 210 : 240);
@@ -181,19 +183,25 @@ export function FlyerActions(props: FlyerExportProps) {
     ctx.strokeStyle = "#b9372b";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(70, linkTop, 1060, detailImages.length ? 142 : 170, 20);
+    ctx.roundRect(70, linkTop, 1060, linkHeight, 20);
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#8c281f";
     ctx.font = "900 22px Arial";
-    ctx.fillText("VIEW THE LIVE MMIPS PUBLIC PROFILE", 100, linkTop + 43);
+    ctx.fillText("VIEW THE LIVE MMIPS PUBLIC PROFILE", 100, linkTop + 40);
     ctx.fillStyle = "#0f4a7a";
-    ctx.font = "bold 26px Arial";
-    wrapText(ctx, props.profileUrl, 100, linkTop + 84, 1000, 34);
+    ctx.font = "bold 24px Arial";
+    wrapText(ctx, props.profileUrl, 100, linkTop + 76, 1000, 30);
+    ctx.fillStyle = "#8c281f";
+    ctx.font = "900 18px Arial";
+    ctx.fillText("GET MMIPS URGENT COMMUNITY ALERTS", 100, linkTop + 126);
+    ctx.fillStyle = "#0f4a7a";
+    ctx.font = "bold 22px Arial";
+    wrapText(ctx, props.alertsUrl, 100, linkTop + 156, 1000, 28);
 
     ctx.fillStyle = "#251f1a";
     ctx.font = "18px Arial";
     wrapText(ctx, "MMIPS is not law enforcement. This flyer does not replace 911, a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.", 70, footerTop, 1060, 28);
-    ctx.fillText("Corrections: corrections@mmips.com · Contact: contact@mmips.com", 70, contactTop);
+    ctx.fillText(`Alerts: ${props.alertsUrl} · Corrections: corrections@mmips.com · Contact: contact@mmips.com`, 70, contactTop);
 
     canvas.toBlob((blob) => {
       if (!blob) {

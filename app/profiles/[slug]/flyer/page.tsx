@@ -14,6 +14,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://mmips.com";
   const profileUrl = `${siteUrl}/profiles/${item.slug}`;
+  const alertsUrl = `${siteUrl}/alerts`;
   const flyerTitle = flyerTitleForProfile(item.profileType, item.status);
   const isUrgent = item.profileType === "urgent_missing";
   const isMurdered = item.profileType === "murdered_info_needed";
@@ -31,6 +32,7 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
             title={item.fullName}
             statusLabel={flyerTitle}
             profileUrl={profileUrl}
+            alertsUrl={alertsUrl}
             imageUrl={item.photoUrl}
             galleryImages={flyerPhotos.map((photo) => ({ url: photo.url, caption: photo.caption || photo.photoType || "" }))}
             lastSeenLocation={item.lastSeenLocation}
@@ -123,9 +125,15 @@ export default async function ProfileFlyerPage({ params }: { params: Promise<{ s
             <p className="muted small-text">Check this live profile before sharing an older flyer. Status and official-contact information may change.</p>
           </section>
 
+          <section className="flyer-case-link-box" aria-label="MMIPS urgent community alerts signup">
+            <p className="flyer-link-label">Get MMIPS urgent community alerts</p>
+            <a className="flyer-case-link" href={alertsUrl}>{alertsUrl}</a>
+            <p className="muted small-text">Sign up for moderator-approved urgent alerts by ZIP/radius or choose all urgent MMIPS community alerts.</p>
+          </section>
+
           <footer className="flyer-footer">
             <p><strong>MMIPS is not law enforcement.</strong> This flyer does not replace 911, a police report, NamUs, Tribal law enforcement, BIA MMU, FBI, or local authorities.</p>
-            <p>Correction/removal requests: corrections@mmips.com · General contact: contact@mmips.com</p>
+            <p>Alerts: {alertsUrl} · Correction/removal requests: corrections@mmips.com · General contact: contact@mmips.com</p>
           </footer>
         </article>
       </div>

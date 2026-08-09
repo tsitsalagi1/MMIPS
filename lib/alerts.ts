@@ -63,7 +63,12 @@ export function createSupabaseAlertStore(): AlertStore | null {
 }
 
 export async function requestAlertSubscription(store: AlertStore, emailInput: unknown, prefsInput?: unknown, dependencies: { now?: Date; mailer?: AlertMailer } = {}) {
-  return workflow.requestAlertSubscription(store, emailInput, prefsInput, { now: dependencies.now ? () => dependencies.now! : undefined, mailer: dependencies.mailer ?? productionMailer, siteUrl: siteUrl() });
+  return workflow.requestAlertSubscription(store, emailInput, prefsInput, {
+    now: dependencies.now ? () => dependencies.now! : undefined,
+    mailer: dependencies.mailer ?? productionMailer,
+    siteUrl: siteUrl(),
+    signingKeys: unsubscribeSigningKeys()
+  });
 }
 export async function confirmAlertSubscription(store: AlertStore, token: unknown, now = new Date(), mailer: AlertMailer = productionMailer) {
   return workflow.confirmAlertSubscription(store, token, { now: () => now, mailer });
