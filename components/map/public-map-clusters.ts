@@ -1,103 +1,132 @@
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import type { PublicMapFeatureCollection } from "./public-map-renderer";
 
-const SOURCE_ID = "mmips-public-cluster-source";
-const CLUSTERS_ID = "mmips-public-clusters";
-const CLUSTER_COUNT_ID = "mmips-public-cluster-count";
-const POINTS_ID = "mmips-public-cluster-points";
+const CELL_SIZE_PX = 56;
+const MAX_ZOOM = 13;
 
-type LayerEvent = { features?: Array<{ geometry?: { coordinates?: [number, number] }; properties?: Record<string, unknown> }> };
+type ActiveMarker = {
+  marker: maplibregl.Marker;
+  element: HTMLButtonElement;
+  clickHandler: () => void;
+};
+
+type Bucket = {
+  features: PublicMapFeatureCollection["features"];
+  longitudeTotal: number;
+  latitudeTotal: number;
+};
+
+function inViewport(map: MapLibreMap, coordinates: [number, number]) {
+  const bounds = map.getBounds();
+  const [longitude, latitude] = coordinates;
+  if (latitude < bounds.getSouth() || latitude > bounds.getNorth()) return false;
+  const west = bounds.getWest();
+  const east = bounds.getEast();
+  return west <= east ? longitude >= west && longitude <= east : longitude >= west || longitude <= east;
+}
+
+function clearMarkers(markers: ActiveMarker[]) {
+  markers.forEach(({ marker, element, clickHandler }) => {
+    element.removeEventListener("click", clickHandler);
+    marker.remove();
+  });
+  markers.length = 0;
+}
+
+function shortCount(count: number) {
+  if (count < 1000) return String(count);
+  return `${Math.round(count / 100) / 10}k`;
+}
+
+function publicPointMarker(
+  feature: PublicMapFeatureCollection["features"][number],
+  onSelect: (publicId: string) => void
+): { element: HTMLButtonElement; clickHandler: () => void } {
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = "mmipsClusterPointMarker";
+  const name = feature.properties.publicName || "MMIPS public profile";
+  const area = feature.properties.publicMapLabel || "approved approximate public-awareness area";
+  element.setAttribute("aria-label", `${name}. ${area}. Show public profile summary.`);
+  element.title = `${name} — ${area}`;
+  const clickHandler = () => onSelect(feature.properties.publicId);
+  element.addEventListener("click", clickHandler);
+  return { element, clickHandler };
+}
+
+function clusterMarker(map: MapLibreMap, bucket: Bucket) {
+  const count = bucket.features.length;
+  const longitude = bucket.longitudeTotal / count;
+  const latitude = bucket.latitudeTotal / count;
+  const element = document.createElement("button");
+  element.type = "button";
+  element.className = "mmipsClusterMarker";
+  element.textContent = shortCount(count);
+  element.setAttribute("aria-label", `${count} MMIPS public profiles in this map area. Zoom in to separate them.`);
+  element.title = `${count} MMIPS public profiles — zoom in`;
+  const clickHandler = () => {
+    map.easeTo({ center: [longitude, latitude], zoom: Math.min(Math.max(map.getZoom() + 2, 4), MAX_ZOOM), duration: 350 });
+  };
+  element.addEventListener("click", clickHandler);
+  return { element, clickHandler, coordinates: [longitude, latitude] as [number, number] };
+}
 
 export function addClusteredPublicPoints(
   map: MapLibreMap,
   geoJson: PublicMapFeatureCollection,
   onSelect: (publicId: string) => void
 ) {
-  map.addSource(SOURCE_ID, {
-    type: "geojson",
-    data: geoJson as any,
-    cluster: true,
-    clusterMaxZoom: 12,
-    clusterRadius: 48
-  });
+  const activeMarkers: ActiveMarker[] = [];
+  let frame: number | null = null;
 
-  map.addLayer({
-    id: CLUSTERS_ID,
-    type: "circle",
-    source: SOURCE_ID,
-    filter: ["has", "point_count"],
-    paint: {
-      "circle-color": "#8f201b",
-      "circle-radius": ["step", ["get", "point_count"], 18, 25, 23, 100, 29, 500, 35],
-      "circle-stroke-width": 2,
-      "circle-stroke-color": "#fff8ef"
-    }
-  });
+  const render = () => {
+    if (frame !== null) cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      frame = null;
+      clearMarkers(activeMarkers);
+      const buckets = new Map<string, Bucket>();
 
-  map.addLayer({
-    id: CLUSTER_COUNT_ID,
-    type: "symbol",
-    source: SOURCE_ID,
-    filter: ["has", "point_count"],
-    layout: {
-      "text-field": ["get", "point_count_abbreviated"],
-      "text-size": 12
-    },
-    paint: { "text-color": "#fff8ef" }
-  });
+      for (const feature of geoJson.features) {
+        const coordinates = feature.geometry.coordinates as [number, number];
+        if (!inViewport(map, coordinates)) continue;
+        const projected = map.project(coordinates);
+        const key = `${Math.floor(projected.x / CELL_SIZE_PX)}:${Math.floor(projected.y / CELL_SIZE_PX)}`;
+        const existing = buckets.get(key);
+        if (existing) {
+          existing.features.push(feature);
+          existing.longitudeTotal += coordinates[0];
+          existing.latitudeTotal += coordinates[1];
+        } else {
+          buckets.set(key, { features: [feature], longitudeTotal: coordinates[0], latitudeTotal: coordinates[1] });
+        }
+      }
 
-  map.addLayer({
-    id: POINTS_ID,
-    type: "circle",
-    source: SOURCE_ID,
-    filter: ["!", ["has", "point_count"]],
-    paint: {
-      "circle-color": "#b82722",
-      "circle-radius": 8,
-      "circle-stroke-width": 2,
-      "circle-stroke-color": "#fff8ef"
-    }
-  });
+      for (const bucket of buckets.values()) {
+        if (bucket.features.length === 1) {
+          const feature = bucket.features[0];
+          const coordinates = feature.geometry.coordinates as [number, number];
+          const { element, clickHandler } = publicPointMarker(feature, onSelect);
+          const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat(coordinates).addTo(map);
+          activeMarkers.push({ marker, element, clickHandler });
+          continue;
+        }
 
-  const pointClick = (event: LayerEvent) => {
-    const publicId = event.features?.[0]?.properties?.publicId;
-    if (typeof publicId === "string") onSelect(publicId);
+        const { element, clickHandler, coordinates } = clusterMarker(map, bucket);
+        const marker = new maplibregl.Marker({ element, anchor: "center" }).setLngLat(coordinates).addTo(map);
+        activeMarkers.push({ marker, element, clickHandler });
+      }
+    });
   };
 
-  const clusterClick = async (event: LayerEvent) => {
-    const feature = event.features?.[0];
-    const coordinates = feature?.geometry?.coordinates;
-    const clusterId = Number(feature?.properties?.cluster_id);
-    if (!coordinates || !Number.isFinite(clusterId)) return;
-    const source = map.getSource(SOURCE_ID) as GeoJSONSource;
-    try {
-      const zoom = await source.getClusterExpansionZoom(clusterId);
-      map.easeTo({ center: coordinates, zoom: Math.min(zoom, 13) });
-    } catch {
-      map.easeTo({ center: coordinates, zoom: Math.min(map.getZoom() + 2, 13) });
-    }
-  };
-
-  const pointerOn = () => { map.getCanvas().style.cursor = "pointer"; };
-  const pointerOff = () => { map.getCanvas().style.cursor = ""; };
-
-  map.on("click", POINTS_ID, pointClick as any);
-  map.on("click", CLUSTERS_ID, clusterClick as any);
-  map.on("mouseenter", POINTS_ID, pointerOn);
-  map.on("mouseleave", POINTS_ID, pointerOff);
-  map.on("mouseenter", CLUSTERS_ID, pointerOn);
-  map.on("mouseleave", CLUSTERS_ID, pointerOff);
+  map.on("moveend", render);
+  map.on("resize", render);
+  render();
 
   return () => {
-    map.off("click", POINTS_ID, pointClick as any);
-    map.off("click", CLUSTERS_ID, clusterClick as any);
-    map.off("mouseenter", POINTS_ID, pointerOn);
-    map.off("mouseleave", POINTS_ID, pointerOff);
-    map.off("mouseenter", CLUSTERS_ID, pointerOn);
-    map.off("mouseleave", CLUSTERS_ID, pointerOff);
-    for (const layer of [POINTS_ID, CLUSTER_COUNT_ID, CLUSTERS_ID]) {
-      if (map.getLayer(layer)) map.removeLayer(layer);
-    }
-    if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+    if (frame !== null) cancelAnimationFrame(frame);
+    map.off("moveend", render);
+    map.off("resize", render);
+    clearMarkers(activeMarkers);
   };
 }
