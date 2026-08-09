@@ -37,7 +37,7 @@ test("anonymous loader uses the dedicated point projection then approved public 
   const pointChain = {
     select: (columns) => { calls.push(["point-select", columns]); return pointChain; },
     order: (...args) => { calls.push(["point-order", ...args]); return pointChain; },
-    limit: (...args) => { calls.push(["point-limit", ...args]); return pointTerminal; }
+    range: (...args) => { calls.push(["point-range", ...args]); return pointTerminal; }
   };
 
   const caseTerminal = Promise.resolve({ data: [cases], error: null });
@@ -60,7 +60,7 @@ test("anonymous loader uses the dedicated point projection then approved public 
   assert.doesNotMatch(caseSelected, /latitude|longitude|moderator_notes|requester|source_ip/);
   assert.match(caseSelected, /review_status/);
   assert.match(caseSelected, /published_at/);
-  assert.deepEqual(calls.map(([name]) => name), ["point-select", "point-order", "point-limit", "case-select", "case-in", "case-eq", "case-not"]);
+  assert.deepEqual(calls.map(([name]) => name), ["point-select", "point-order", "point-range", "case-select", "case-in", "case-eq", "case-not"]);
 });
 
 test("an empty public map relation is available rather than an error", async () => {
@@ -69,11 +69,11 @@ test("an empty public map relation is available rather than an error", async () 
   const chain = {
     select: (columns) => { calls.push(["select", columns]); return chain; },
     order: (...args) => { calls.push(["order", ...args]); return chain; },
-    limit: (...args) => { calls.push(["limit", ...args]); return terminal; }
+    range: (...args) => { calls.push(["range", ...args]); return terminal; }
   };
   const result = await loadPublicMapPoints({ from: () => chain });
   assert.deepEqual(result, { points: [], availability: "available" });
-  assert.deepEqual(calls.map(([name]) => name), ["select", "order", "limit"]);
+  assert.deepEqual(calls.map(([name]) => name), ["select", "order", "range"]);
 });
 
 test("missing Supabase configuration returns no synthetic profile", async () => {
@@ -90,7 +90,7 @@ test("missing Supabase configuration returns no synthetic profile", async () => 
 
 test("database failure returns no synthetic profile and only a safe internal error code", async () => {
   const terminal = Promise.resolve({ data: null, error: { code: "private-provider-detail" } });
-  const chain = { select: () => chain, order: () => chain, limit: () => terminal };
+  const chain = { select: () => chain, order: () => chain, range: () => terminal };
   const messages = [];
   const original = console.error;
   console.error = (...args) => messages.push(args);
