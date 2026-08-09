@@ -11,6 +11,7 @@ const rendererCss = fs.readFileSync("components/map/MapLibreRenderer.module.css"
 const boundary = fs.readFileSync("components/map/public-map-renderer.ts", "utf8");
 const page = fs.readFileSync("app/map/page.tsx", "utf8");
 const zipRoute = fs.readFileSync("app/api/map/zip/route.ts", "utf8");
+const publicMap = fs.readFileSync("lib/public-map.ts", "utf8");
 const serverSources = ["app/map/page.tsx", "lib/public-map.ts"].map((path) => fs.readFileSync(path, "utf8")).join("\n");
 
 test("MapLibre 6 dependency is exact, locked, ESM-loaded, and absent from server boundaries", () => {
@@ -76,26 +77,32 @@ test("camera frames the United States and Canada and preserves page scrolling", 
   assert.match(rendererCss, /\.canvas\{height:24rem;width:100%;min-height:24rem\}/);
 });
 
-test("ZIP search uses the existing Census lookup behind a no-store same-origin request", () => {
+test("ZIP search uses Census lookup and loads only nearby public points through a no-store same-origin request", () => {
   assert.match(experience, /fetch\("\/api\/map\/zip"/);
   assert.match(experience, /method: "POST"/);
   assert.match(experience, /cache: "no-store"/);
   assert.match(experience, /pattern="\[0-9\]\{5\}"/);
   assert.match(experience, /autoComplete="postal-code"/);
   assert.match(experience, /MMIPS does not save this ZIP search as a case location/);
+  assert.match(experience, /setMapPoints\(nearbyPoints\)/);
   assert.match(zipRoute, /lookupZcta\(zip\)/);
-  assert.match(zipRoute, /normalizeZip/);
+  assert.match(zipRoute, /getPublicMapPointsNear/);
+  assert.match(zipRoute, /points: nearby\.points/);
   assert.match(zipRoute, /"Cache-Control": "no-store"/);
+  assert.match(publicMap, /PUBLIC_MAP_ZIP_RADIUS_MILES = 100/);
+  assert.match(publicMap, /\.gte\("public_latitude"/);
+  assert.match(publicMap, /\.lte\("public_longitude"/);
   assert.doesNotMatch(zipRoute, /console\.|request\.nextUrl|searchParams/);
 });
 
-test("ZIP search focuses the map with a zero-duration camera change", () => {
+test("ZIP search focuses the map with a zero-duration camera change and filtering preserves that focus", () => {
   assert.match(experience, /focusTarget=\{mapFocus\}/);
   assert.match(renderer, /focusTarget\?: MapFocusTarget \| null/);
   assert.match(renderer, /map\.flyTo\(/);
   assert.match(renderer, /center: \[focusTarget\.longitude, focusTarget\.latitude\]/);
   assert.match(renderer, /zoom: focusTarget\.zoom \?\? 9/);
   assert.match(renderer, /duration: 0/);
+  assert.match(renderer, /if \(!focusTarget\) updateMapCamera\(map, geoJson\)/);
   assert.doesNotMatch(renderer, /duration:\s*[1-9][0-9]*/);
 });
 
@@ -120,13 +127,13 @@ test("slow basemap loading remains non-destructive", () => {
   assert.match(rendererCss, /\.loadingNotice/);
 });
 
-test("map page is map-first and does not duplicate paginated profile cards", () => {
+test("map page is map-first, skips the national case payload, and does not duplicate profile cards", () => {
   assert.match(experience, /<MapLibreRenderer points=\{filtered\}/);
   assert.match(experience, /href="\/profiles"/);
   assert.match(experience, /Prefer a list or need a non-map view\? Search public profiles/);
   assert.doesNotMatch(experience, /ACCESSIBLE_PAGE_SIZE|accessiblePoints|accessible-map-list|Previous 20|Next 20|Page \{safePage\}/);
   assert.doesNotMatch(experience, /\.map\(\(point\) => <article/);
-  assert.doesNotMatch(page, /getPublishedCases\(\)/);
-  assert.match(page, /getPublicMapPoints\(\)/);
+  assert.doesNotMatch(page, /getPublishedCases|getPublicMapPoints/);
+  assert.match(page, /<PublicMapExperience points=\{\[\]\} availability="available"/);
   assert.match(page, /<h1>MMIPS public map<\/h1>/);
 });
