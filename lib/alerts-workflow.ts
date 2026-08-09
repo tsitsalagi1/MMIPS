@@ -105,7 +105,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     "",
     unsubscribeUrl
       ? "If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required."
-      : "If you did not request these alerts, do not confirm this subscription. No explanation is required."
+      : "If you did not request these alerts, do not confirm this subscription. If you confirm and later change your mind, every urgent alert includes a one-click unsubscribe option. No explanation is required."
   ].join("\n");
 
   const html = [
@@ -135,7 +135,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     "<p>Your ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.</p>",
     unsubscribeUrl
       ? "<p>If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required.</p>"
-      : "<p>If you did not request these alerts, do not confirm this subscription. No explanation is required.</p>"
+      : "<p>If you did not request these alerts, do not confirm this subscription. If you confirm and later change your mind, every urgent alert includes a one-click unsubscribe option. No explanation is required.</p>"
   ].join("\n");
 
   return { text, html };
