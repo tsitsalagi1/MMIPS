@@ -217,7 +217,7 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
     } else {
       markersRef.current = createMarkers(map, geoJson, (publicId) => onSelectRef.current(publicId));
     }
-    updateMapCamera(map, geoJson);
+    if (!focusTarget) updateMapCamera(map, geoJson);
 
     return () => {
       clearMarkers(markersRef.current);
@@ -225,7 +225,7 @@ export default function MapLibreRenderer({ points, onSelect, focusTarget }: Prop
       clusterCleanupRef.current?.();
       clusterCleanupRef.current = null;
     };
-  }, [geoJson, attempt]);
+  }, [geoJson, focusTarget, attempt]);
 
   useEffect(() => {
     const map = mapRef.current;
