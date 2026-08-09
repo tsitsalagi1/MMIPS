@@ -44,6 +44,14 @@ jobs:
         run: |
           rm -rf .next
           npm run build
+      - name: Canada prelaunch production build without United States database credentials
+        env:
+          MMIPS_SITE_MODE: ca
+          NEXT_PUBLIC_SITE_URL: https://ca.mmips.com
+          NEXT_PUBLIC_GLOBAL_SITE_URL: https://mmips.com
+        run: |
+          rm -rf .next
+          npm run build
       - name: Public smoke checks without browser automation
         run: npm run test:smoke
       - name: Static accessibility baseline checks

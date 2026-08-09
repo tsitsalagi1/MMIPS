@@ -1,4 +1,4 @@
-import { usSiteUrl } from "./site-mode";
+import { canadaPortalIsActive, canadaSiteUrl, usSiteUrl } from "./site-mode";
 
 export type CountryPortalStatus = "active" | "preparing";
 
@@ -12,6 +12,8 @@ export type CountryPortal = {
 };
 
 export function countryPortals(): CountryPortal[] {
+  const canadaActive = canadaPortalIsActive();
+
   return [
     {
       code: "US",
@@ -25,8 +27,11 @@ export function countryPortals(): CountryPortal[] {
       code: "CA",
       name: "Canada",
       indigenousContext: "First Nations, Inuit, and Métis peoples and communities",
-      status: "preparing",
-      description: "A separate Canadian MMIPS system, database, map, reporting workflow, terminology, and privacy framework is being prepared."
+      status: canadaActive ? "active" : "preparing",
+      url: canadaActive ? canadaSiteUrl() : undefined,
+      description: canadaActive
+        ? "Enter the separate Canadian MMIPS system built around Canadian Indigenous communities, geography, reporting, privacy, and moderation."
+        : "A separate Canadian MMIPS system, database, map, reporting workflow, terminology, and privacy framework is being prepared."
     },
     {
       code: "AU",

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
-const isGlobal = process.env.MMIPS_SITE_MODE === "global";
+const siteMode = process.env.MMIPS_SITE_MODE;
+const isDatabaseLessCountryShell = siteMode === "global" || siteMode === "ca";
 const supabaseOrigin = "https://borhgkrydfuqgabkhxsr.supabase.co";
 const supabaseWebSocketOrigin = "wss://borhgkrydfuqgabkhxsr.supabase.co";
 
@@ -22,7 +23,7 @@ const unitedStatesContentSecurityPolicy = [
   "upgrade-insecure-requests"
 ].join("; ");
 
-const globalGatewayContentSecurityPolicy = [
+const databaseLessCountryShellContentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
@@ -36,8 +37,8 @@ const globalGatewayContentSecurityPolicy = [
   "upgrade-insecure-requests"
 ].join("; ");
 
-const contentSecurityPolicy = isGlobal
-  ? globalGatewayContentSecurityPolicy
+const contentSecurityPolicy = isDatabaseLessCountryShell
+  ? databaseLessCountryShellContentSecurityPolicy
   : unitedStatesContentSecurityPolicy;
 
 const securityHeaders = [

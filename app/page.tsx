@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { CanadaHome } from "../components/CanadaHome";
 import { GlobalGateway } from "../components/GlobalGateway";
 import { SafetyNotice } from "../components/SafetyNotice";
 import { mmipsSiteMode } from "../lib/site-mode";
 
 export default function HomePage() {
-  if (mmipsSiteMode() === "global") return <GlobalGateway />;
+  const mode = mmipsSiteMode();
+  if (mode === "global") return <GlobalGateway />;
+  if (mode === "ca") return <CanadaHome />;
   return <UnitedStatesHomePage />;
 }
 

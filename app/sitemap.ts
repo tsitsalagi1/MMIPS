@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 import { mmipsSiteMode } from "../lib/site-mode";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const isGlobal = mmipsSiteMode() === "global";
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com").replace(/\/$/, "");
+  const mode = mmipsSiteMode();
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || (mode === "ca" ? "https://ca.mmips.com" : "https://mmips.com")).replace(/\/$/, "");
 
-  if (isGlobal) {
+  if (mode === "global" || mode === "ca") {
     return [{ url: base, changeFrequency: "weekly", priority: 1 }];
   }
 
