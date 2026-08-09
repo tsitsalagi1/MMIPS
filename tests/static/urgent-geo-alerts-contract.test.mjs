@@ -6,6 +6,7 @@ const migration = fs.readFileSync("supabase/urgent_geo_alerts_20260808.sql", "ut
 const page = fs.readFileSync("app/alerts/page.tsx", "utf8");
 const subscribe = fs.readFileSync("app/api/alerts/subscribe/route.ts", "utf8");
 const zipGeo = fs.readFileSync("lib/zip-geo.ts", "utf8");
+const publicMap = fs.readFileSync("lib/public-map.ts", "utf8");
 const urgentRoute = fs.readFileSync("app/api/admin/alerts/urgent/route.ts", "utf8");
 const urgentUi = fs.readFileSync("app/admin/AdminUrgentAlerts.tsx", "utf8");
 const urgentAlerts = fs.readFileSync("lib/urgent-alerts.ts", "utf8");
@@ -60,7 +61,8 @@ test("urgent retries reuse the frozen delivery ledger and summarize persisted de
 
 test("ZIP-distance public search uses only approved public map points for geography", () => {
   assert.match(profileSearch, /getPublishedCases/);
-  assert.match(profileSearch, /getPublicMapPoints/);
-  assert.match(profileSearch, /distanceMiles/);
+  assert.match(profileSearch, /getPublicMapPointsNear/);
+  assert.match(publicMap, /distanceMiles/);
+  assert.match(publicMap, /loadNearbyPointRows/);
   assert.doesNotMatch(profileSearch, /last_known_location_private|latitude\s*:\s*item\.latitude|longitude\s*:\s*item\.longitude/);
 });
