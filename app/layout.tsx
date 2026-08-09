@@ -74,12 +74,12 @@ function UnitedStatesHeader() {
           <span>MMIPS</span>
         </Link>
         <div className="nav-links">
-          <a href={globalSiteUrl()}>United States · Change country</a>
           <Link href="/how-it-works">How it works</Link>
           <Link href="/profiles">Search Profiles</Link>
           <Link href="/alerts">Alerts</Link>
           <Link href="/resources">Family Resources</Link>
           <Link href="/submit">Submit Information</Link>
+          <a href={globalSiteUrl()}>United States · Change country</a>
         </div>
       </nav>
     </header>
