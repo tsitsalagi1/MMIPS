@@ -7,7 +7,7 @@ const alertsPage = fs.readFileSync("app/alerts/page.tsx", "utf8");
 const theme = fs.readFileSync("app/theme-overrides.css", "utf8");
 const readability = fs.readFileSync("app/readability-overrides.css", "utf8");
 
-test("public navigation prioritizes How It Works, Profiles, Alerts, Map, Family Resources, then Submit", () => {
+test("public navigation prioritizes How It Works, Profiles, Alerts, Family Resources, then Submit", () => {
   const navStart = layout.indexOf('<div className="nav-links">');
   const navEnd = layout.indexOf('</div>', navStart);
   const nav = layout.slice(navStart, navEnd);
@@ -15,7 +15,6 @@ test("public navigation prioritizes How It Works, Profiles, Alerts, Map, Family 
     '<Link href="/how-it-works">How it works</Link>',
     '<Link href="/profiles">Search Profiles</Link>',
     '<Link href="/alerts">Alerts</Link>',
-    '<Link href="/map">Map</Link>',
     '<Link href="/resources">Family Resources</Link>',
     '<Link href="/submit">Submit Information</Link>'
   ];
@@ -25,6 +24,7 @@ test("public navigation prioritizes How It Works, Profiles, Alerts, Map, Family 
     assert.ok(index > previous, `${item} should appear in requested order`);
     previous = index;
   }
+  assert.equal(nav.includes('<Link href="/map">'), false);
   assert.equal(nav.includes('<Link href="/corrections">'), false);
 });
 
