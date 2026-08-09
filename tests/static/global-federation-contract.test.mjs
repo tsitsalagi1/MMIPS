@@ -9,6 +9,8 @@ const home = fs.readFileSync("app/page.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const proxy = fs.readFileSync("proxy.ts", "utf8");
 const sitemap = fs.readFileSync("app/sitemap.ts", "utf8");
+const nextConfig = fs.readFileSync("next.config.ts", "utf8");
+const turnstile = fs.readFileSync("lib/security/turnstile.ts", "utf8");
 const architecture = fs.readFileSync("docs/GLOBAL_FEDERATION_ARCHITECTURE.md", "utf8");
 
 test("United States remains the safe default unless global mode is explicitly enabled", () => {
@@ -45,6 +47,14 @@ test("global and United States deployment surfaces are distinct", () => {
   assert.match(layout, /UnitedStatesFooter/);
   assert.match(layout, /United States · Change country/);
   assert.match(layout, /MMIPS Global[\s\S]*does not maintain a worldwide family, subscriber, or case database/);
+});
+
+test("global gateway gets a narrower browser security surface than the United States portal", () => {
+  assert.match(nextConfig, /const isGlobal = process\.env\.MMIPS_SITE_MODE === "global"/);
+  assert.match(nextConfig, /globalGatewayContentSecurityPolicy/);
+  assert.match(nextConfig, /connect-src 'self'/);
+  assert.match(nextConfig, /isGlobal[\s\S]*globalGatewayContentSecurityPolicy[\s\S]*unitedStatesContentSecurityPolicy/);
+  assert.match(turnstile, /"us\.mmips\.com"/);
 });
 
 test("architecture prohibits shared country-private credentials and data warehouse", () => {
