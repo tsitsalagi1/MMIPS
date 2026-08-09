@@ -42,7 +42,7 @@ test("renderer entry does not simulate geography or expose unsafe location contr
 });
 
 test("map page is ZIP-first while Search Profiles remains the non-map fallback", () => {
-  assert.match(component, /Zoom map to a ZIP code/);
+  assert.match(component, /Enter a ZIP code/);
   assert.match(component, /fetch\("\/api\/map\/zip"/);
   assert.match(component, /method: "POST"/);
   assert.match(component, /cache: "no-store"/);
@@ -56,15 +56,29 @@ test("map page is ZIP-first while Search Profiles remains the non-map fallback",
   assert.match(component, /Open selected public profile/);
   assert.doesNotMatch(component, /Accessible public profile results|ACCESSIBLE_PAGE_SIZE|accessiblePoints|Previous 20|Next 20/);
   assert.doesNotMatch(component, /\.map\(\(point\) => <article/);
-  assert.doesNotMatch(page, /getPublishedCases/);
+  assert.doesNotMatch(page, /getPublishedCases|getPublicMapPoints/);
+  assert.match(page, /points=\{\[\]\}/);
 });
 
-test("ZIP lookup validates input, uses existing Census helper, and does not persist or log searches", () => {
+test("ZIP lookup validates input, loads nearby public points, and does not persist or log searches", () => {
   assert.match(zipRoute, /normalizeZip/);
   assert.match(zipRoute, /lookupZcta\(zip\)/);
+  assert.match(zipRoute, /getPublicMapPointsNear/);
+  assert.match(zipRoute, /PUBLIC_MAP_ZIP_RADIUS_MILES/);
+  assert.match(zipRoute, /points: nearby\.points/);
   assert.match(zipRoute, /"Cache-Control": "no-store"/);
   assert.match(zipRoute, /export async function POST/);
   assert.doesNotMatch(zipRoute, /console\.|insert\(|update\(|upsert\(|localStorage|sessionStorage|searchParams/);
+});
+
+test("nearby public map query is geographically bounded before public case hydration", () => {
+  assert.match(loader, /loadNearbyPointRows/);
+  assert.match(loader, /\.gte\("public_latitude"/);
+  assert.match(loader, /\.lte\("public_latitude"/);
+  assert.match(loader, /\.gte\("public_longitude"/);
+  assert.match(loader, /\.lte\("public_longitude"/);
+  assert.match(loader, /\.limit\(LOCAL_MAP_POINT_LIMIT\)/);
+  assert.match(loader, /distanceMiles/);
 });
 
 test("migration grants exactly the public map columns and keeps moderation state private", () => {
