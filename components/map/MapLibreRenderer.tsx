@@ -13,7 +13,7 @@ const LAYER_ID = "approved-public-areas-circles";
 const MAX_FIT_ZOOM = 7;
 const SINGLE_POINT_ZOOM = 5;
 const MAPTILER_ORIGIN = "https://api.maptiler.com";
-const MAP_LOAD_TIMEOUT_MS = 12000;
+const MAP_SLOW_LOAD_NOTICE_MS = 15000;
 
 interface Props {
   points: PublicMapPoint[];
@@ -38,6 +38,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelect);
   const [failure, setFailure] = useState<MapFailureCode | null>(null);
+  const [loadingSlowly, setLoadingSlowly] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const geoJson = useMemo(() => toPublicGeoJson(points), [points]);
   const showMapTilerLogo = usesMapTiler(process.env.NEXT_PUBLIC_MAP_STYLE_URL);
@@ -48,6 +49,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
 
   useEffect(() => {
     setFailure(null);
+    setLoadingSlowly(false);
     const configResult = readPublicMapConfig({
       NEXT_PUBLIC_MAP_STYLE_URL: process.env.NEXT_PUBLIC_MAP_STYLE_URL,
       NEXT_PUBLIC_MAP_ATTRIBUTION: process.env.NEXT_PUBLIC_MAP_ATTRIBUTION,
@@ -69,7 +71,7 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     let map: MapLibreMap;
     let mapLoaded = false;
     let pointListenersBound = false;
-    let loadTimer: ReturnType<typeof setTimeout> | null = null;
+    let slowLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
     const onPointClick = (event: MapMouseEvent) => {
       const feature = map.queryRenderedFeatures(event.point, { layers: [LAYER_ID] })[0];
@@ -113,7 +115,8 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
 
     const onLoad = () => {
       mapLoaded = true;
-      if (loadTimer) clearTimeout(loadTimer);
+      if (slowLoadTimer) clearTimeout(slowLoadTimer);
+      setLoadingSlowly(false);
       if (!map.getSource(SOURCE_ID)) map.addSource(SOURCE_ID, { type: "geojson", data: geoJson });
       if (!map.getLayer(LAYER_ID)) {
         map.addLayer({
@@ -149,15 +152,12 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     map.once("load", onLoad);
     map.on("error", onError);
     canvas.addEventListener("webglcontextlost", onContextLost);
-    loadTimer = setTimeout(() => {
-      if (!mapLoaded) {
-        setFailure("MAP_STYLE_LOAD_FAILED");
-        reportMapFailure("MAP_STYLE_LOAD_FAILED");
-      }
-    }, MAP_LOAD_TIMEOUT_MS);
+    slowLoadTimer = setTimeout(() => {
+      if (!mapLoaded) setLoadingSlowly(true);
+    }, MAP_SLOW_LOAD_NOTICE_MS);
 
     return () => {
-      if (loadTimer) clearTimeout(loadTimer);
+      if (slowLoadTimer) clearTimeout(slowLoadTimer);
       canvas.removeEventListener("webglcontextlost", onContextLost);
       map.off("error", onError);
       if (pointListenersBound) {
@@ -178,9 +178,13 @@ export default function MapLibreRenderer({ points, onSelect }: Props) {
     updateMapDataAndCamera(map, geoJson);
   }, [geoJson]);
 
-  return <div className={styles.frame} data-map-state={failure ? "fallback" : "interactive"}>
+  return <div className={styles.frame} data-map-state={failure ? "fallback" : loadingSlowly ? "loading-slowly" : "interactive"}>
     <div ref={containerRef} className={failure ? styles.hiddenCanvas : styles.canvas} aria-label="Optional visual map of approved approximate public-awareness areas" />
     {!failure && showMapTilerLogo ? <a className={styles.providerLogo} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" alt="MapTiler" referrerPolicy="no-referrer" /></a> : null}
+    {!failure && loadingSlowly ? <div className={styles.loadingNotice} role="status">
+      <p><strong>Map is taking longer than expected to load.</strong> You can keep waiting; the map will continue loading, or you can retry it.</p>
+      <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
+    </div> : null}
     {failure ? <div className={styles.fallback} role="status" data-map-failure-code={failure}>
       <p><strong>Visual map unavailable.</strong> The complete accessible list remains available below.</p>
       <button type="button" className="button secondary" onClick={() => setAttempt((value) => value + 1)}>Retry visual map</button>
