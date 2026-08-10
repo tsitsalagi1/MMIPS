@@ -36,9 +36,9 @@ test("country gateway activates Canada only through an explicit release flag plu
   assert.match(portals, /code: "CA"[\s\S]*status: canadaActive \? "active" : "preparing"/);
   assert.match(portals, /code: "AU"[\s\S]*status: "preparing"/);
   assert.match(portals, /code: "NZ"[\s\S]*status: "preparing"/);
-  assert.match(gateway, /Choose your country or region/);
-  assert.match(gateway, /does not hold a worldwide family or case database/);
-  assert.match(gateway, /does not automatically redirect visitors based on IP address/);
+  assert.match(gateway, /Find the MMIPS site for your country/);
+  assert.match(gateway, /global page only helps you choose where to go/);
+  assert.match(gateway, /come back here anytime to switch countries/);
 });
 
 test("global gateway remains isolated from every country application and API route", () => {
@@ -81,7 +81,7 @@ test("Global, Canada and United States deployment surfaces are distinct", () => 
   assert.match(layout, /UnitedStatesFooter/);
   assert.match(layout, /United States · Change country/);
   assert.match(layout, /Canada · Preparing/);
-  assert.match(layout, /MMIPS Global[\s\S]*does not maintain a worldwide family, subscriber, or case database/);
+  assert.match(layout, /MMIPS Global[\s\S]*Case information stays with each country site/);
 });
 
 test("country-shell sitemap and robots expose only the root before Canada release", () => {
