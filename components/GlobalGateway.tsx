@@ -9,16 +9,16 @@ export function GlobalGateway() {
         <div className="container hero-grid calm-hero-grid">
           <div className="hero-copy">
             <p className="eyebrow">Missing & Murdered Indigenous People Search</p>
-            <h1>Choose your country or region.</h1>
+            <h1>Find the MMIPS site for your country.</h1>
             <p className="lead">
-              MMIPS is one worldwide Indigenous public-awareness network made up of separate country systems. Each country site is designed around its own Indigenous peoples, communities, reporting systems, laws, terminology, and safety needs.
+              MMIPS helps families and communities share reviewed public information about missing and murdered Indigenous people. Choose a country below to use the site built for that country&apos;s communities, reporting systems, and safety needs.
             </p>
           </div>
-          <aside className="card hero-logo-panel" aria-label="MMIPS federation commitment">
+          <aside className="card hero-logo-panel" aria-label="How MMIPS country sites work">
             <img src="/mmips-hand-transparent.png" alt="MMIPS red handprint logo" className="hero-logo" />
-            <h2>One network. Separate country systems.</h2>
+            <h2>Your country, your MMIPS site.</h2>
             <p>
-              MMIPS Global does not hold a worldwide family or case database. Country systems keep their case information, administration, maps, alerts, and private data separated.
+              Each country has its own MMIPS site and keeps its case information separate. This global page only helps you choose where to go.
             </p>
           </aside>
         </div>
@@ -26,10 +26,10 @@ export function GlobalGateway() {
 
       <section className="container section" aria-labelledby="country-heading">
         <div className="section-heading">
-          <p className="eyebrow">Country & region portals</p>
-          <h2 id="country-heading">Enter the MMIPS system designed for your country.</h2>
+          <p className="eyebrow">Choose a country</p>
+          <h2 id="country-heading">Where would you like to go?</h2>
           <p className="muted text-measure">
-            You can return here at any time to choose a different country. MMIPS does not automatically redirect visitors based on IP address or device location.
+            Select the country you need. You can come back here anytime to switch countries.
           </p>
         </div>
 
@@ -41,9 +41,9 @@ export function GlobalGateway() {
               <p><strong>{portal.indigenousContext}</strong></p>
               <p>{portal.description}</p>
               {portal.status === "active" && portal.url ? (
-                <a className="button" href={portal.url}>Enter {portal.name} MMIPS</a>
+                <a className="button" href={portal.url}>Go to MMIPS {portal.name}</a>
               ) : (
-                <p className="muted" role="status"><strong>Preparing.</strong> This country system is not accepting MMIPS submissions yet.</p>
+                <p className="muted" role="status"><strong>Coming soon.</strong> This country site is still being built and is not accepting submissions yet.</p>
               )}
             </article>
           ))}
@@ -52,10 +52,10 @@ export function GlobalGateway() {
 
       <section className="container section">
         <div className="card calm-panel">
-          <p className="eyebrow">Federated by design</p>
-          <h2>Country-specific does not mean disconnected.</h2>
+          <p className="eyebrow">Why separate country sites?</p>
+          <h2>Built around local communities and systems.</h2>
           <p className="text-measure">
-            Every MMIPS country system follows shared minimum safety, privacy, accessibility, moderation, and accountability standards. Country systems may adopt stronger protections and country-specific requirements. Cross-border public-awareness sharing must use approved public information only; private family, subscriber, moderator, or investigative data is not copied into a global warehouse.
+            Indigenous communities, reporting agencies, privacy rules, and support resources differ from country to country. Each MMIPS country site is built around those local needs while following the same core safety and privacy standards. When a case needs cross-border awareness, only approved public information is shared.
           </p>
         </div>
       </section>
