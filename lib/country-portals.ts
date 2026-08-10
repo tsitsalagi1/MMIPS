@@ -21,7 +21,7 @@ export function countryPortals(): CountryPortal[] {
       indigenousContext: "Tribal Nations, Alaska Native communities, and Indigenous families",
       status: "active",
       url: usSiteUrl(),
-      description: "United States profiles, alerts, family resources, Tribal and law-enforcement reporting context, and U.S.-specific case information."
+      description: "Search reviewed public profiles, sign up for alerts, find family resources, and see United States reporting information."
     },
     {
       code: "CA",
@@ -30,22 +30,22 @@ export function countryPortals(): CountryPortal[] {
       status: canadaActive ? "active" : "preparing",
       url: canadaActive ? canadaSiteUrl() : undefined,
       description: canadaActive
-        ? "Enter the separate Canadian MMIPS system built around Canadian Indigenous communities, geography, reporting, privacy, and moderation."
-        : "A separate Canadian MMIPS system, database, map, reporting workflow, terminology, and privacy framework is being prepared."
+        ? "Use MMIPS Canada for Canadian reporting information and resources built around First Nations, Inuit, and Métis communities."
+        : "The Canadian MMIPS site is being built for First Nations, Inuit, and Métis communities."
     },
     {
       code: "AU",
       name: "Australia",
       indigenousContext: "Aboriginal and Torres Strait Islander peoples and communities",
       status: "preparing",
-      description: "A separate Australian MMIPS system, database, map, reporting workflow, terminology, and privacy framework is being prepared."
+      description: "The Australian MMIPS site is being built for Aboriginal and Torres Strait Islander peoples and communities."
     },
     {
       code: "NZ",
       name: "Aotearoa / New Zealand",
       indigenousContext: "Māori whānau, hapū, iwi, and communities",
       status: "preparing",
-      description: "A separate Aotearoa / New Zealand MMIPS system, database, map, reporting workflow, terminology, and privacy framework is being prepared."
+      description: "The Aotearoa / New Zealand MMIPS site is being built for Māori whānau, hapū, iwi, and communities."
     }
   ];
 }
