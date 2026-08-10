@@ -18,7 +18,7 @@ export function generateMetadata(): Metadata {
       : "MMIPS United States — Missing & Murdered Indigenous People Search";
 
   const description = mode === "global"
-    ? "Choose a country-specific MMIPS system. MMIPS Global is a gateway to separate Indigenous missing-person public-awareness systems and does not hold a worldwide case database."
+    ? "Choose the MMIPS site for your country. Each country has its own Indigenous missing-person resources, reporting information, and privacy protections."
     : mode === "ca"
       ? "A separate Canadian MMIPS public-awareness system being built around First Nations, Inuit and Métis communities, Canadian reporting, privacy, geography, and moderation."
       : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
@@ -66,7 +66,7 @@ function GlobalHeader() {
           <span>MMIPS</span>
         </Link>
         <div className="nav-links">
-          <span>Global country gateway</span>
+          <span>Choose a country</span>
         </div>
       </nav>
     </header>
@@ -118,7 +118,7 @@ function GlobalFooter() {
     <footer className="site-footer">
       <div className="container footer-grid">
         <div className="footer-mission">
-          <p><strong>MMIPS Global</strong> is the doorway to separate country-specific MMIPS systems. It does not maintain a worldwide family, subscriber, or case database.</p>
+          <p><strong>MMIPS Global</strong> helps you find the MMIPS site for your country. Case information stays with each country site.</p>
         </div>
         <div className="footer-contact" aria-label="MMIPS Global contact email address">
           <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>
