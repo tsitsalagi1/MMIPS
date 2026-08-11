@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { getCanadaPublicMapPoints } from "@/lib/canada-public";
 import { getPublicMapPoints } from "@/lib/public-map";
+import { mmipsSiteMode } from "@/lib/site-mode";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await getPublicMapPoints();
+  const result = mmipsSiteMode() === "ca"
+    ? await getCanadaPublicMapPoints()
+    : await getPublicMapPoints();
   const status = result.availability === "error" ? 503 : 200;
 
   return NextResponse.json(
