@@ -4,6 +4,7 @@ import type { CaseStatus, ProfileType } from "./types";
 export const PUBLIC_MAP_PRECISIONS = ["state", "broad_region", "tribal_region", "county", "city_centroid"] as const;
 export type PublicMapPrecision = typeof PUBLIC_MAP_PRECISIONS[number];
 export type PublicMapAvailability = "available" | "unconfigured" | "error";
+export type PublicMapSourceCountry = "ca" | "us";
 
 export interface PublicMapPoint {
   caseId: string;
@@ -17,6 +18,8 @@ export interface PublicMapPoint {
   precision: PublicMapPrecision;
   regionType: string;
   lastPublicUpdate: string | null;
+  sourceCountry?: PublicMapSourceCountry;
+  profileUrl?: string;
 }
 
 export interface PublicMapResult {

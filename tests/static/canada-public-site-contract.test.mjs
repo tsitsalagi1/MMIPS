@@ -3,6 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 
 const canadaPublic = fs.readFileSync("lib/canada-public.ts", "utf8");
+const crossBorderMap = fs.readFileSync("lib/cross-border-public-map.ts", "utf8");
 const canadaSearch = fs.readFileSync("components/CanadaProfilesSearch.tsx", "utf8");
 const canadaProfile = fs.readFileSync("components/CanadaPublicProfile.tsx", "utf8");
 const canadaPrivacy = fs.readFileSync("components/CanadaPrivacy.tsx", "utf8");
@@ -14,6 +15,7 @@ const sourceLockdown = fs.readFileSync("supabase/canada/004_lock_public_source_t
 test("Canada map and profile APIs branch to the separate Canada data adapter", () => {
   assert.match(mapRoute, /mmipsSiteMode\(\) === "ca"/);
   assert.match(mapRoute, /getCanadaPublicMapPoints/);
+  assert.match(mapRoute, /getCanadaFederatedPublicMapPoints/);
   assert.match(searchRoute, /mmipsSiteMode\(\) === "ca"/);
   assert.match(searchRoute, /searchCanadaPublicProfileIds/);
   assert.match(searchRoute, /geocodeCanadianPostalCode/);
@@ -27,6 +29,19 @@ test("Canada public data reads only safe projection tables", () => {
   assert.doesNotMatch(canadaPublic, /\.from\("persons"\)/);
   assert.doesNotMatch(canadaPublic, /exact_latitude/);
   assert.doesNotMatch(canadaPublic, /exact_longitude/);
+});
+
+test("Canada cross-border map imports only the fixed U.S. public projection endpoint", () => {
+  assert.match(crossBorderMap, /https:\/\/us\.mmips\.com\/api\/profiles\/map/);
+  assert.match(crossBorderMap, /sanitizeUnitedStatesPublicPoint/);
+  assert.match(crossBorderMap, /sourceCountry: "us"/);
+  assert.match(crossBorderMap, /profileUrl:/);
+  assert.match(crossBorderMap, /MAX_REMOTE_PUBLIC_POINTS/);
+  assert.doesNotMatch(crossBorderMap, /service_role/i);
+  assert.doesNotMatch(crossBorderMap, /submitter/i);
+  assert.doesNotMatch(crossBorderMap, /requester/i);
+  assert.doesNotMatch(crossBorderMap, /exact_latitude/i);
+  assert.doesNotMatch(crossBorderMap, /exact_longitude/i);
 });
 
 test("Canada projection tables are read-only public surfaces maintained by release-gated triggers", () => {
@@ -51,24 +66,27 @@ test("Canada source tables are not directly readable by public roles", () => {
   assert.match(sourceLockdown, /grant select on public_canada_profile_projection, public_case_map_projection to anon, authenticated/);
 });
 
-test("Canada user-facing search and profiles use Canadian language and privacy boundaries", () => {
+test("Canada search keeps Canadian controls while adding cross-border cards", () => {
   assert.match(canadaSearch, /Province or territory/);
   assert.match(canadaSearch, /Canadian postal code/);
   assert.match(canadaSearch, /Within 1,000 km/);
+  assert.match(canadaSearch, /Canada and border-area map/);
+  assert.match(canadaSearch, /Browse the current results/);
+  assert.match(canadaSearch, /Show more profiles/);
+  assert.match(canadaSearch, /sourceCountry === "us"/);
   assert.match(canadaProfile, /First Nations, Inuit or Métis affiliation/);
   assert.match(canadaProfile, /Police \/ official contact/);
-  assert.match(canadaProfile, /approved public-awareness area/);
+  assert.match(canadaProfile, /approximate public area/);
   assert.doesNotMatch(canadaProfile, /NamUs/);
   assert.doesNotMatch(canadaProfile, /NCIC/);
   assert.doesNotMatch(canadaSearch, /ZIP code/);
 });
 
-test("Canada privacy copy records separation, data minimization, and reversible public release", () => {
-  assert.match(canadaPrivacy, /Separate Canadian system/);
-  assert.match(canadaPrivacy, /Collect only what is needed/);
-  assert.match(canadaPrivacy, /explicit public-profile release gate/);
-  assert.match(canadaPrivacy, /separate map-release gate/);
+test("Canada privacy copy explains public/private boundaries in plain language", () => {
+  assert.match(canadaPrivacy, /What can appear publicly/);
+  assert.match(canadaPrivacy, /What stays private/);
+  assert.match(canadaPrivacy, /Cross-border public information/);
+  assert.match(canadaPrivacy, /Collect and keep only what is needed/);
   assert.match(canadaPrivacy, /withdrawal of consent/);
-  assert.match(canadaPrivacy, /suppression/);
   assert.match(canadaPrivacy, /deletion or de-identification/);
 });

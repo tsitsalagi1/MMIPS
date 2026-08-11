@@ -18,7 +18,7 @@ export function generateMetadata(): Metadata {
   const description = mode === "global"
     ? "Choose the MMIPS site for your country. Each country has its own Indigenous missing-person resources, reporting information, and privacy protections."
     : mode === "ca"
-      ? "A separate Canadian MMIPS public-awareness system for First Nations, Inuit and Métis families and communities, with Canadian search, mapping, reporting information, privacy controls, and moderation."
+      ? "Search public MMIPS profiles in Canada, explore the Canada and border-area map, and find resources for First Nations, Inuit and Métis families and communities."
       : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
 
   return {
@@ -134,20 +134,20 @@ function CanadaFooter() {
     <footer className="site-footer">
       <div className="container footer-grid">
         <div className="footer-mission">
-          <p><strong>MMIPS Canada</strong> provides a separate Canadian public-awareness system for First Nations, Inuit and Métis families and communities. It is not law enforcement and does not replace emergency reporting or an official missing-person report.</p>
+          <p><strong>MMIPS Canada</strong> helps people find public information about missing and murdered Indigenous people and resources for families. MMIPS is not police or an emergency service.</p>
         </div>
         <nav className="footer-links" aria-label="MMIPS Canada footer navigation">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/profiles">Search Profiles</Link>
           <Link href="/resources">Family Resources</Link>
-          <Link href="/submit">Submission status</Link>
-          <Link href="/privacy">Canada privacy</Link>
+          <Link href="/submit">Submit Information</Link>
+          <Link href="/privacy">Privacy</Link>
         </nav>
         <div className="footer-contact" aria-label="MMIPS Canada contact and country navigation">
           <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>
           <span>Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a></span>
           <span>Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a></span>
-          <span><a href={globalSiteUrl()}>Return to MMIPS Global</a></span>
+          <span><a href={globalSiteUrl()}>Change country</a></span>
         </div>
       </div>
     </footer>

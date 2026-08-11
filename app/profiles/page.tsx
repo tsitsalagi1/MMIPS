@@ -21,13 +21,13 @@ function CanadaProfilesPage() {
   return (
     <main className="container section">
       <p className="eyebrow">MMIPS Canada</p>
-      <h1>Search Canadian public profiles</h1>
-      <p className="lead">Search reviewed Canadian MMIPS public-awareness profiles by name, Nation or community, locality, police service, status, province or territory, or distance from a Canadian postal code.</p>
+      <h1>Search profiles and explore the map.</h1>
+      <p className="lead">Search by name, public area, status, province or territory, or Canadian postal code. The map can also show public MMIPS results from the United States for cross-border awareness.</p>
       <section className="notice safety-notice" aria-label="Canadian reporting information">
-        <strong>Need immediate help?</strong>
+        <strong>If someone is missing or in immediate danger</strong>
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.emergency}</p>
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.missingPerson}</p>
-        <p>MMIPS Canada is not law enforcement and does not replace an official missing-person report.</p>
+        <p>MMIPS helps with public awareness. It does not replace an official missing-person report.</p>
       </section>
       <CanadaProfilesSearch />
     </main>
