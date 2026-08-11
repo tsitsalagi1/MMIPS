@@ -16,8 +16,11 @@ function safeHttpsOrigin(value: string | undefined) {
 
 const configuredSupabaseOrigin = safeHttpsOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const fallbackUsSupabaseOrigin = siteMode === "ca" ? null : "https://borhgkrydfuqgabkhxsr.supabase.co";
+const fallbackUsSupabaseWebSocketOrigin = siteMode === "ca" ? null : "wss://borhgkrydfuqgabkhxsr.supabase.co";
 const supabaseOrigin = configuredSupabaseOrigin || fallbackUsSupabaseOrigin;
-const supabaseWebSocketOrigin = supabaseOrigin ? supabaseOrigin.replace(/^https:/, "wss:") : null;
+const supabaseWebSocketOrigin = configuredSupabaseOrigin
+  ? configuredSupabaseOrigin.replace(/^https:/, "wss:")
+  : fallbackUsSupabaseWebSocketOrigin;
 
 const countrySiteContentSecurityPolicy = [
   "default-src 'self'",
