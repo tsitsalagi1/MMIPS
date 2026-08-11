@@ -1,15 +1,19 @@
+import { CanadaSubmitStatus } from "../../components/CanadaSubmitStatus";
 import { SafetyNotice } from "../../components/SafetyNotice";
 import { TurnstileWidget } from "../../components/TurnstileWidget";
 import { PhotoPermissionUpload } from "../../components/PhotoPermissionUpload";
 import { ProfileTypeFields } from "../../components/ProfileTypeFields";
 import { SubmissionReviewGate } from "../../components/SubmissionReviewGate";
 import { submissionIntakeModeFromEnv } from "../../lib/release-controls";
+import { mmipsSiteMode } from "../../lib/site-mode";
 
 export default async function SubmitPage({
   searchParams
 }: {
   searchParams?: Promise<{ error?: string }>;
 }) {
+  if (mmipsSiteMode() === "ca") return <CanadaSubmitStatus />;
+
   const params = await searchParams;
   const error = params?.error;
   const intakeMode = submissionIntakeModeFromEnv();
