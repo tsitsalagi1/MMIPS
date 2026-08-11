@@ -31,17 +31,17 @@ export function CanadaPublicProfileView({ profile }: { profile: CanadaPublicProf
 
       <div className="profile-hero">
         <div>
-          <p className="muted">MMIPS Canada public profile</p>
+          <p className="eyebrow">MMIPS Canada</p>
           <h1>{profile.fullName}</h1>
-          <p className="reading-measure">{canadaStatusLabel(profile.status)}</p>
+          <p className="lead">{canadaStatusLabel(profile.status)}</p>
         </div>
       </div>
 
       <section className="notice safety-notice" aria-label="Canadian reporting information">
-        <strong>Need immediate help?</strong>
+        <strong>If someone is missing or in danger</strong>
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.emergency}</p>
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.missingPerson}</p>
-        <p>MMIPS Canada does not collect investigative tips and does not replace a police report.</p>
+        <p>Send investigative tips to police or the official tip contact below, not to MMIPS.</p>
       </section>
 
       <section className="feature-grid profile-primary-facts" aria-label="Key public information">
@@ -49,30 +49,30 @@ export function CanadaPublicProfileView({ profile }: { profile: CanadaPublicProf
           <h3>{profile.status === "homicide_unsolved" ? "Public area" : "Last seen / public area"}</h3>
           <p>{publicLocation(profile)}</p>
           {profile.lastSeenDate ? <p><strong>Last seen date:</strong> {profile.lastSeenDate}</p> : null}
-          <p className="muted">Location detail is limited to an approved public-awareness area. Exact or sensitive coordinates are not shown.</p>
+          <p className="muted">This is an approximate public area, not an exact private location.</p>
         </div>
         <div className="card">
           <h3>Police / official contact</h3>
           <p><strong>Police service:</strong> {profile.leadPoliceService || "Not publicly listed yet"}</p>
-          <p><strong>Public tip contact:</strong> {profile.officialTipContact || "Use the investigating police service or 911 for immediate danger."}</p>
+          <p><strong>Where to send tips:</strong> {profile.officialTipContact || "Use the investigating police service or 911 for immediate danger."}</p>
         </div>
         <div className="card">
           <h3>First Nations, Inuit or Métis affiliation</h3>
           {affiliations.length ? <ul>{affiliations.map((label) => <li key={label}>{label}</li>)}</ul> : <p>Not publicly listed.</p>}
-          <p className="muted">Affiliation is shown only when its publication has been approved.</p>
+          <p className="muted">Affiliation information is shown only when it is appropriate and approved for public display.</p>
         </div>
       </section>
 
       <section className="card">
         <h2>What is publicly known</h2>
-        <p className="reading-measure">{profile.publicSummary || "No public summary has been released."}</p>
+        <p className="reading-measure">{profile.publicSummary || "No public summary is available yet."}</p>
         {profile.lastPublicUpdate ? <p className="muted"><strong>Last public update:</strong> {profile.lastPublicUpdate}</p> : null}
       </section>
 
       {profile.officialReferences.length ? (
         <section className="card official-source-card">
-          <h2>Official references</h2>
-          <p className="reading-measure">These references were approved for public display. The investigating police service remains the source for investigative updates and tips.</p>
+          <h2>Official links and references</h2>
+          <p className="reading-measure">Use the investigating police service for investigative updates and tips.</p>
           <ul>
             {profile.officialReferences.map((reference, index) => {
               const url = safeHttpsUrl(reference.source_url);
@@ -86,17 +86,17 @@ export function CanadaPublicProfileView({ profile }: { profile: CanadaPublicProf
       <section className="card">
         <h2>Location privacy</h2>
         <p><strong>Public location detail:</strong> {profile.locationPrecision.replaceAll("_", " ")}</p>
-        <p className="muted reading-measure">MMIPS Canada does not publish exact private addresses, shelters, domestic-violence locations, or other sensitive locations that could put a person, family, or investigation at risk.</p>
+        <p className="muted reading-measure">MMIPS does not publish private home addresses, shelters, domestic-violence locations, or other exact sensitive locations that could put someone at risk.</p>
       </section>
 
       <section className="card correction-cta">
-        <h2>Need to correct, suppress, or remove information?</h2>
-        <p className="reading-measure">Families and authorized contacts can ask MMIPS Canada to review incorrect, unsafe, outdated, or no-longer-authorized public information.</p>
-        <a className="button secondary" href="mailto:corrections@mmips.com?subject=MMIPS%20Canada%20profile%20review%20request">Contact MMIPS Canada for a review</a>
+        <h2>Need a correction or removal?</h2>
+        <p className="reading-measure">Families and authorized contacts can ask MMIPS to review information that is wrong, unsafe, outdated, or should no longer be public.</p>
+        <a className="button secondary" href="mailto:corrections@mmips.com?subject=MMIPS%20Canada%20profile%20review%20request">Ask MMIPS to review this profile</a>
       </section>
 
       <div className="button-row">
-        <Link className="button secondary" href="/profiles">Back to Canada profile search</Link>
+        <Link className="button secondary" href="/profiles">Back to profiles and map</Link>
       </div>
     </main>
   );
