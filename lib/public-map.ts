@@ -4,6 +4,7 @@ import type { CaseStatus, ProfileType } from "./types";
 export const PUBLIC_MAP_PRECISIONS = ["state", "broad_region", "tribal_region", "county", "city_centroid"] as const;
 export type PublicMapPrecision = typeof PUBLIC_MAP_PRECISIONS[number];
 export type PublicMapAvailability = "available" | "unconfigured" | "error";
+export type PublicMapSourceCountry = "ca" | "us";
 
 export interface PublicMapPoint {
   caseId: string;
@@ -17,6 +18,8 @@ export interface PublicMapPoint {
   precision: PublicMapPrecision;
   regionType: string;
   lastPublicUpdate: string | null;
+  sourceCountry?: PublicMapSourceCountry;
+  profileUrl?: string;
 }
 
 export interface PublicMapResult {
@@ -90,147 +93,76 @@ export function sanitizePublicMapRows(rows: unknown[] | null | undefined): Publi
       publicName: row.public_name || person?.full_name || "Name withheld",
       profileType: row.profile_type || nestedCase?.profile_type || "unknown",
       publicStatus: row.public_status || nestedCase?.status || "unknown",
-      publicMapLabel: row.public_label,
+      publicMapLabel: row.public_label || "Approved approximate public-awareness area",
       publicLatitude: lat,
       publicLongitude: lon,
       precision: row.precision,
-      regionType: row.region_type || "approved public area",
-      lastPublicUpdate: row.last_public_update ?? nestedCase?.last_public_update ?? null
-    } satisfies PublicMapPoint];
+      regionType: row.region_type || "public_awareness_area",
+      lastPublicUpdate: row.last_public_update || row.updated_at || nestedCase?.last_public_update || nestedCase?.updated_at || null
+    }];
   });
 }
 
-type PublicMapClient = Pick<SupabaseClient, "from">;
+export async function loadAllPublicMapPoints(client: SupabaseClient | null = createPublicSupabaseClient()): Promise<PublicMapResult> {
+  if (!client) return { points: [], availability: "unconfigured" };
 
-async function loadAllProjectionRows(client: PublicMapClient, select: string) {
-  const rows: any[] = [];
-  for (let from = 0; ; from += MAP_POINT_PAGE_SIZE) {
-    const { data, error } = await client
-      .from(MAP_PROJECTION)
-      .select(select)
-      .order("updated_at", { ascending: false })
-      .range(from, from + MAP_POINT_PAGE_SIZE - 1);
-
-    if (error) return { rows: [] as any[], error };
-    const page = data || [];
-    rows.push(...page);
-    if (page.length < MAP_POINT_PAGE_SIZE) break;
-  }
-  return { rows, error: null };
-}
-
-async function loadNearbyProjectionRows(client: PublicMapClient, latitude: number, longitude: number, radiusMiles: number) {
-  const rows: any[] = [];
-  const latitudeDelta = radiusMiles / 69.0;
-  const longitudeScale = Math.max(0.2, Math.cos(latitude * Math.PI / 180));
-  const longitudeDelta = radiusMiles / (69.0 * longitudeScale);
-
-  for (let from = 0; ; from += MAP_POINT_PAGE_SIZE) {
-    const { data, error } = await client
-      .from(MAP_PROJECTION)
-      .select(MAP_POINT_SELECT)
-      .gte("public_latitude", latitude - latitudeDelta)
-      .lte("public_latitude", latitude + latitudeDelta)
-      .gte("public_longitude", longitude - longitudeDelta)
-      .lte("public_longitude", longitude + longitudeDelta)
-      .order("updated_at", { ascending: false })
-      .range(from, from + MAP_POINT_PAGE_SIZE - 1);
-
-    if (error) return { rows: [] as any[], error };
-    const page = data || [];
-    rows.push(...page);
-    if (page.length < MAP_POINT_PAGE_SIZE) break;
-  }
-
-  return { rows, error: null };
-}
-
-export async function loadPublicMapPoints(client: PublicMapClient): Promise<PublicMapResult> {
-  const result = await loadAllProjectionRows(client, MAP_POINT_SELECT);
-  if (result.error) {
-    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
+  const points: PublicMapPoint[] = [];
+  try {
+    for (let from = 0; ; from += MAP_POINT_PAGE_SIZE) {
+      const to = from + MAP_POINT_PAGE_SIZE - 1;
+      const { data, error } = await client
+        .from(MAP_PROJECTION)
+        .select(MAP_POINT_SELECT)
+        .order("updated_at", { ascending: false })
+        .order("case_id", { ascending: true })
+        .range(from, to);
+      if (error) throw error;
+      const page = sanitizePublicMapRows(data);
+      points.push(...page);
+      if (!data || data.length < MAP_POINT_PAGE_SIZE) break;
+    }
+    return { points, availability: "available" };
+  } catch (error) {
+    console.error("Public map projection unavailable", { code: (error as { code?: string })?.code || "PUBLIC_MAP_READ_FAILED" });
     return { points: [], availability: "error" };
   }
-  return { points: sanitizePublicMapRows(result.rows), availability: "available" };
 }
 
 export async function getPublicMapPoints(): Promise<PublicMapResult> {
-  const supabase = createPublicSupabaseClient();
-  if (!supabase) return { points: [], availability: "unconfigured" };
-  return loadPublicMapPoints(supabase);
+  return loadAllPublicMapPoints();
 }
 
-export async function getPublicMapPointsNear(
-  latitude: number,
-  longitude: number,
-  radiusMiles = PUBLIC_MAP_ZIP_RADIUS_MILES
-): Promise<PublicMapResult> {
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-    return { points: [], availability: "error" };
-  }
-  if (!Number.isFinite(radiusMiles) || radiusMiles <= 0 || radiusMiles > 250) {
-    return { points: [], availability: "error" };
-  }
+export async function searchPublicProfileIds(filters: PublicProfileSearchFilters, client: SupabaseClient | null = createPublicSupabaseClient()): Promise<PublicProfileIdSearchResult> {
+  if (!client) return { ids: [], availability: "unconfigured" };
 
-  const supabase = createPublicSupabaseClient();
-  if (!supabase) return { points: [], availability: "unconfigured" };
+  try {
+    const normalizedQuery = filters.q.trim().replace(/[%_]/g, "").slice(0, 120);
+    const normalizedState = filters.state.trim().toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2);
+    const normalizedStatus = filters.status.trim();
+    let query = client.from(MAP_PROJECTION).select(SEARCH_PROJECTION_SELECT);
 
-  const result = await loadNearbyProjectionRows(supabase, latitude, longitude, radiusMiles);
-  if (result.error) {
-    console.error("Public map request failed", { code: "PUBLIC_MAP_QUERY_FAILED" });
-    return { points: [], availability: "error" };
-  }
+    if (normalizedStatus && normalizedStatus !== "all") query = query.eq("public_status", normalizedStatus);
+    if (normalizedState) query = query.eq("last_seen_state", normalizedState);
+    if (normalizedQuery) {
+      const escaped = normalizedQuery.replace(/,/g, " ");
+      query = query.or(`public_name.ilike.%${escaped}%,public_label.ilike.%${escaped}%,last_seen_area_public.ilike.%${escaped}%,last_seen_city.ilike.%${escaped}%,lead_agency.ilike.%${escaped}%,namus_number.ilike.%${escaped}%,tribal_affiliation.ilike.%${escaped}%`);
+    }
 
-  return {
-    availability: "available",
-    points: sanitizePublicMapRows(result.rows).filter((point) => distanceMiles(
-      { latitude, longitude },
-      { latitude: point.publicLatitude, longitude: point.publicLongitude }
-    ) <= radiusMiles)
-  };
-}
-
-function includesText(value: unknown, query: string) {
-  return typeof value === "string" && value.toLowerCase().includes(query);
-}
-
-export async function searchPublicProfileIds(filters: PublicProfileSearchFilters): Promise<PublicProfileIdSearchResult> {
-  const supabase = createPublicSupabaseClient();
-  if (!supabase) return { ids: [], availability: "unconfigured" };
-
-  const result = await loadAllProjectionRows(supabase, SEARCH_PROJECTION_SELECT);
-  if (result.error) {
-    console.error("Public profile search failed", { code: "PUBLIC_PROFILE_SEARCH_QUERY_FAILED" });
+    const { data, error } = await query.order("updated_at", { ascending: false }).limit(5000);
+    if (error) throw error;
+    const ids = Array.from(new Set((data || []).map((row: any) => row.case_id).filter((id: unknown): id is string => typeof id === "string")));
+    return { ids, availability: "available" };
+  } catch (error) {
+    console.error("Public profile search projection unavailable", { code: (error as { code?: string })?.code || "PUBLIC_SEARCH_READ_FAILED" });
     return { ids: [], availability: "error" };
   }
-
-  const q = filters.q.trim().toLowerCase();
-  const state = filters.state.trim().toLowerCase();
-  const status = filters.status;
-  const ids = result.rows.flatMap((row: Record<string, any>) => {
-    if (status !== "all" && row.public_status !== status) return [];
-    if (state && ![row.last_seen_area_public, row.last_seen_city, row.last_seen_state, row.public_label].some((value) => includesText(value, state))) return [];
-    if (q && ![
-      row.public_name,
-      row.tribal_affiliation,
-      row.public_label,
-      row.last_seen_area_public,
-      row.last_seen_city,
-      row.last_seen_state,
-      row.lead_agency,
-      row.namus_number
-    ].some((value) => includesText(value, q))) return [];
-    return typeof row.case_id === "string" ? [row.case_id] : [];
-  });
-
-  return { ids: [...new Set(ids)], availability: "available" };
 }
 
-export interface PublicMapFilters { profileType: string; status: string; region: string; }
-export function filterPublicMapPoints(points: PublicMapPoint[], filters: PublicMapFilters): PublicMapPoint[] {
-  return points.filter((point) =>
-    (filters.profileType === "all" || point.profileType === filters.profileType) &&
-    (filters.status === "all" || point.publicStatus === filters.status) &&
-    (filters.region === "all" || point.publicMapLabel === filters.region)
-  );
+export async function queryNearbyPublicMapPoints(center: { latitude: number; longitude: number }, radiusMiles = PUBLIC_MAP_ZIP_RADIUS_MILES): Promise<PublicMapResult> {
+  const result = await loadAllPublicMapPoints();
+  if (result.availability !== "available") return result;
+  return {
+    availability: "available",
+    points: result.points.filter((point) => distanceMiles(center, { latitude: point.publicLatitude, longitude: point.publicLongitude }) <= radiusMiles)
+  };
 }
