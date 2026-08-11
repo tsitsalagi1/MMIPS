@@ -2,17 +2,30 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 const siteMode = process.env.MMIPS_SITE_MODE;
-const isDatabaseLessCountryShell = siteMode === "global" || siteMode === "ca";
-const supabaseOrigin = "https://borhgkrydfuqgabkhxsr.supabase.co";
-const supabaseWebSocketOrigin = "wss://borhgkrydfuqgabkhxsr.supabase.co";
+const isGlobalGateway = siteMode === "global";
 
-const unitedStatesContentSecurityPolicy = [
+function safeHttpsOrigin(value: string | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+const configuredSupabaseOrigin = safeHttpsOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const fallbackUsSupabaseOrigin = siteMode === "ca" ? null : "https://borhgkrydfuqgabkhxsr.supabase.co";
+const supabaseOrigin = configuredSupabaseOrigin || fallbackUsSupabaseOrigin;
+const supabaseWebSocketOrigin = supabaseOrigin ? supabaseOrigin.replace(/^https:/, "wss:") : null;
+
+const countrySiteContentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${supabaseOrigin} https://api.maptiler.com`,
+  `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""} https://api.maptiler.com`,
   "font-src 'self' data: https://api.maptiler.com",
-  `connect-src 'self' ${supabaseOrigin} ${supabaseWebSocketOrigin} https://api.maptiler.com https://challenges.cloudflare.com`,
+  `connect-src 'self'${supabaseOrigin ? ` ${supabaseOrigin}` : ""}${supabaseWebSocketOrigin ? ` ${supabaseWebSocketOrigin}` : ""} https://api.maptiler.com https://challenges.cloudflare.com`,
   "worker-src blob:",
   "child-src blob:",
   "frame-src https://challenges.cloudflare.com",
@@ -23,7 +36,7 @@ const unitedStatesContentSecurityPolicy = [
   "upgrade-insecure-requests"
 ].join("; ");
 
-const databaseLessCountryShellContentSecurityPolicy = [
+const globalGatewayContentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
@@ -37,9 +50,9 @@ const databaseLessCountryShellContentSecurityPolicy = [
   "upgrade-insecure-requests"
 ].join("; ");
 
-const contentSecurityPolicy = isDatabaseLessCountryShell
-  ? databaseLessCountryShellContentSecurityPolicy
-  : unitedStatesContentSecurityPolicy;
+const contentSecurityPolicy = isGlobalGateway
+  ? globalGatewayContentSecurityPolicy
+  : countrySiteContentSecurityPolicy;
 
 const securityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
