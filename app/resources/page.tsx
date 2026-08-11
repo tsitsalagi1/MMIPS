@@ -1,4 +1,6 @@
+import { CanadaResources } from "../../components/CanadaResources";
 import { SafetyNotice } from "../../components/SafetyNotice";
+import { mmipsSiteMode } from "../../lib/site-mode";
 
 const officialLinks = [
   {
@@ -62,6 +64,8 @@ const askFor = [
 ];
 
 export default function ResourcesPage() {
+  if (mmipsSiteMode() === "ca") return <CanadaResources />;
+
   return (
     <main className="container section resources-page plain-language-page">
       <h1>Family resources</h1>
@@ -71,56 +75,23 @@ export default function ResourcesPage() {
       <section className="card resource-priority-card">
         <h2>If someone is missing now</h2>
         <p className="lead compact-lead">Start with official reporting. Then MMIPS can help with reviewed public awareness, profiles, flyers, and updates.</p>
-        <ol className="resource-checklist">
-          {immediateSteps.map((step) => <li key={step}>{step}</li>)}
-        </ol>
+        <ol className="resource-checklist">{immediateSteps.map((step) => <li key={step}>{step}</li>)}</ol>
       </section>
 
       <section className="feature-grid resource-link-grid" aria-label="Official and support resources">
         {officialLinks.map((resource) => (
           <div className="card" key={resource.title}>
-            <h3>{resource.title}</h3>
-            <p>{resource.body}</p>
+            <h3>{resource.title}</h3><p>{resource.body}</p>
             <a className="button secondary" href={resource.href} target={resource.href.startsWith("http") ? "_blank" : undefined} rel={resource.href.startsWith("http") ? "noreferrer" : undefined}>{resource.linkText}</a>
           </div>
         ))}
       </section>
 
-      <section className="card plain-language-section">
-        <h2>What to ask the agency</h2>
-        <p>Keep a simple written record of who you spoke with, when you spoke, and what they told you. These details can also help MMIPS keep a public profile accurate.</p>
-        <div className="resource-chip-list">
-          {askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}
-        </div>
-      </section>
+      <section className="card plain-language-section"><h2>What to ask the agency</h2><p>Keep a simple written record of who you spoke with, when you spoke, and what they told you. These details can also help MMIPS keep a public profile accurate.</p><div className="resource-chip-list">{askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}</div></section>
 
-      <section className="card plain-language-section">
-        <h2>Before you share online</h2>
-        <div className="feature-grid compact-grid">
-          <div>
-            <h3>Helpful to share</h3>
-            <p>Approved recent photos, the official contact, a broad last-known area, agency or NamUs numbers, the MMIPS profile link, and the current approved flyer.</p>
-          </div>
-          <div>
-            <h3>Keep private</h3>
-            <p>Rumors, public suspect accusations, private addresses, shelter or domestic-violence locations, graphic images, and exact sensitive locations.</p>
-          </div>
-          <div>
-            <h3>Where tips go</h3>
-            <p>Send tips to the official agency or tip line shown on the public profile. Use 911 for immediate danger. Do not send investigative tips to MMIPS.</p>
-          </div>
-        </div>
-      </section>
+      <section className="card plain-language-section"><h2>Before you share online</h2><div className="feature-grid compact-grid"><div><h3>Helpful to share</h3><p>Approved recent photos, the official contact, a broad last-known area, agency or NamUs numbers, the MMIPS profile link, and the current approved flyer.</p></div><div><h3>Keep private</h3><p>Rumors, public suspect accusations, private addresses, shelter or domestic-violence locations, graphic images, and exact sensitive locations.</p></div><div><h3>Where tips go</h3><p>Send tips to the official agency or tip line shown on the public profile. Use 911 for immediate danger. Do not send investigative tips to MMIPS.</p></div></div></section>
 
-      <section className="card plain-language-section">
-        <h2>Contact MMIPS</h2>
-        <p>Use these addresses for site questions, corrections, removals, privacy questions, or updates to approved public information. Do not email emergency or investigative tips to MMIPS.</p>
-        <p className="contact-line">
-          General: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />
-          Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />
-          Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a>
-        </p>
-      </section>
+      <section className="card plain-language-section"><h2>Contact MMIPS</h2><p>Use these addresses for site questions, corrections, removals, privacy questions, or updates to approved public information. Do not email emergency or investigative tips to MMIPS.</p><p className="contact-line">General: <a href="mailto:contact@mmips.com">contact@mmips.com</a><br />Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a></p></section>
     </main>
   );
 }
