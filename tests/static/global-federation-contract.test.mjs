@@ -17,6 +17,7 @@ const turnstile = fs.readFileSync("lib/security/turnstile.ts", "utf8");
 const architecture = fs.readFileSync("docs/GLOBAL_FEDERATION_ARCHITECTURE.md", "utf8");
 const canadaArchitecture = fs.readFileSync("docs/CANADA_FOUNDATION.md", "utf8");
 const canadaSchema = fs.readFileSync("supabase/canada/schema.sql", "utf8");
+const canadaHardening = fs.readFileSync("supabase/canada/001_prelaunch_hardening.sql", "utf8");
 
 test("United States remains the safe default while Global and Canada require explicit site modes", () => {
   assert.match(siteMode, /MMIPS_SITE_MODE === "global"/);
@@ -114,6 +115,22 @@ test("Canada schema is explicitly separate, Canada-specific and least-privilege"
   assert.doesNotMatch(canadaSchema, /ncic/i);
   assert.doesNotMatch(canadaSchema, /last_seen_state/i);
   assert.doesNotMatch(canadaSchema, /last_seen_county/i);
+});
+
+test("Canada prelaunch hardening adds explicit release, privacy and lifecycle controls", () => {
+  assert.match(canadaHardening, /public_profile_enabled boolean not null default false/);
+  assert.match(canadaHardening, /public_map_enabled boolean not null default false/);
+  assert.match(canadaHardening, /privacy_request_type/);
+  assert.match(canadaHardening, /delete_or_deidentify/);
+  assert.match(canadaHardening, /source_ip_delete_after[\s\S]*30 days/);
+  assert.match(canadaHardening, /privacy_requests force row level security/);
+  assert.match(canadaHardening, /revoke all on privacy_requests from anon, authenticated/);
+  assert.match(canadaHardening, /public_profile_enabled = true[\s\S]*suppressed_at is null/);
+  assert.match(canadaHardening, /public_map_enabled = true/);
+  assert.match(canadaHardening, /public_latitude between -90 and 90/);
+  assert.match(canadaHardening, /public_longitude between -180 and 180/);
+  assert.match(canadaHardening, /security_invoker = true/);
+  assert.match(canadaHardening, /set_updated_at/);
 });
 
 test("architecture prohibits shared country-private credentials and data warehouse", () => {
