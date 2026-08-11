@@ -7,8 +7,6 @@ import "./readability-overrides.css";
 
 export function generateMetadata(): Metadata {
   const mode = mmipsSiteMode();
-  // Keep production URLs explicit per Vercel project. A Canada build defaults to
-  // its own country hostname rather than the Global or United States domain.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (mode === "ca" ? "https://ca.mmips.com" : "https://mmips.com");
 
   const title = mode === "global"
@@ -20,7 +18,7 @@ export function generateMetadata(): Metadata {
   const description = mode === "global"
     ? "Choose the MMIPS site for your country. Each country has its own Indigenous missing-person resources, reporting information, and privacy protections."
     : mode === "ca"
-      ? "A separate Canadian MMIPS public-awareness system being built around First Nations, Inuit and Métis communities, Canadian reporting, privacy, geography, and moderation."
+      ? "A separate Canadian MMIPS public-awareness system for First Nations, Inuit and Métis families and communities, with Canadian search, mapping, reporting information, privacy controls, and moderation."
       : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
 
   return {
@@ -82,8 +80,11 @@ function CanadaHeader() {
           <span>MMIPS Canada</span>
         </Link>
         <div className="nav-links">
-          <span>Canada · Preparing</span>
-          <a href={globalSiteUrl()}>Change country</a>
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/profiles">Search Profiles</Link>
+          <Link href="/resources">Family Resources</Link>
+          <Link href="/submit">Submit Information</Link>
+          <a href={globalSiteUrl()}>Canada · Change country</a>
         </div>
       </nav>
     </header>
@@ -133,10 +134,19 @@ function CanadaFooter() {
     <footer className="site-footer">
       <div className="container footer-grid">
         <div className="footer-mission">
-          <p><strong>MMIPS Canada</strong> is being prepared as a separate Canadian system for First Nations, Inuit and Métis families and communities. It is not law enforcement and is not accepting Canadian case submissions yet.</p>
+          <p><strong>MMIPS Canada</strong> provides a separate Canadian public-awareness system for First Nations, Inuit and Métis families and communities. It is not law enforcement and does not replace emergency reporting or an official missing-person report.</p>
         </div>
+        <nav className="footer-links" aria-label="MMIPS Canada footer navigation">
+          <Link href="/how-it-works">How it works</Link>
+          <Link href="/profiles">Search Profiles</Link>
+          <Link href="/resources">Family Resources</Link>
+          <Link href="/submit">Submission status</Link>
+          <Link href="/privacy">Canada privacy</Link>
+        </nav>
         <div className="footer-contact" aria-label="MMIPS Canada contact and country navigation">
           <span>Contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></span>
+          <span>Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a></span>
+          <span>Legal/privacy: <a href="mailto:legal@mmips.com">legal@mmips.com</a></span>
           <span><a href={globalSiteUrl()}>Return to MMIPS Global</a></span>
         </div>
       </div>
