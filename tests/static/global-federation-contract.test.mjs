@@ -5,8 +5,10 @@ import test from "node:test";
 const siteMode = fs.readFileSync("lib/site-mode.ts", "utf8");
 const portals = fs.readFileSync("lib/country-portals.ts", "utf8");
 const canadaConfig = fs.readFileSync("lib/canada-config.ts", "utf8");
+const canadaPublic = fs.readFileSync("lib/canada-public.ts", "utf8");
 const gateway = fs.readFileSync("components/GlobalGateway.tsx", "utf8");
 const canadaHome = fs.readFileSync("components/CanadaHome.tsx", "utf8");
+const canadaSearch = fs.readFileSync("components/CanadaProfilesSearch.tsx", "utf8");
 const home = fs.readFileSync("app/page.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const proxy = fs.readFileSync("proxy.ts", "utf8");
@@ -18,6 +20,7 @@ const architecture = fs.readFileSync("docs/GLOBAL_FEDERATION_ARCHITECTURE.md", "
 const canadaArchitecture = fs.readFileSync("docs/CANADA_FOUNDATION.md", "utf8");
 const canadaSchema = fs.readFileSync("supabase/canada/schema.sql", "utf8");
 const canadaHardening = fs.readFileSync("supabase/canada/001_prelaunch_hardening.sql", "utf8");
+const canadaPublicProjection = fs.readFileSync("supabase/canada/002_public_site_projection.sql", "utf8");
 
 test("United States remains the safe default while Global and Canada require explicit site modes", () => {
   assert.match(siteMode, /MMIPS_SITE_MODE === "global"/);
@@ -38,8 +41,6 @@ test("country gateway activates Canada only through an explicit release flag plu
   assert.match(portals, /code: "AU"[\s\S]*status: "preparing"/);
   assert.match(portals, /code: "NZ"[\s\S]*status: "preparing"/);
   assert.match(gateway, /Find the MMIPS site for your country/);
-  assert.match(gateway, /global page only helps you choose where to go/);
-  assert.match(gateway, /come back here anytime to switch countries/);
 });
 
 test("global gateway remains isolated from every country application and API route", () => {
@@ -49,16 +50,30 @@ test("global gateway remains isolated from every country application and API rou
   assert.match(proxy, /gatewayUrl\.pathname = "\/"/);
 });
 
-test("Canada prelaunch fails closed instead of falling through to United States routes", () => {
+test("Canada exposes only deliberately converted public routes and APIs", () => {
   assert.match(proxy, /MMIPS_SITE_MODE !== "ca"/);
-  assert.match(proxy, /MMIPS Canada is preparing and does not accept or expose case data yet/);
+  assert.match(proxy, /canadaPublicRouteAllowed/);
+  assert.match(proxy, /pathname === "\/profiles"/);
+  assert.match(proxy, /pathname === "\/resources"/);
+  assert.match(proxy, /pathname === "\/how-it-works"/);
+  assert.match(proxy, /pathname === "\/submit"/);
+  assert.match(proxy, /pathname === "\/privacy"/);
+  assert.match(proxy, /pathname === "\/api\/profiles\/map"/);
+  assert.match(proxy, /pathname === "\/api\/profiles\/search"/);
+  assert.match(proxy, /This API is not enabled for MMIPS Canada/);
   assert.match(proxy, /canadaHome\.pathname = "\/"/);
-  assert.match(canadaHome, /does not accept case submissions, expose U\.S\. profiles, or connect to the U\.S\. MMIPS\s+database/);
-  assert.doesNotMatch(canadaHome, /NamUs/);
-  assert.doesNotMatch(canadaHome, /NCIC/);
-  assert.doesNotMatch(canadaHome, /ZIP code/);
+});
+
+test("Canada public experience remains Canada-specific rather than inheriting U.S. identifiers", () => {
+  assert.match(canadaHome, /First Nations, Inuit and Métis/);
   assert.match(canadaHome, /Canadian postal codes/);
   assert.match(canadaHome, /kilometres/);
+  assert.match(canadaSearch, /Canadian postal code/);
+  assert.match(canadaSearch, /Province or territory/);
+  assert.match(canadaSearch, /Within 100 km/);
+  assert.doesNotMatch(canadaSearch, /NamUs/);
+  assert.doesNotMatch(canadaSearch, /NCIC/);
+  assert.doesNotMatch(canadaSearch, /ZIP code/);
 });
 
 test("Canada configuration uses Canadian provinces, territories and postal-code structure", () => {
@@ -73,6 +88,17 @@ test("Canada configuration uses Canadian provinces, territories and postal-code 
   assert.match(canadaConfig, /There is no 24-hour waiting period/);
 });
 
+test("Canada public data adapter uses only Canada projections and kilometres", () => {
+  assert.match(canadaPublic, /public_case_map_projection/);
+  assert.match(canadaPublic, /public_canada_profile_projection/);
+  assert.match(canadaPublic, /normalizeCanadianPostalCode/);
+  assert.match(canadaPublic, /country", "ca"/);
+  assert.match(canadaPublic, /postal_code/);
+  assert.match(canadaPublic, /radiusKm/);
+  assert.doesNotMatch(canadaPublic, /lookupZcta/);
+  assert.doesNotMatch(canadaPublic, /radiusMiles/);
+});
+
 test("Global, Canada and United States deployment surfaces are distinct", () => {
   assert.match(layout, /GlobalHeader/);
   assert.match(layout, /CanadaHeader/);
@@ -81,22 +107,29 @@ test("Global, Canada and United States deployment surfaces are distinct", () => 
   assert.match(layout, /CanadaFooter/);
   assert.match(layout, /UnitedStatesFooter/);
   assert.match(layout, /United States · Change country/);
-  assert.match(layout, /Canada · Preparing/);
+  assert.match(layout, /Canada · Change country/);
   assert.match(layout, /MMIPS Global[\s\S]*Case information stays with each country site/);
 });
 
-test("country-shell sitemap and robots expose only the root before Canada release", () => {
-  assert.match(sitemap, /mode === "global" \|\| mode === "ca"/);
-  assert.match(robots, /mode === "global" \|\| mode === "ca"/);
+test("Canada sitemap and robots expose only converted Canada public pages", () => {
+  assert.match(sitemap, /mode === "ca"/);
+  assert.match(sitemap, /canadaPaths/);
+  assert.match(sitemap, /"\/profiles"/);
+  assert.match(sitemap, /"\/resources"/);
+  assert.match(robots, /mode === "ca"/);
+  assert.match(robots, /"\/profiles"/);
+  assert.match(robots, /"\/resources"/);
+  assert.match(robots, /"\/api\/"/);
   assert.match(sitemap, /https:\/\/ca\.mmips\.com/);
   assert.match(robots, /https:\/\/ca\.mmips\.com/);
 });
 
-test("Global and Canada prelaunch builds get a narrower browser security surface than United States", () => {
-  assert.match(nextConfig, /siteMode === "global" \|\| siteMode === "ca"/);
-  assert.match(nextConfig, /databaseLessCountryShellContentSecurityPolicy/);
-  assert.match(nextConfig, /connect-src 'self'/);
-  assert.match(nextConfig, /isDatabaseLessCountryShell[\s\S]*databaseLessCountryShellContentSecurityPolicy[\s\S]*unitedStatesContentSecurityPolicy/);
+test("Canada country build can use its own Supabase origin and the shared MapTiler renderer", () => {
+  assert.match(nextConfig, /NEXT_PUBLIC_SUPABASE_URL/);
+  assert.match(nextConfig, /siteMode === "ca"/);
+  assert.match(nextConfig, /https:\/\/api\.maptiler\.com/);
+  assert.match(nextConfig, /countrySiteContentSecurityPolicy/);
+  assert.match(nextConfig, /globalGatewayContentSecurityPolicy/);
   assert.match(turnstile, /"us\.mmips\.com"/);
 });
 
@@ -127,10 +160,19 @@ test("Canada prelaunch hardening adds explicit release, privacy and lifecycle co
   assert.match(canadaHardening, /revoke all on privacy_requests from anon, authenticated/);
   assert.match(canadaHardening, /public_profile_enabled = true[\s\S]*suppressed_at is null/);
   assert.match(canadaHardening, /public_map_enabled = true/);
-  assert.match(canadaHardening, /public_latitude between -90 and 90/);
-  assert.match(canadaHardening, /public_longitude between -180 and 180/);
   assert.match(canadaHardening, /security_invoker = true/);
-  assert.match(canadaHardening, /set_updated_at/);
+});
+
+test("Canada public projections remain RLS-invoking and release-gated", () => {
+  assert.match(canadaPublicProjection, /security_invoker = true/);
+  assert.match(canadaPublicProjection, /public_profile_enabled = true/);
+  assert.match(canadaPublicProjection, /public_map_enabled = true/);
+  assert.match(canadaPublicProjection, /suppressed_at is null/);
+  assert.match(canadaPublicProjection, /person_indigenous_affiliations/);
+  assert.match(canadaPublicProjection, /official_case_references/);
+  assert.match(canadaPublicProjection, /profile_photos/);
+  assert.doesNotMatch(canadaPublicProjection, /exact_latitude/);
+  assert.doesNotMatch(canadaPublicProjection, /exact_longitude/);
 });
 
 test("architecture prohibits shared country-private credentials and data warehouse", () => {

@@ -1,4 +1,9 @@
+import { CanadaPrivacy } from "../../components/CanadaPrivacy";
+import { mmipsSiteMode } from "../../lib/site-mode";
+
 export default function PrivacyPage() {
+  if (mmipsSiteMode() === "ca") return <CanadaPrivacy />;
+
   return (
     <main className="container section legal-body">
       <h1>Privacy Policy</h1>

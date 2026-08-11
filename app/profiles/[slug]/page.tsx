@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CanadaPublicProfileView } from "../../../components/CanadaPublicProfile";
 import { CaseStatusBadge, ProfileTypeBadge, VerificationBadge } from "../../../components/StatusBadge";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { SafetyNotice } from "../../../components/SafetyNotice";
+import { getCanadaPublicProfile } from "../../../lib/canada-public";
 import { getCaseBySlug } from "../../../lib/cases";
+import { mmipsSiteMode } from "../../../lib/site-mode";
 import { flyerTitleForProfile, profileIntroForType } from "../../../lib/status";
 
 export const dynamic = "force-dynamic";
 
 export default async function PublicProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+
+  if (mmipsSiteMode() === "ca") {
+    const canadaProfile = await getCanadaPublicProfile(slug);
+    if (!canadaProfile) notFound();
+    return <CanadaPublicProfileView profile={canadaProfile} />;
+  }
+
   const item = await getCaseBySlug(slug);
   if (!item) notFound();
 
