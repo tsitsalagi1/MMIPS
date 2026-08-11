@@ -76,7 +76,7 @@ test("Canada search keeps Canadian controls while adding cross-border cards", ()
   assert.match(canadaSearch, /sourceCountry === "us"/);
   assert.match(canadaProfile, /First Nations, Inuit or Métis affiliation/);
   assert.match(canadaProfile, /Police \/ official contact/);
-  assert.match(canadaProfile, /approved public-awareness area/);
+  assert.match(canadaProfile, /approximate public area/);
   assert.doesNotMatch(canadaProfile, /NamUs/);
   assert.doesNotMatch(canadaProfile, /NCIC/);
   assert.doesNotMatch(canadaSearch, /ZIP code/);
