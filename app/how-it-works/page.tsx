@@ -33,33 +33,43 @@ function CanadaHowItWorks() {
     <main className="container section legal-body plain-language-page">
       <p className="eyebrow">MMIPS Canada</p>
       <h1>How MMIPS Canada works</h1>
-      <p className="lead">MMIPS Canada keeps private review information separate from approved public awareness. A reviewed case does not become public automatically, and a public profile does not automatically receive a map point.</p>
+      <p className="lead">MMIPS helps people find reviewed public information while keeping sensitive family and case details out of public view.</p>
 
-      <section className="notice safety-notice"><strong>Official reporting comes first.</strong><p>{CANADA_PUBLIC_REPORTING_GUIDANCE.emergency}</p><p>{CANADA_PUBLIC_REPORTING_GUIDANCE.missingPerson}</p></section>
+      <section className="notice safety-notice">
+        <strong>Report a missing person first.</strong>
+        <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.emergency}</p>
+        <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.missingPerson}</p>
+      </section>
 
       <section className="feature-grid">
-        <div className="card"><h2>1. Information is received privately</h2><p>When Canadian intake is authorized to open, submissions will enter the separate Canadian review system. The public will not see raw submissions.</p></div>
-        <div className="card"><h2>2. Review permission and safety</h2><p>Reviewers check what can be shared, the appropriate police or official contact, safe location wording, Indigenous affiliation publication permission, and whether photos are authorized.</p></div>
-        <div className="card"><h2>3. Release the public profile separately</h2><p>A profile needs review approval, a publication date, and the explicit Canadian public-profile release gate. A suppression request can remove it from public view without erasing the audit history.</p></div>
-        <div className="card"><h2>4. Release the map point separately</h2><p>A Canadian public map point requires its own map-release gate plus a moderator-approved approximate location. Exact private coordinates are not used for public map display.</p></div>
+        <div className="card"><h2>1. Report the person missing</h2><p>Contact the police service responsible for the area. Keep the police file number and the investigator or family-liaison contact.</p></div>
+        <div className="card"><h2>2. Decide what is safe to share</h2><p>Public information may include an approved photo, a broad public area, the current status, and the official place where tips should go.</p></div>
+        <div className="card"><h2>3. MMIPS reviews public information</h2><p>MMIPS checks safety, permission, wording, photos, and public location information before anything is shown on the site.</p></div>
+        <div className="card"><h2>4. Update, correct, or remove</h2><p>Families and authorized contacts can ask for changes when information is wrong, unsafe, outdated, or should no longer be public.</p></div>
+      </section>
+
+      <section className="card plain-language-section">
+        <h2>How the map works</h2>
+        <p>The map uses approximate public-awareness areas instead of exact private locations. It does not show private homes, shelters, family locations, or sensitive exact coordinates.</p>
+        <p>The Canada map can also show public MMIPS results from the United States. This helps people near the border see relevant public information without combining the countries&apos; private case records.</p>
       </section>
 
       <section className="card plain-language-section">
         <h2>First Nations, Inuit and Métis information</h2>
-        <p>MMIPS Canada does not treat First Nations, Inuit and Métis Peoples as one interchangeable category. Public affiliation details are shown only when the specific affiliation record is approved for publication, and community-preferred names are used when available.</p>
+        <p>MMIPS Canada keeps these identities distinct. When affiliation information is shown, the goal is to use the Nation, community, Inuit region, or Métis government/community name that is appropriate for that person and approved for public display.</p>
       </section>
 
       <section className="card plain-language-section">
-        <h2>Corrections, consent and privacy</h2>
-        <p>The Canadian data model supports correction, withdrawal-of-consent, suppression, access, and deletion or de-identification review workflows. Public release should always be reversible when safety, consent, accuracy, or privacy requires review.</p>
+        <h2>What stays private</h2>
+        <p>Raw submissions, family contact information, private notes, exact sensitive locations, internal review information, and other details not approved for public sharing stay private.</p>
         <p>Corrections or removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a></p>
         <p>Privacy questions: <a href="mailto:legal@mmips.com">legal@mmips.com</a></p>
       </section>
 
       <section className="card plain-language-section">
         <h2>What MMIPS Canada does not do</h2>
-        <p>MMIPS Canada is not police, an emergency service, an investigative tip line, or a replacement for an official missing-person report. The RCMP National Centre for Missing Persons and Unidentified Remains supports national coordination and investigations but does not replace the police service of jurisdiction.</p>
-        <div className="button-row"><Link className="button" href="/profiles">Search Canadian profiles</Link><Link className="button secondary" href="/resources">Family resources</Link></div>
+        <p>MMIPS is not police, an emergency service, or an investigative tip line. Send case tips to the police service or official tip contact listed on the public profile.</p>
+        <div className="button-row"><Link className="button" href="/profiles">Search profiles and map</Link><Link className="button secondary" href="/resources">Family resources</Link></div>
       </section>
     </main>
   );
