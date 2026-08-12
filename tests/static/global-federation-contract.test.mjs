@@ -6,7 +6,6 @@ const siteMode = fs.readFileSync("lib/site-mode.ts", "utf8");
 const portals = fs.readFileSync("lib/country-portals.ts", "utf8");
 const canadaConfig = fs.readFileSync("lib/canada-config.ts", "utf8");
 const canadaPublic = fs.readFileSync("lib/canada-public.ts", "utf8");
-const crossBorderMap = fs.readFileSync("lib/cross-border-public-map.ts", "utf8");
 const gateway = fs.readFileSync("components/GlobalGateway.tsx", "utf8");
 const canadaHome = fs.readFileSync("components/CanadaHome.tsx", "utf8");
 const canadaSearch = fs.readFileSync("components/CanadaProfilesSearch.tsx", "utf8");
@@ -65,16 +64,13 @@ test("Canada exposes only deliberately converted public routes and APIs", () => 
   assert.match(proxy, /canadaHome\.pathname = "\/"/);
 });
 
-test("Canada public experience remains Canada-specific while allowing public-only border awareness", () => {
-  assert.match(canadaHome, /First Nations/);
-  assert.match(canadaHome, /Inuit/);
-  assert.match(canadaHome, /Métis/);
-  assert.match(canadaHome, /Public awareness should not stop at the border/);
+test("Canada public experience remains Canada-specific rather than inheriting U.S. identifiers", () => {
+  assert.match(canadaHome, /First Nations, Inuit and Métis/);
+  assert.match(canadaHome, /Canadian postal codes/);
+  assert.match(canadaHome, /kilometres/);
   assert.match(canadaSearch, /Canadian postal code/);
   assert.match(canadaSearch, /Province or territory/);
   assert.match(canadaSearch, /Within 100 km/);
-  assert.match(crossBorderMap, /https:\/\/us\.mmips\.com\/api\/profiles\/map/);
-  assert.match(crossBorderMap, /sourceCountry: "us"/);
   assert.doesNotMatch(canadaSearch, /NamUs/);
   assert.doesNotMatch(canadaSearch, /NCIC/);
   assert.doesNotMatch(canadaSearch, /ZIP code/);

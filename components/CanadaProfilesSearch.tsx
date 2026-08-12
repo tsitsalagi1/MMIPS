@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CANADA_PROVINCES_AND_TERRITORIES } from "@/lib/canada-config";
@@ -8,7 +9,6 @@ import type { MapFocusTarget } from "./map/MapLibreRenderer";
 
 const MapLibreRenderer = dynamic(() => import("./map/MapLibreRenderer"), { ssr: false });
 const TEXT_RESULTS_PAGE_SIZE = 50;
-const PROFILE_CARD_PAGE_SIZE = 24;
 
 type SearchResponse = {
   ok?: boolean;
@@ -22,9 +22,6 @@ type MapDataResponse = {
   ok?: boolean;
   availability?: PublicMapAvailability;
   points?: PublicMapPoint[];
-  canadaCount?: number;
-  unitedStatesCount?: number;
-  crossBorder?: boolean;
 };
 
 function isSyntheticPoint(point: PublicMapPoint) {
@@ -39,29 +36,6 @@ function statusLabel(point: PublicMapPoint) {
   return "Public profile";
 }
 
-function sourceLabel(point: PublicMapPoint) {
-  return point.sourceCountry === "us" ? "United States" : "Canada";
-}
-
-function profileHref(point: PublicMapPoint) {
-  return point.profileUrl || `/profiles/${encodeURIComponent(point.slug)}`;
-}
-
-function matchesStatus(point: PublicMapPoint, status: string) {
-  if (status === "all") return true;
-  if (status === "missing") return point.publicStatus === "missing" || point.profileType === "missing" || point.profileType === "urgent_missing";
-  if (status === "homicide_unsolved") return point.publicStatus === "murdered_unsolved" || point.profileType === "murdered_info_needed";
-  if (status === "unidentified") return point.publicStatus === "unidentified" || point.profileType === "unidentified";
-  if (status === "resolved") return point.publicStatus === "resolved" || point.profileType === "located";
-  return true;
-}
-
-function matchesPublicText(point: PublicMapPoint, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
-  return `${point.publicName} ${point.publicMapLabel}`.toLowerCase().includes(normalized);
-}
-
 export default function CanadaProfilesSearch() {
   const [allPoints, setAllPoints] = useState<PublicMapPoint[]>([]);
   const [visiblePoints, setVisiblePoints] = useState<PublicMapPoint[]>([]);
@@ -74,13 +48,10 @@ export default function CanadaProfilesSearch() {
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [radiusKm, setRadiusKm] = useState("100");
-  const [message, setMessage] = useState("Loading profiles and map…");
+  const [message, setMessage] = useState("Loading the Canada public map…");
   const [loading, setLoading] = useState(false);
   const [textViewOpen, setTextViewOpen] = useState(false);
   const [textPage, setTextPage] = useState(0);
-  const [cardLimit, setCardLimit] = useState(PROFILE_CARD_PAGE_SIZE);
-  const [canadaCount, setCanadaCount] = useState(0);
-  const [unitedStatesCount, setUnitedStatesCount] = useState(0);
 
   const selected = useMemo(
     () => visiblePoints.find((point) => point.caseId === selectedId) ?? null,
@@ -93,12 +64,8 @@ export default function CanadaProfilesSearch() {
     () => visiblePoints.slice(textPage * TEXT_RESULTS_PAGE_SIZE, (textPage + 1) * TEXT_RESULTS_PAGE_SIZE),
     [visiblePoints, textPage]
   );
-  const cardResults = useMemo(() => visiblePoints.slice(0, cardLimit), [visiblePoints, cardLimit]);
 
-  useEffect(() => {
-    setTextPage(0);
-    setCardLimit(PROFILE_CARD_PAGE_SIZE);
-  }, [visiblePoints]);
+  useEffect(() => { setTextPage(0); }, [visiblePoints]);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,25 +77,21 @@ export default function CanadaProfilesSearch() {
         if (cancelled) return;
         const points = Array.isArray(data.points) ? data.points : [];
         const availability = data.availability || (response.ok ? "available" : "error");
-        const localCount = Number.isFinite(data.canadaCount) ? Number(data.canadaCount) : points.filter((point) => point.sourceCountry !== "us").length;
-        const usCount = Number.isFinite(data.unitedStatesCount) ? Number(data.unitedStatesCount) : points.filter((point) => point.sourceCountry === "us").length;
         setMapAvailability(availability);
         setAllPoints(points);
         setVisiblePoints(points);
-        setCanadaCount(localCount);
-        setUnitedStatesCount(usCount);
         setMessage(
           availability === "available"
             ? points.length
-              ? `${points.length.toLocaleString()} public map result${points.length === 1 ? "" : "s"} shown — ${localCount.toLocaleString()} from Canada and ${usCount.toLocaleString()} from the United States.`
-              : "No public MMIPS profiles are available on the Canada map yet."
-            : "Public map information is temporarily unavailable."
+              ? `${points.length} approved Canadian public-awareness map point${points.length === 1 ? "" : "s"} shown.`
+              : "No Canadian public profiles have been released to the map yet."
+            : "Canadian public map information is temporarily unavailable."
         );
       } catch {
         if (cancelled) return;
         setMapAvailability("error");
         setTextViewOpen(true);
-        setMessage("Public map information is temporarily unavailable. Please try again later.");
+        setMessage("Canadian public map information is temporarily unavailable. Please try again later.");
       } finally {
         if (!cancelled) setMapLoading(false);
       }
@@ -146,19 +109,8 @@ export default function CanadaProfilesSearch() {
     }
 
     setLoading(true);
+    setMessage("Searching approved Canadian public profiles…");
     setSelectedId(null);
-
-    // Name/status search can include the public-safe cross-border results already loaded in the browser.
-    if (!province && !postalCode.trim()) {
-      const mapped = allPoints.filter((point) => matchesStatus(point, status) && matchesPublicText(point, q));
-      setVisiblePoints(mapped);
-      setMapFocus(null);
-      setMessage(`${mapped.length.toLocaleString()} public profile${mapped.length === 1 ? "" : "s"} matched across the current Canada and U.S. public results.`);
-      setLoading(false);
-      return;
-    }
-
-    setMessage("Searching Canadian location results…");
     try {
       const response = await fetch("/api/profiles/search", {
         method: "POST",
@@ -179,7 +131,7 @@ export default function CanadaProfilesSearch() {
       }
 
       const ids = new Set((Array.isArray(data.profiles) ? data.profiles : []).map((profile) => profile.id));
-      const mapped = allPoints.filter((point) => point.sourceCountry !== "us" && ids.has(point.caseId));
+      const mapped = allPoints.filter((point) => ids.has(point.caseId));
       setVisiblePoints(mapped);
       if (data.mapFocus && Number.isFinite(data.mapFocus.latitude) && Number.isFinite(data.mapFocus.longitude)) {
         setMapFocus({
@@ -192,7 +144,7 @@ export default function CanadaProfilesSearch() {
         setMapFocus(null);
       }
       const profileCount = Number(data.count || 0);
-      setMessage(`${profileCount.toLocaleString()} Canadian public profile${profileCount === 1 ? "" : "s"} matched the location search. Clear the province/postal-code filters to see cross-border results again.`);
+      setMessage(`${profileCount} public profile${profileCount === 1 ? "" : "s"} matched. ${mapped.length} approved map point${mapped.length === 1 ? "" : "s"} shown.`);
     } catch {
       setMessage("Search is temporarily unavailable. Please try again.");
     } finally {
@@ -210,16 +162,16 @@ export default function CanadaProfilesSearch() {
     setSelectedId(null);
     setMapFocus(null);
     setMessage(allPoints.length
-      ? `${allPoints.length.toLocaleString()} public map results shown — ${canadaCount.toLocaleString()} from Canada and ${unitedStatesCount.toLocaleString()} from the United States.`
-      : "No public MMIPS profiles are available on the Canada map yet.");
+      ? `${allPoints.length} approved Canadian public-awareness map point${allPoints.length === 1 ? "" : "s"} shown.`
+      : "No Canadian public profiles have been released to the map yet.");
   }
 
   return (
-    <section aria-label="Search MMIPS public profiles from Canada and nearby United States results">
+    <section aria-label="Search and map approved MMIPS Canada public profiles">
       <div className="card" style={{ margin: "20px 0" }}>
         <form className="form" onSubmit={search}>
-          <label>Search by name or public area
-            <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, community, city, or public area" />
+          <label>Search by name, Nation or community, locality, or police service
+            <input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search MMIPS Canada public profiles" />
           </label>
           <div className="check-grid">
             <label>Status
@@ -240,7 +192,7 @@ export default function CanadaProfilesSearch() {
           </div>
           <fieldset className="field-group">
             <legend>Search near a Canadian postal code</legend>
-            <p className="field-help">Optional. Enter a postal code to focus on nearby Canadian public profiles. The public map uses approximate areas, not private addresses or exact sensitive locations.</p>
+            <p className="field-help">Optional. This search uses the postal code only to focus on approved public-awareness areas nearby. MMIPS Canada does not use a private home, shelter, family, or incident address for the public map.</p>
             <div className="check-grid">
               <label>Postal code
                 <input
@@ -264,79 +216,55 @@ export default function CanadaProfilesSearch() {
             </div>
           </fieldset>
           <div className="button-row">
-            <button type="submit" disabled={loading || mapLoading}>{loading ? "Searching…" : "Search"}</button>
-            <button type="button" className="secondary" onClick={reset} disabled={mapLoading}>Show all results</button>
+            <button type="submit" disabled={loading || mapLoading}>{loading ? "Searching…" : "Search map"}</button>
+            <button type="button" className="secondary" onClick={reset} disabled={mapLoading}>Show all map points</button>
           </div>
           <p className="status-message" role="status" aria-live="polite">{message}</p>
         </form>
       </div>
 
       <section className="card" aria-labelledby="canada-map-heading" style={{ marginTop: "22px" }}>
-        <h2 id="canada-map-heading">Canada and border-area map</h2>
-        <p className="text-measure">The map can show public MMIPS profiles from both Canada and the United States so an international border does not create a blind spot for families or nearby communities.</p>
-        <p className="text-measure">Map locations are approximate public-awareness areas. Private case information, family contact information, exact locations, and review notes do not cross between the country systems.</p>
+        <h2 id="canada-map-heading">MMIPS Canada public profile map</h2>
+        <p className="text-measure">The map shows every Canadian MMIPS profile that has passed both the public-profile and public-map review gates. Locations are approved public-awareness areas, not private or exact locations.</p>
+        <p className="text-measure"><strong>Map context:</strong> MMIPS Canada is a public-awareness resource, not a complete statistical census. Cluster totals count approved MMIPS Canada public profiles in that area and are not population-adjusted rates.</p>
         {syntheticCount > 0 ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA IS PRESENT.</strong> {syntheticCount.toLocaleString()} of {allPoints.length.toLocaleString()} currently loaded map points are rehearsal records and must not be interpreted as real case prevalence.</p> : null}
-        {mapAvailability === "unconfigured" ? <p className="status-message">The Canadian public map is being connected.</p> : null}
-        {mapAvailability === "error" ? <p className="status-message">Public map information is temporarily unavailable.</p> : null}
+        {mapAvailability === "unconfigured" ? <p className="status-message">The Canadian public map is being connected to the Canada database.</p> : null}
+        {mapAvailability === "error" ? <p className="status-message">Canadian public map information is temporarily unavailable.</p> : null}
 
         <div className="button-row" style={{ marginBottom: "14px" }}>
           <button type="button" className="secondary" aria-expanded={textViewOpen} aria-controls="canada-map-text-results" onClick={() => setTextViewOpen((value) => !value)}>
-            {textViewOpen ? "Hide text results" : `View all ${visiblePoints.length.toLocaleString()} results as text`}
+            {textViewOpen ? "Hide text results" : `View all ${visiblePoints.length.toLocaleString()} current results as text`}
           </button>
         </div>
 
         <MapLibreRenderer points={visiblePoints} onSelect={setSelectedId} focusTarget={mapFocus} onFailure={() => setTextViewOpen(true)} />
         <div className="card calm-panel" style={{ marginTop: "16px" }} aria-live="polite" aria-atomic="true">
           {selected ? <>
-            <h3>{selected.publicName}</h3>
+            <h3>Selected public profile</h3>
             {isSyntheticPoint(selected) ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — Not a real person or real case.</p> : null}
-            <p><strong>{statusLabel(selected)}</strong> · {sourceLabel(selected)}</p>
-            <p>{selected.publicMapLabel}. Approximate public-awareness area; not an exact location.</p>
-            <a href={profileHref(selected)}>View public profile</a>
-          </> : visiblePoints.length === 0 && !mapLoading ? <p>No public map points match the current search.</p> : <p>Select a map point to see the profile summary here.</p>}
+            <p><strong>{selected.publicName}</strong> · {statusLabel(selected)}</p>
+            <p>{selected.publicMapLabel}. Approved approximate public-awareness area; not an exact location.</p>
+            <Link href={`/profiles/${selected.slug}`}>Open selected public profile</Link>
+          </> : visiblePoints.length === 0 && !mapLoading ? <p>No approved Canadian map points match the current search.</p> : <p>Select a map point to see its public profile summary here.</p>}
         </div>
 
         {textViewOpen ? <section id="canada-map-text-results" className="card calm-panel stack" aria-labelledby="canada-map-text-heading" style={{ marginTop: "16px" }}>
-          <h3 id="canada-map-text-heading">Current results as text</h3>
-          <p>{visiblePoints.length.toLocaleString()} public map result{visiblePoints.length === 1 ? "" : "s"}. {visibleSyntheticCount > 0 ? `${visibleSyntheticCount.toLocaleString()} are clearly labelled synthetic rehearsal records.` : ""}</p>
+          <h3 id="canada-map-text-heading">Current Canada map results as text</h3>
+          <p>{visiblePoints.length.toLocaleString()} approved public map point{visiblePoints.length === 1 ? "" : "s"}. {visibleSyntheticCount > 0 ? `${visibleSyntheticCount.toLocaleString()} are clearly labelled synthetic rehearsal records.` : ""}</p>
           {textResults.length ? <ol start={textPage * TEXT_RESULTS_PAGE_SIZE + 1}>
             {textResults.map((point) => <li key={point.caseId} style={{ marginBottom: "12px" }}>
-              <a href={profileHref(point)}><strong>{point.publicName}</strong></a>
+              <Link href={`/profiles/${point.slug}`}><strong>{point.publicName}</strong></Link>
               {isSyntheticPoint(point) ? <> — <strong>SYNTHETIC TEST DATA</strong></> : null}
               <br />
-              {statusLabel(point)} · {sourceLabel(point)} · {point.publicMapLabel}. Approximate public-awareness area.
+              {statusLabel(point)} · {point.publicMapLabel}. Approved approximate public-awareness area; not an exact location.
             </li>)}
-          </ol> : <p>No public map points match the current search.</p>}
+          </ol> : <p>No approved Canadian public map points match the current search.</p>}
           {visiblePoints.length > TEXT_RESULTS_PAGE_SIZE ? <div className="button-row" aria-label="Text result pages">
             <button type="button" className="secondary" onClick={() => setTextPage((page) => Math.max(0, page - 1))} disabled={textPage === 0}>Previous results</button>
             <span>Page {textPage + 1} of {textPageCount}</span>
             <button type="button" className="secondary" onClick={() => setTextPage((page) => Math.min(textPageCount - 1, page + 1))} disabled={textPage >= textPageCount - 1}>Next results</button>
           </div> : null}
         </section> : null}
-      </section>
-
-      <section aria-labelledby="canada-profile-cards-heading" style={{ marginTop: "32px" }}>
-        <p className="eyebrow">Profiles</p>
-        <h2 id="canada-profile-cards-heading">Browse the current results</h2>
-        <p className="muted">Profile cards match the results shown on the map. United States profiles open on the U.S. MMIPS site; Canadian profiles stay on MMIPS Canada.</p>
-        {cardResults.length ? <div className="feature-grid" style={{ alignItems: "stretch" }}>
-          {cardResults.map((point) => <article className="card calm-card" key={point.caseId}>
-            <div className="badge-row">
-              <span className="badge badge-neutral">{sourceLabel(point)}</span>
-              <span className="badge badge-neutral">{statusLabel(point)}</span>
-            </div>
-            <h3>{point.publicName}</h3>
-            {isSyntheticPoint(point) ? <p className="synthetic-test-banner"><strong>SYNTHETIC TEST DATA</strong> — Not a real person or real case.</p> : null}
-            <p>{point.publicMapLabel}</p>
-            <a className="button secondary" href={profileHref(point)}>View profile</a>
-          </article>)}
-        </div> : <div className="card calm-panel"><p>No public profiles match the current search.</p></div>}
-        {cardLimit < visiblePoints.length ? <div className="button-row">
-          <button type="button" className="secondary" onClick={() => setCardLimit((limit) => Math.min(visiblePoints.length, limit + PROFILE_CARD_PAGE_SIZE))}>
-            Show more profiles
-          </button>
-          <span className="muted">Showing {cardResults.length.toLocaleString()} of {visiblePoints.length.toLocaleString()}</span>
-        </div> : cardResults.length ? <p className="muted">Showing {cardResults.length.toLocaleString()} profile card{cardResults.length === 1 ? "" : "s"}.</p> : null}
       </section>
     </section>
   );
