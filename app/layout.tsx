@@ -18,7 +18,7 @@ export function generateMetadata(): Metadata {
   const description = mode === "global"
     ? "Choose the MMIPS site for your country. Each country has its own Indigenous missing-person resources, reporting information, and privacy protections."
     : mode === "ca"
-      ? "Search public MMIPS profiles in Canada, explore the Canada and border-area map, and find resources for First Nations, Inuit and Métis families and communities."
+      ? "Search reviewed MMIPS public profiles in Canada, explore the Canadian public-awareness map, and find resources for First Nations, Inuit and Métis families and communities."
       : "A moderated United States public-awareness resource for missing and murdered Indigenous people public profiles.";
 
   return {

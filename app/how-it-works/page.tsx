@@ -33,7 +33,7 @@ function CanadaHowItWorks() {
     <main className="container section legal-body plain-language-page">
       <p className="eyebrow">MMIPS Canada</p>
       <h1>How MMIPS Canada works</h1>
-      <p className="lead">MMIPS helps people find reviewed public information while keeping sensitive family and case details out of public view.</p>
+      <p className="lead">MMIPS Canada helps families, authorized advocates, Indigenous community representatives, and official contacts share reviewed public information safely. Nothing becomes public automatically.</p>
 
       <section className="notice safety-notice">
         <strong>Report a missing person first.</strong>
@@ -42,16 +42,15 @@ function CanadaHowItWorks() {
       </section>
 
       <section className="feature-grid">
-        <div className="card"><h2>1. Report the person missing</h2><p>Contact the police service responsible for the area. Keep the police file number and the investigator or family-liaison contact.</p></div>
-        <div className="card"><h2>2. Decide what is safe to share</h2><p>Public information may include an approved photo, a broad public area, the current status, and the official place where tips should go.</p></div>
-        <div className="card"><h2>3. MMIPS reviews public information</h2><p>MMIPS checks safety, permission, wording, photos, and public location information before anything is shown on the site.</p></div>
-        <div className="card"><h2>4. Update, correct, or remove</h2><p>Families and authorized contacts can ask for changes when information is wrong, unsafe, outdated, or should no longer be public.</p></div>
+        <div className="card"><h2>1. Send information for review</h2><p>When Canadian intake is open, information goes into a private review queue. The public cannot see a raw submission.</p></div>
+        <div className="card"><h2>2. Review for safety</h2><p>MMIPS checks permission, police or official contacts, safe location wording, photos, and which details should stay private.</p></div>
+        <div className="card"><h2>3. Publish only approved information</h2><p>Only reviewed public information appears on a profile or map. Private family contact information, notes, and exact sensitive locations stay private.</p></div>
+        <div className="card"><h2>4. Correct or remove</h2><p>Families and authorized contacts can ask for changes when information is wrong, unsafe, outdated, or should no longer be public.</p></div>
       </section>
 
       <section className="card plain-language-section">
-        <h2>How the map works</h2>
-        <p>The map uses approximate public-awareness areas instead of exact private locations. It does not show private homes, shelters, family locations, or sensitive exact coordinates.</p>
-        <p>The Canada map can also show public MMIPS results from the United States. This helps people near the border see relevant public information without combining the countries&apos; private case records.</p>
+        <h2>How the Canada map works</h2>
+        <p>The map shows approved Canadian public-awareness areas instead of exact private locations. It does not show private homes, shelters, family locations, or sensitive exact coordinates.</p>
       </section>
 
       <section className="card plain-language-section">
@@ -68,8 +67,8 @@ function CanadaHowItWorks() {
 
       <section className="card plain-language-section">
         <h2>What MMIPS Canada does not do</h2>
-        <p>MMIPS is not police, an emergency service, or an investigative tip line. Send case tips to the police service or official tip contact listed on the public profile.</p>
-        <div className="button-row"><Link className="button" href="/profiles">Search profiles and map</Link><Link className="button secondary" href="/resources">Family resources</Link></div>
+        <p>MMIPS is not police, an emergency service, or an investigative tip line. Send case tips to the police service or official tip contact listed on a public profile.</p>
+        <div className="button-row"><Link className="button" href="/profiles">Search public profiles</Link><Link className="button secondary" href="/resources">Family resources</Link></div>
       </section>
     </main>
   );

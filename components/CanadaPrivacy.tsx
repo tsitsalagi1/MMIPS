@@ -4,7 +4,7 @@ export function CanadaPrivacy() {
       <p className="eyebrow">MMIPS Canada</p>
       <h1>Privacy in Canada</h1>
       <p className="lead">This page explains what MMIPS Canada may show publicly, what stays private, and how to ask for a correction or removal.</p>
-      <p className="muted">Last updated August 11, 2026. Privacy requirements can vary by organization, activity, province or territory, and the facts of a situation.</p>
+      <p className="muted">Last updated August 12, 2026. Privacy requirements can vary by organization, activity, province or territory, and the facts of a situation.</p>
 
       <h2>What can appear publicly</h2>
       <p>Only information cleared for public awareness should appear on a profile or map. That may include a person&apos;s public name, an approved photo, status, a broad public area, approved First Nations, Inuit or Métis affiliation information, and an official contact for tips.</p>
@@ -14,9 +14,6 @@ export function CanadaPrivacy() {
 
       <h2>Map locations are approximate</h2>
       <p>The public map does not need a private home address or exact sensitive coordinate. Homes, shelters, domestic-violence locations, witness or family locations, and other unsafe exact places should not be shown publicly.</p>
-
-      <h2>Cross-border public information</h2>
-      <p>The Canada map may show public MMIPS profile information from the United States so people near the border can see relevant public awareness. Only the public-safe map/profile information needed for that display is shared. Private Canadian records stay in the Canadian system, and private U.S. records stay in the U.S. system.</p>
 
       <h2>First Nations, Inuit and Métis information</h2>
       <p>Affiliation information can be sensitive. MMIPS Canada should show it only when it is appropriate and approved for public display, using the Nation, community, Inuit region, or Métis government/community name that is appropriate for the person.</p>
@@ -32,6 +29,9 @@ export function CanadaPrivacy() {
 
       <h2>Security</h2>
       <p>Personal information should receive protection appropriate to how sensitive it is. MMIPS separates private review information from the public-facing data used by the website and limits public access to information intended for public display.</p>
+
+      <h2>Test data during development</h2>
+      <p>MMIPS Canada may show clearly labelled synthetic test profiles while the Canadian site is being tested. Synthetic profiles are fictional and are not real people, real cases, or case statistics.</p>
 
       <h2>Service providers</h2>
       <p>MMIPS Canada currently uses Vercel for web hosting, a Canada-region Supabase project for database services, and MapTiler/MapLibre for the public map. These providers may process ordinary technical request information under their own terms.</p>
