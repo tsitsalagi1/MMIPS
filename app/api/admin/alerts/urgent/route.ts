@@ -2,8 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { safeApiError } from "@/lib/security/api-errors";
 import { matchedUrgentSubscribers, sendUrgentCommunityAlert } from "@/lib/urgent-alerts";
+import { prepareCrossBorderAlertRequest } from "@/lib/cross-border-alert-request";
 
 export const dynamic = "force-dynamic";
+
+type RelayResult = { matched: number; sent: number; failed: number; available: boolean };
+
+function urgentEventKey(caseId: string) {
+  return `urgent:${caseId}:${new Date().toISOString().slice(0, 13)}`;
+}
+
+async function relayPeer(target: Awaited<ReturnType<typeof loadTarget>> extends infer T ? T extends { target: infer U } ? U : never : never, caseId: string, intent: "preview" | "send"): Promise<RelayResult> {
+  try {
+    const prepared = prepareCrossBorderAlertRequest(target, urgentEventKey(caseId), intent);
+    const response = await fetch(prepared.url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-MMIPS-Alert-Signature": prepared.signature
+      },
+      body: JSON.stringify(prepared.payload),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!response.ok) return { matched: 0, sent: 0, failed: 0, available: false };
+    const data = await response.json().catch(() => ({}));
+    return {
+      matched: Number(data.matched) || 0,
+      sent: Number(data.sent) || 0,
+      failed: Number(data.failed) || 0,
+      available: true
+    };
+  } catch {
+    return { matched: 0, sent: 0, failed: 0, available: false };
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +50,10 @@ export async function GET(request: NextRequest) {
     if ("error" in loaded) {
       return NextResponse.json({ ok: false, message: loaded.error }, { status: 409 });
     }
-    const matched = await matchedUrgentSubscribers(loaded.target);
+    const [localMatched, crossBorder] = await Promise.all([
+      matchedUrgentSubscribers(loaded.target),
+      relayPeer(loaded.target, caseId, "preview")
+    ]);
     return NextResponse.json({
       ok: true,
       profile: {
@@ -30,7 +66,10 @@ export async function GET(request: NextRequest) {
         lead_agency: loaded.target.leadAgency,
         public_profile_url: `/profiles/${loaded.profile.slug}`
       },
-      matchedCount: matched.length,
+      matchedCount: localMatched.length + crossBorder.matched,
+      localMatchedCount: localMatched.length,
+      crossBorderMatchedCount: crossBorder.matched,
+      crossBorderAvailable: crossBorder.available,
       canSend:
         loaded.profile.review_status === "approved" &&
         Boolean(loaded.profile.published_at) &&
@@ -93,7 +132,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await sendUrgentCommunityAlert(loaded.target, admin.user.id);
+    const localResult = await sendUrgentCommunityAlert(loaded.target, admin.user.id);
+    const crossBorder = await relayPeer(loaded.target, caseId, "send");
     await admin.supabase.from("audit_log").insert({
       actor_id: admin.user.id,
       action: "urgent_community_alert_sent",
@@ -102,19 +142,30 @@ export async function POST(request: NextRequest) {
       reason: "Moderator confirmed approved urgent public alert.",
       metadata: {
         slug: loaded.profile.slug,
-        matched_count: result.matched,
-        sent_count: result.sent,
-        failed_count: result.failed,
-        duplicate: result.duplicate
+        matched_count: localResult.matched,
+        sent_count: localResult.sent,
+        failed_count: localResult.failed,
+        duplicate: localResult.duplicate,
+        cross_border_available: crossBorder.available,
+        cross_border_matched_count: crossBorder.matched,
+        cross_border_sent_count: crossBorder.sent,
+        cross_border_failed_count: crossBorder.failed
       }
     });
 
+    const totalMatched = localResult.matched + crossBorder.matched;
+    const totalSent = localResult.sent + crossBorder.sent;
     return NextResponse.json({
       ok: true,
-      message: result.duplicate
-        ? "This hourly urgent alert event was already sent."
-        : `Urgent alert processed: ${result.sent} sent of ${result.matched} matched subscribers.`,
-      result
+      message: localResult.duplicate && crossBorder.sent === 0
+        ? "This hourly urgent alert event was already processed."
+        : `Urgent alert processed across the U.S.–Canada network: ${totalSent} sent of ${totalMatched} matched subscribers.`,
+      result: {
+        ...localResult,
+        totalMatched,
+        totalSent,
+        crossBorder
+      }
     });
   } catch {
     return safeApiError({
