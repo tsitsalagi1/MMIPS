@@ -65,11 +65,12 @@ function globalGatewayIsolation(request: NextRequest) {
 function canadaPublicRouteAllowed(pathname: string) {
   if (pathname === "/" || pathname === "/profiles" || pathname === "/resources" || pathname === "/how-it-works" || pathname === "/submit" || pathname === "/privacy") return true;
   if (pathname.startsWith("/profiles/")) return true;
+  if (pathname === "/admin") return true;
   return isCountryShellAsset(pathname);
 }
 
 function canadaPublicApiAllowed(pathname: string) {
-  return pathname === "/api/profiles/map" || pathname === "/api/profiles/search";
+  return pathname === "/api/profiles/map" || pathname === "/api/profiles/search" || pathname.startsWith("/api/admin/canada/");
 }
 
 function canadaCountryIsolation(request: NextRequest) {
@@ -97,7 +98,9 @@ export function proxy(request: NextRequest) {
   if (globalResponse) return globalResponse;
 
   const canadaResponse = canadaCountryIsolation(request);
-  if (canadaResponse) return canadaResponse;
+  if (canadaResponse) {
+    if (!request.nextUrl.pathname.startsWith("/admin")) return canadaResponse;
+  }
 
   if (!request.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
 
