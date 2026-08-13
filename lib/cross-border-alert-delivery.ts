@@ -49,7 +49,7 @@ export async function processCrossBorderAlert(payload: CrossBorderAlertPayload) 
       { ...message, to: subscriber.email_normalized },
       { send: sendTransactionalEmail }
     );
-    if (result.status === "sent") sent += 1;
+    if (result.ok) sent += 1;
     else failed += 1;
   }
 
