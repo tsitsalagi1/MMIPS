@@ -3,7 +3,7 @@ import { CANADA_PUBLIC_REPORTING_GUIDANCE } from "@/lib/canada-config";
 import { canadaSubmissionIntakeModeFromEnv } from "@/lib/release-controls";
 import { CanadaSubmissionForm } from "@/components/CanadaSubmissionForm";
 
-export function CanadaSubmitStatus() {
+export function CanadaSubmitStatus({ error }: { error?: string }) {
   const mode = canadaSubmissionIntakeModeFromEnv();
   return (
     <main className="container section plain-language-page">
@@ -16,6 +16,8 @@ export function CanadaSubmitStatus() {
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.emergency}</p>
         <p>{CANADA_PUBLIC_REPORTING_GUIDANCE.missingPerson}</p>
       </section>
+
+      {error ? <div className="notice warning"><strong>We could not process the submission.</strong><p>{error}</p></div> : null}
 
       {mode === "locked" ? (
         <section className="card notice warning" role="status" aria-live="polite">
