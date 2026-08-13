@@ -9,6 +9,15 @@ import { mmipsSiteMode } from "@/lib/site-mode";
 import { subscriberMatchesUrgentTarget } from "@/lib/urgent-alerts";
 import type { CrossBorderAlertPayload } from "@/lib/cross-border-alert-contract";
 
+function localProfileHandoffUrl(payload: CrossBorderAlertPayload) {
+  const source = new URL(payload.publicUrl);
+  const segments = source.pathname.split("/").filter(Boolean);
+  if (segments.length !== 2 || segments[0] !== "profiles") throw new Error("cross_border_alert_profile_url_invalid");
+  const slug = segments[1];
+  if (!/^[a-z0-9][a-z0-9-]{0,119}$/.test(slug)) throw new Error("cross_border_alert_profile_slug_invalid");
+  return `${siteUrl().replace(/\/$/, "")}/profiles/cross-border/${payload.sourceCountry}/${encodeURIComponent(slug)}`;
+}
+
 export async function processCrossBorderAlert(payload: CrossBorderAlertPayload) {
   const localCountry = mmipsSiteMode();
   if ((localCountry !== "us" && localCountry !== "ca") || localCountry === payload.sourceCountry) {
@@ -25,6 +34,7 @@ export async function processCrossBorderAlert(payload: CrossBorderAlertPayload) 
   if (payload.intent === "preview") return { matched: subscribers.length, sent: 0, failed: 0 };
 
   const alertEventKey = `cross-border:${payload.sourceCountry}:${payload.eventKey}`;
+  const publicUrl = localProfileHandoffUrl(payload);
   let sent = 0;
   let failed = 0;
 
@@ -34,7 +44,7 @@ export async function processCrossBorderAlert(payload: CrossBorderAlertPayload) 
 
     const message = buildPublicAlertEmail({
       title: payload.title,
-      publicUrl: payload.publicUrl,
+      publicUrl,
       publicMapLabel: payload.publicMapLabel,
       tipContact: payload.officialTipContact,
       leadAgency: payload.leadAgency,
