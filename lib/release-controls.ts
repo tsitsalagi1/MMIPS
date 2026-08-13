@@ -23,3 +23,12 @@ export function submissionIntakeModeFromEnv() {
     syntheticFlag: process.env.MMIPS_SYNTHETIC_SUBMISSIONS_ENABLED
   });
 }
+
+export function canadaSubmissionIntakeModeFromEnv() {
+  return submissionIntakeMode({
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+    realFlag: process.env.MMIPS_CA_REAL_SUBMISSIONS_ENABLED,
+    syntheticFlag: process.env.MMIPS_CA_SYNTHETIC_SUBMISSIONS_ENABLED
+  });
+}
