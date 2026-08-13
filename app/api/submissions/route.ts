@@ -4,6 +4,8 @@ import { expectedTurnstileHostname, verifyTurnstileToken } from "@/lib/security/
 import { sendTransactionalEmail } from "@/lib/email";
 import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "@/lib/security/uploads";
 import { submissionIntakeModeFromEnv } from "@/lib/release-controls";
+import { handleCanadaSubmission } from "@/lib/canada-intake";
+import { mmipsSiteMode } from "@/lib/site-mode";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -122,6 +124,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (mmipsSiteMode() === "ca") return handleCanadaSubmission(request);
+
   const intakeMode = submissionIntakeModeFromEnv();
   if (intakeMode === "locked") {
     console.warn("MMIPS submission intake blocked by release control.", { code: "submission_intake_locked" });
