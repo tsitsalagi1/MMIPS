@@ -1,10 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 export default function AdminPasswordRecovery({ siteLabel }: { siteLabel: string }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -89,7 +92,7 @@ export default function AdminPasswordRecovery({ siteLabel }: { siteLabel: string
       setNewPassword("");
       setConfirmPassword("");
       setMessage("Password updated. Returning to admin sign in…");
-      window.setTimeout(() => window.location.assign("/admin"), 700);
+      window.setTimeout(() => router.push("/admin"), 700);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The password could not be updated. Request a new reset link and try again.");
     } finally {
