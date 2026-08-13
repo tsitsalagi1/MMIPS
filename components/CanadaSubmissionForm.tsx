@@ -1,5 +1,5 @@
 import { TurnstileWidget } from "@/components/TurnstileWidget";
-import { CanadaProvinceTerritoryOptions } from "@/components/CanadaProfilesSearch";
+import { CANADA_PROVINCES_AND_TERRITORIES } from "@/lib/canada-config";
 import type { SubmissionIntakeMode } from "@/lib/release-controls";
 
 export function CanadaSubmissionForm({ mode }: { mode: SubmissionIntakeMode }) {
@@ -15,7 +15,7 @@ export function CanadaSubmissionForm({ mode }: { mode: SubmissionIntakeMode }) {
         <label>Case status<select name="status" defaultValue="missing" required><option value="missing">Missing</option><option value="homicide_unsolved">Homicide / information needed</option><option value="unidentified">Unidentified person</option><option value="resolved">Resolved / located</option><option value="unknown">Other / needs review</option></select></label>
         <label>Last seen date, if known<input name="last_seen_date" type="date" /></label>
         <label>Last-seen locality<input name="last_seen_locality" required placeholder="City, community, reserve, settlement, or broad locality" maxLength={300} /></label>
-        <label>Province or territory<select name="last_seen_province_territory" required defaultValue=""><option value="" disabled>Choose one</option><CanadaProvinceTerritoryOptions /></select></label>
+        <label>Province or territory<select name="last_seen_province_territory" required defaultValue=""><option value="" disabled>Choose one</option>{CANADA_PROVINCES_AND_TERRITORIES.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
         <label>Canadian postal code, optional<input name="last_seen_postal_code" autoComplete="postal-code" placeholder="K1A 0B1" maxLength={7} /></label>
         <label>Safe public area wording, optional<input name="last_seen_area_public_proposed" placeholder="Example: Saskatoon area, SK" maxLength={500} /></label>
       </div>
