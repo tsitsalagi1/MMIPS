@@ -12,10 +12,10 @@ export default async function SubmitPage({
 }: {
   searchParams?: Promise<{ error?: string }>;
 }) {
-  if (mmipsSiteMode() === "ca") return <CanadaSubmitStatus />;
-
   const params = await searchParams;
   const error = params?.error;
+  if (mmipsSiteMode() === "ca") return <CanadaSubmitStatus error={error} />;
+
   const intakeMode = submissionIntakeModeFromEnv();
 
   return (
