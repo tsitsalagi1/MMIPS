@@ -28,6 +28,9 @@ type Preview = {
     public_profile_url: string;
   };
   matchedCount: number;
+  localMatchedCount: number;
+  crossBorderMatchedCount: number;
+  crossBorderAvailable: boolean;
   canSend: boolean;
 };
 
@@ -215,6 +218,10 @@ export default function AdminUrgentAlerts() {
           </p>
           <p>
             <strong>Confirmed subscribers matched:</strong> {preview.matchedCount}
+          </p>
+          <p className="muted">
+            {preview.localMatchedCount} on this country site · {preview.crossBorderMatchedCount} across the border
+            {preview.crossBorderAvailable ? "" : " (peer preview unavailable)"}
           </p>
           <p>
             <strong>Urgency:</strong> {preview.profile.urgency_level}

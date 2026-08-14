@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { safeApiError } from "@/lib/security/api-errors";
 import { requireAdmin } from "@/lib/supabase/admin";
+import { mmipsSiteMode } from "@/lib/site-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,43 @@ export async function GET(request: Request) {
 
     if (!officialSourceDrafts && q.length < 2) {
       return NextResponse.json({ ok: true, profiles: [], requiresSearch: true });
+    }
+
+    if (mmipsSiteMode() === "ca") {
+      let personIds: string[] = [];
+      if (q) {
+        const { data: people, error: peopleError } = await admin.supabase
+          .from("persons")
+          .select("id")
+          .ilike("full_name", `%${q}%`)
+          .limit(100);
+        if (peopleError) throw peopleError;
+        personIds = (people || []).map((person: any) => person.id).filter(Boolean);
+      }
+
+      const canadaQuery = admin.supabase
+        .from("cases")
+        .select("id,slug,status,urgency_level,review_status,published_at,synthetic,person_id,persons(full_name)")
+        .eq("review_status", "approved")
+        .not("published_at", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (q) {
+        const term = `%${q}%`;
+        const filters = [`slug.ilike.${term}`];
+        if (personIds.length) filters.push(`person_id.in.(${personIds.join(",")})`);
+        canadaQuery.or(filters.join(","));
+      }
+      const { data, error } = await canadaQuery;
+      if (error) throw error;
+      return NextResponse.json({
+        ok: true,
+        profiles: (data || []).map((profile: any) => ({
+          ...profile,
+          profile_type: "urgent_missing"
+        })),
+        requiresSearch: true
+      });
     }
 
     let personIds: string[] = [];

@@ -27,6 +27,7 @@ export default function AdminPage() {
         <CanadaAdminDashboard />
         <PasswordRecoveryLink />
         <AdminMfaPanel />
+        <AdminUrgentAlerts />
       </>
     );
   }

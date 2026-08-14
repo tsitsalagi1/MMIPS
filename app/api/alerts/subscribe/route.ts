@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAlertStore, MAX_ALERT_REQUEST_BYTES, requestAlertSubscription } from "@/lib/alerts";
 import { expectedTurnstileHostname, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { lookupZcta, normalizeAlertRadius, normalizeZip } from "@/lib/zip-geo";
+import { mmipsSiteMode } from "@/lib/site-mode";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  if (mmipsSiteMode() === "ca") {
+    return NextResponse.json({
+      ok: false,
+      code: "canada_alert_signup_locked",
+      message: "Canadian alert sign-up is not open during the synthetic cross-border rehearsal."
+    }, { status: 503 });
+  }
   const length = Number(request.headers.get("content-length") || "0");
   if (length > MAX_ALERT_REQUEST_BYTES) return NextResponse.json({ ok: false, code: "request_too_large", message: "We could not process that request. Please check the form and try again." }, { status: 413 });
   let body: { email?: unknown; zip?: unknown; radiusMiles?: unknown; allUrgent?: unknown; turnstileToken?: unknown };

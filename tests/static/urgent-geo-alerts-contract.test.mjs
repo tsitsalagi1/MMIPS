@@ -44,7 +44,8 @@ test("urgent send requires published approval, urgent status, approved map point
   assert.match(urgentRoute, /urgency_level !== "urgent_public_awareness"/);
   assert.match(urgentRoute, /moderator_approved/);
   assert.match(urgentRoute, /SEND URGENT ALERT/);
-  assert.match(urgentRoute, /MMIPS TEST PERSON/);
+  assert.match(urgentRoute, /loaded\.profile\.synthetic !== true/);
+  assert.doesNotMatch(urgentRoute, /title\.startsWith/);
   assert.match(urgentRoute, /status: 423/);
   assert.match(urgentUi, /A raw submission never sends a public alert automatically/);
 });

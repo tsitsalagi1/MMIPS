@@ -25,7 +25,31 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ ok: true, submissions: data || [] }, { headers: { "Cache-Control": "no-store" } });
+    const submissions = data || [];
+    const submissionIds = submissions.map((item) => item.id);
+    const approvedCaseBySubmission = new Map<string, string>();
+    if (submissionIds.length) {
+      const { data: decisions, error: decisionError } = await admin.supabase
+        .from("canada_moderation_decisions")
+        .select("submission_id,case_id,created_at")
+        .eq("action", "approved")
+        .not("case_id", "is", null)
+        .in("submission_id", submissionIds)
+        .order("created_at", { ascending: false });
+      if (decisionError) throw decisionError;
+      for (const decision of decisions || []) {
+        if (decision.case_id && !approvedCaseBySubmission.has(decision.submission_id)) {
+          approvedCaseBySubmission.set(decision.submission_id, decision.case_id);
+        }
+      }
+    }
+    return NextResponse.json({
+      ok: true,
+      submissions: submissions.map((item) => ({
+        ...item,
+        approved_case_id: approvedCaseBySubmission.get(item.id) || null
+      }))
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return safeApiError({ code: "canada_submissions_load_failed", message: "Could not load Canadian submissions." });
   }

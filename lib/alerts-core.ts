@@ -25,6 +25,7 @@ export type AlertPreferences = {
 
 export type AlertSubscriberRecord = {
   id: string; email_normalized: string; status: SubscriberStatus;
+  synthetic: boolean;
   confirmation_token_hash: string | null; confirmation_expires_at: string | null;
   unsubscribe_token_id: string; unsubscribe_token_version: number;
   preferences: AlertPreferences;
