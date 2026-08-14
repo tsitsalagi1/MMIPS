@@ -6,7 +6,7 @@ import {
 } from "@/lib/alerts";
 import { siteUrl, sendTransactionalEmail } from "@/lib/email";
 import { mmipsSiteMode } from "@/lib/site-mode";
-import { subscriberMatchesUrgentTarget } from "@/lib/urgent-alerts";
+import { subscriberMatchesUrgentTarget } from "@/lib/urgent-alert-matching";
 import type { CrossBorderAlertPayload } from "@/lib/cross-border-alert-contract";
 
 function localProfileHandoffUrl(payload: CrossBorderAlertPayload) {

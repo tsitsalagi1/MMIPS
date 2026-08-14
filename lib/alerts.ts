@@ -9,7 +9,7 @@ export type AlertMailer = { send(input: Parameters<typeof sendTransactionalEmail
 const productionMailer: AlertMailer = { send: sendTransactionalEmail };
 export const ALERT_CONSENT_SOURCE = workflow.ALERT_CONSENT_SOURCE;
 export const ALERT_CONSENT_TEXT = workflow.ALERT_CONSENT_TEXT;
-const subscriberFields = "id,email_normalized,status,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_id,unsubscribe_token_version,preferences,home_zip,home_latitude,home_longitude,radius_miles,all_urgent,geography_source,confirmation_last_sent_at,confirmation_window_started_at,confirmation_send_count";
+const subscriberFields = "id,email_normalized,status,synthetic,confirmation_token_hash,confirmation_expires_at,unsubscribe_token_id,unsubscribe_token_version,preferences,home_zip,home_latitude,home_longitude,radius_miles,all_urgent,geography_source,confirmation_last_sent_at,confirmation_window_started_at,confirmation_send_count";
 
 function supabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,6 +27,7 @@ export function createSupabaseAlertStore(): AlertStore | null {
         email: input.email,
         email_normalized: input.email,
         status: "pending",
+        synthetic: false,
         consent_source: input.consentSource,
         consent_text: input.consentText,
         consent_at: input.requestedAt,

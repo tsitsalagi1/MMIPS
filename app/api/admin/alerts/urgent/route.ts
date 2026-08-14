@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/admin";
 import { safeApiError } from "@/lib/security/api-errors";
 import { matchedUrgentSubscribers, sendUrgentCommunityAlert } from "@/lib/urgent-alerts";
+import type { UrgentAlertTarget } from "@/lib/urgent-alerts";
 import { prepareCrossBorderAlertRequest } from "@/lib/cross-border-alert-request";
+import { mmipsSiteMode } from "@/lib/site-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,7 @@ function urgentEventKey(caseId: string) {
   return `urgent:${caseId}:${new Date().toISOString().slice(0, 13)}`;
 }
 
-async function relayPeer(target: Awaited<ReturnType<typeof loadTarget>> extends infer T ? T extends { target: infer U } ? U : never : never, caseId: string, intent: "preview" | "send"): Promise<RelayResult> {
+async function relayPeer(target: UrgentAlertTarget, caseId: string, intent: "preview" | "send"): Promise<RelayResult> {
   try {
     const prepared = prepareCrossBorderAlertRequest(target, urgentEventKey(caseId), intent);
     const response = await fetch(prepared.url, {
@@ -74,6 +76,7 @@ export async function GET(request: NextRequest) {
         loaded.profile.review_status === "approved" &&
         Boolean(loaded.profile.published_at) &&
         loaded.profile.urgency_level === "urgent_public_awareness" &&
+        loaded.profile.synthetic === true &&
         Boolean(loaded.target.officialTipContact)
     });
   } catch {
@@ -121,8 +124,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Synthetic rehearsal lock: do not send real-case alerts while the release rehearsal is active.
-    if (!loaded.target.title.startsWith("MMIPS TEST PERSON")) {
+    // Synthetic rehearsal lock: the audience and target must share an explicit database marker.
+    // Names and email domains are display labels, never security boundaries.
+    if (loaded.profile.synthetic !== true || loaded.target.synthetic !== true) {
       return NextResponse.json(
         {
           ok: false,
@@ -184,15 +188,18 @@ async function loadTarget(
   admin: Awaited<ReturnType<typeof requireAdmin>> & { ok: true },
   caseId: string
 ) {
-  const { data: profile, error: profileError } = await admin.supabase
+  const canada = mmipsSiteMode() === "ca";
+  const profileFields = canada
+    ? "id,slug,status,urgency_level,review_status,published_at,official_tip_contact,lead_police_service,synthetic,persons(full_name)"
+    : "id,slug,status,profile_type,urgency_level,review_status,published_at,official_tip_contact,lead_agency,synthetic,persons(full_name)";
+  const { data: rawProfile, error: profileError } = await admin.supabase
     .from("cases")
-    .select(
-      "id,slug,status,profile_type,urgency_level,review_status,published_at,official_tip_contact,lead_agency,persons(full_name)"
-    )
+    .select(profileFields)
     .eq("id", caseId)
     .maybeSingle();
   if (profileError) throw profileError;
-  if (!profile) return { error: "Profile not found." } as const;
+  if (!rawProfile) return { error: "Profile not found." } as const;
+  const profile = rawProfile as any;
 
   const officialTipContact =
     typeof profile.official_tip_contact === "string" ? profile.official_tip_contact.trim() : "";
@@ -203,20 +210,24 @@ async function loadTarget(
     } as const;
   }
 
-  const { data: point, error: pointError } = await admin.supabase
+  const basePointQuery = admin.supabase
     .from("public_case_map_points")
-    .select("public_label,public_latitude,public_longitude,precision,moderator_approved,safety_reviewed_at,hidden_at")
+    .select(canada
+      ? "public_area_label,public_latitude,public_longitude,moderator_approved,hidden"
+      : "public_label,public_latitude,public_longitude,precision,moderator_approved,safety_reviewed_at,hidden_at")
     .eq("case_id", caseId)
-    .is("hidden_at", null)
-    .eq("moderator_approved", true)
-    .maybeSingle();
+    .eq("moderator_approved", true);
+  const { data: rawPoint, error: pointError } = canada
+    ? await basePointQuery.eq("hidden", false).maybeSingle()
+    : await basePointQuery.is("hidden_at", null).maybeSingle();
   if (pointError) throw pointError;
-  if (!point) {
+  if (!rawPoint) {
     return {
       error:
         "This profile needs an approved public map point before a geographic urgent alert can be sent."
     } as const;
   }
+  const point = rawPoint as any;
 
   const latitude = Number(point.public_latitude);
   const longitude = Number(point.public_longitude);
@@ -229,11 +240,14 @@ async function loadTarget(
       caseId: profile.id,
       slug: profile.slug,
       title: personName(profile),
-      publicMapLabel: point.public_label,
+      publicMapLabel: canada ? point.public_area_label : point.public_label,
       officialTipContact,
-      leadAgency: typeof profile.lead_agency === "string" ? profile.lead_agency.trim() || null : null,
+      leadAgency: typeof (canada ? profile.lead_police_service : profile.lead_agency) === "string"
+        ? (canada ? profile.lead_police_service : profile.lead_agency).trim() || null
+        : null,
       latitude,
-      longitude
+      longitude,
+      synthetic: profile.synthetic === true
     },
     profile,
     point

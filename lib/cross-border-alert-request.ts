@@ -12,6 +12,7 @@ export function prepareCrossBorderAlertRequest(target: {
   leadAgency?: string | null;
   latitude: number;
   longitude: number;
+  synthetic: boolean;
 }, eventKey: string, intent: "preview" | "send") {
   const mode = mmipsSiteMode();
   if (mode !== "us" && mode !== "ca") throw new Error("cross_border_alert_country_required");
@@ -27,6 +28,7 @@ export function prepareCrossBorderAlertRequest(target: {
     leadAgency: target.leadAgency ?? null,
     latitude: target.latitude,
     longitude: target.longitude,
+    synthetic: target.synthetic,
     issuedAt: new Date().toISOString()
   };
   const baseUrl = mode === "us" ? canadaSiteUrl() : usSiteUrl();

@@ -19,6 +19,13 @@ export default function AlertsPage() {
   const widgetId = useRef<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState("");
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const canadaAlertsLocked = (() => {
+    try {
+      return new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mmips.com").hostname === "ca.mmips.com";
+    } catch {
+      return false;
+    }
+  })();
 
   function renderTurnstile() {
     if (!siteKey || !window.turnstile || !widgetRef.current || widgetId.current) return;
@@ -60,6 +67,30 @@ export default function AlertsPage() {
       if (widgetId.current && window.turnstile) window.turnstile.reset(widgetId.current);
       window.setTimeout(() => statusRef.current?.focus(), 0);
     }
+  }
+
+  if (canadaAlertsLocked) {
+    return (
+      <main className="alerts-page stack page-narrow" id="main-content">
+        <section className="alerts-hero card stack">
+          <p className="eyebrow">Urgent community alerts</p>
+          <h1>Canadian alert sign-up is not open yet.</h1>
+          <p className="lead">
+            MMIPS is rehearsing distance-based U.S.–Canada alert matching with fictional records only.
+            An alert can cross the border when a confirmed subscriber is inside the chosen distance.
+          </p>
+        </section>
+        <section className="card stack">
+          <h2>Why sign-up is paused</h2>
+          <p>
+            Canadian postal-area lookup, bilingual consent language, and privacy review must be completed before
+            real subscriber information is accepted. The current rehearsal uses reserved, non-deliverable test
+            addresses and does not enroll the public.
+          </p>
+          <p>MMIPS will not ask Canadian visitors to enter a U.S. ZIP code or send Canadian postal codes to the U.S. Census Bureau.</p>
+        </section>
+      </main>
+    );
   }
 
   return (

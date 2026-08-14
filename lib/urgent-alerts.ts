@@ -7,8 +7,10 @@ import {
 } from "@/lib/alerts";
 import { siteUrl, sendTransactionalEmail } from "@/lib/email";
 import { summarizeUrgentDeliveryState } from "@/lib/urgent-alert-state";
-import { distanceMiles } from "@/lib/zip-geo";
-import type { AlertSubscriberRecord, DeliveryStatus } from "@/lib/alerts-core";
+import { subscriberMatchesUrgentTarget } from "@/lib/urgent-alert-matching";
+import type { DeliveryStatus } from "@/lib/alerts-core";
+
+export { subscriberMatchesUrgentTarget } from "@/lib/urgent-alert-matching";
 
 export type UrgentAlertTarget = {
   caseId: string;
@@ -19,6 +21,7 @@ export type UrgentAlertTarget = {
   leadAgency?: string | null;
   latitude: number;
   longitude: number;
+  synthetic: boolean;
 };
 
 type PersistedDelivery = {
@@ -31,26 +34,7 @@ function isDeliveryStatus(value: unknown): value is DeliveryStatus {
   return value === "queued" || value === "sent" || value === "failed_retryable" || value === "failed_final";
 }
 
-export function subscriberMatchesUrgentTarget(
-  subscriber: AlertSubscriberRecord,
-  target: Pick<UrgentAlertTarget, "latitude" | "longitude">
-) {
-  if (subscriber.status !== "active") return false;
-  if (!subscriber.preferences?.categories?.includes("urgent_community_alerts")) return false;
-  if (subscriber.all_urgent === true || subscriber.preferences.allUrgent === true) return true;
-  const latitude = Number(subscriber.home_latitude ?? subscriber.preferences.homeLatitude);
-  const longitude = Number(subscriber.home_longitude ?? subscriber.preferences.homeLongitude);
-  const radius = Number(subscriber.radius_miles ?? subscriber.preferences.radiusMiles);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || ![10, 25, 50, 100, 250].includes(radius)) {
-    return false;
-  }
-  return distanceMiles(
-    { latitude, longitude },
-    { latitude: target.latitude, longitude: target.longitude }
-  ) <= radius;
-}
-
-export async function matchedUrgentSubscribers(target: Pick<UrgentAlertTarget, "latitude" | "longitude">) {
+export async function matchedUrgentSubscribers(target: UrgentAlertTarget) {
   const store = createSupabaseAlertStore();
   if (!store) throw new Error("alerts_store_unavailable");
   const subscribers = await store.activeSubscribers();

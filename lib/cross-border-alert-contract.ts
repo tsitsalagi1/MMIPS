@@ -11,6 +11,7 @@ export type CrossBorderAlertPayload = {
   leadAgency?: string | null;
   latitude: number;
   longitude: number;
+  synthetic: boolean;
   issuedAt: string;
 };
 
@@ -25,6 +26,7 @@ export function isCrossBorderAlertPayload(value: unknown): value is CrossBorderA
     typeof p.publicUrl === "string" && p.publicUrl.startsWith("https://") &&
     typeof p.publicMapLabel === "string" && p.publicMapLabel.length <= 200 &&
     typeof p.officialTipContact === "string" && p.officialTipContact.trim().length > 0 &&
+    typeof p.synthetic === "boolean" &&
     Number.isFinite(Number(p.latitude)) && Number(p.latitude) >= -90 && Number(p.latitude) <= 90 &&
     Number.isFinite(Number(p.longitude)) && Number(p.longitude) >= -180 && Number(p.longitude) <= 180 &&
     typeof p.issuedAt === "string";

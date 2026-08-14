@@ -31,6 +31,7 @@ type CanadaSubmission = {
   public_longitude_proposed: number | null;
   moderator_notes: string | null;
   synthetic: boolean;
+  approved_case_id: string | null;
 };
 
 type EditState = {
@@ -39,7 +40,7 @@ type EditState = {
   publicArea: string;
   publicLatitude: string;
   publicLongitude: string;
-  publishMap: boolean;
+  safetyConfirmed: boolean;
   reason: string;
 };
 
@@ -54,7 +55,7 @@ function initialEdit(item: CanadaSubmission): EditState {
     publicArea: item.last_seen_area_public_proposed || `${item.last_seen_locality}, ${item.last_seen_province_territory}`,
     publicLatitude: item.public_latitude_proposed == null ? "" : String(item.public_latitude_proposed),
     publicLongitude: item.public_longitude_proposed == null ? "" : String(item.public_longitude_proposed),
-    publishMap: item.map_requested !== false,
+    safetyConfirmed: false,
     reason: item.moderator_notes || ""
   };
 }
@@ -130,29 +131,58 @@ export default function CanadaAdminDashboard() {
     setEdits((current) => ({ ...current, [id]: { ...(current[id] || initialEdit(items.find((item) => item.id === id)!)), ...patch } }));
   }
 
-  async function act(item: CanadaSubmission, action: "approve" | "needs_more_info" | "rejected") {
+  async function act(item: CanadaSubmission, action: "approve" | "approve_map" | "mark_urgent" | "needs_more_info" | "rejected" | "hidden") {
     if (!sessionToken) return;
     const edit = edits[item.id] || initialEdit(item);
+    if (edit.reason.trim().length < 12) {
+      setMessage("Document a moderation reason of at least 12 characters before making a decision.");
+      return;
+    }
+    if (action === "approve_map" && !edit.safetyConfirmed) {
+      setMessage("Confirm that the map coordinates are deliberately approximate and safe for public release.");
+      return;
+    }
+    if (action === "hidden" && !window.confirm("Hide this synthetic published profile and any public map point now?")) return;
+    if (action === "mark_urgent" && !window.confirm("Mark this approved fictional profile eligible for the synthetic urgent-alert rehearsal?")) return;
     setLoading(true);
     setMessage("");
     try {
       const response = await fetch(`/api/admin/canada/submissions/${item.id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${sessionToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify(action === "approve" ? {
-          action,
-          reason: edit.reason,
-          slug: edit.slug,
-          publicSummary: edit.publicSummary,
-          publicArea: edit.publicArea,
-          publicLatitude: edit.publicLatitude,
-          publicLongitude: edit.publicLongitude,
-          publishMap: edit.publishMap
-        } : { action, reason: edit.reason })
+        body: JSON.stringify(
+          action === "approve" ? {
+            action,
+            reason: edit.reason,
+            slug: edit.slug,
+            publicSummary: edit.publicSummary,
+            publicArea: edit.publicArea,
+            publicLatitude: null,
+            publicLongitude: null,
+            publishMap: false
+          } : action === "approve_map" ? {
+            action,
+            reason: edit.reason,
+            publicArea: edit.publicArea,
+            publicLatitude: edit.publicLatitude,
+            publicLongitude: edit.publicLongitude,
+            safetyConfirmed: edit.safetyConfirmed
+          } : { action, reason: edit.reason }
+        )
       });
       const json = await response.json();
       if (!response.ok || !json.ok) throw new Error(json.message || "Moderation action failed.");
-      setMessage(action === "approve" ? "Submission approved and released through the Canadian publication gates." : `Submission moved to ${action.replaceAll("_", " ")}.`);
+      setMessage(
+        action === "approve"
+          ? "Profile approved without a map point. Any requested map now requires a separate safety decision."
+          : action === "approve_map"
+            ? "The separate approximate public map point was approved."
+            : action === "hidden"
+              ? "Published profile and map point hidden from public projections."
+              : action === "mark_urgent"
+                ? "The approved fictional profile is now eligible for the synthetic urgent-alert rehearsal."
+              : `Submission moved to ${action.replaceAll("_", " ")}.`
+      );
       await load(sessionToken);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Moderation action failed.");
@@ -202,13 +232,30 @@ export default function CanadaAdminDashboard() {
             <details><summary>Private submitter information</summary><p>{item.submitter_name} · {item.relationship} · {item.submitter_email}{item.submitter_phone ? ` · ${item.submitter_phone}` : ""}</p><p><strong>Authority/permission basis:</strong> {item.authority_basis || "Not provided"}</p></details>
 
             <div className="form" style={{ marginTop: 16 }}>
-              <label>Public slug<input value={edit.slug} onChange={(event) => setEdit(item.id, { slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} /></label>
-              <label>Reviewed public summary<textarea value={edit.publicSummary} onChange={(event) => setEdit(item.id, { publicSummary: event.target.value })} /></label>
-              <label>Approved public area<input value={edit.publicArea} onChange={(event) => setEdit(item.id, { publicArea: event.target.value })} /></label>
-              <div className="check-grid"><label>Public latitude<input inputMode="decimal" value={edit.publicLatitude} onChange={(event) => setEdit(item.id, { publicLatitude: event.target.value })} /></label><label>Public longitude<input inputMode="decimal" value={edit.publicLongitude} onChange={(event) => setEdit(item.id, { publicLongitude: event.target.value })} /></label></div>
-              <label className="checkbox"><input type="checkbox" checked={edit.publishMap} onChange={(event) => setEdit(item.id, { publishMap: event.target.checked })} /> Approve this approximate public area for the map</label>
-              <label>Moderator notes / reason<textarea value={edit.reason} onChange={(event) => setEdit(item.id, { reason: event.target.value })} /></label>
-              <div className="button-row"><button type="button" onClick={() => act(item, "approve")} disabled={loading}>Approve profile{edit.publishMap ? " + map" : ""}</button><button type="button" className="secondary" onClick={() => act(item, "needs_more_info")} disabled={loading}>Needs more information</button><button type="button" className="secondary" onClick={() => act(item, "rejected")} disabled={loading}>Reject</button></div>
+              {item.review_status !== "approved" ? (
+                <>
+                  <label>Public slug<input value={edit.slug} onChange={(event) => setEdit(item.id, { slug: event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} /></label>
+                  <label>Reviewed public summary<textarea value={edit.publicSummary} onChange={(event) => setEdit(item.id, { publicSummary: event.target.value })} /></label>
+                  <label>Approved public area<input value={edit.publicArea} onChange={(event) => setEdit(item.id, { publicArea: event.target.value })} /></label>
+                </>
+              ) : item.map_requested ? (
+                <>
+                  <div className="notice"><strong>Separate map safety decision.</strong><p>The profile is already public. Approve only a deliberately approximate area requested by the submitter.</p></div>
+                  <label>Approved public area<input value={edit.publicArea} onChange={(event) => setEdit(item.id, { publicArea: event.target.value })} /></label>
+                  <div className="check-grid"><label>Approximate public latitude<input inputMode="decimal" value={edit.publicLatitude} onChange={(event) => setEdit(item.id, { publicLatitude: event.target.value })} /></label><label>Approximate public longitude<input inputMode="decimal" value={edit.publicLongitude} onChange={(event) => setEdit(item.id, { publicLongitude: event.target.value })} /></label></div>
+                  <label className="checkbox"><input type="checkbox" checked={edit.safetyConfirmed} onChange={(event) => setEdit(item.id, { safetyConfirmed: event.target.checked })} /> I confirm these coordinates are deliberately approximate and not copied from a private or exact location.</label>
+                </>
+              ) : <p className="notice">The submitter did not request public map publication. The server will not permit a map point for this profile.</p>}
+              <label>Moderator notes / reason<textarea minLength={12} required value={edit.reason} onChange={(event) => setEdit(item.id, { reason: event.target.value })} /></label>
+              {item.review_status === "approved" ? (
+                <div className="button-row">
+                  {item.map_requested ? <button type="button" onClick={() => act(item, "approve_map")} disabled={loading || !edit.safetyConfirmed || edit.reason.trim().length < 12}>Approve map separately</button> : null}
+                  {item.synthetic ? <button type="button" className="secondary" onClick={() => act(item, "mark_urgent")} disabled={loading || edit.reason.trim().length < 12}>Mark synthetic profile urgent</button> : null}
+                  <button type="button" className="secondary" onClick={() => act(item, "hidden")} disabled={loading || edit.reason.trim().length < 12}>Hide published profile</button>
+                </div>
+              ) : (
+                <div className="button-row"><button type="button" onClick={() => act(item, "approve")} disabled={loading || edit.reason.trim().length < 12}>Approve profile only</button><button type="button" className="secondary" onClick={() => act(item, "needs_more_info")} disabled={loading || edit.reason.trim().length < 12}>Needs more information</button><button type="button" className="secondary" onClick={() => act(item, "rejected")} disabled={loading || edit.reason.trim().length < 12}>Reject</button></div>
+              )}
             </div>
           </article>
         );

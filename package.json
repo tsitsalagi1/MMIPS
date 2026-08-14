@@ -12,7 +12,7 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "build:test-modules": "rm -rf .test-dist && tsc -p tsconfig.test.json && cp .test-dist/lib/alerts-core.js .test-dist/lib/alerts-core && cp .test-dist/lib/security/rate-limit.js .test-dist/lib/security/rate-limit",
+    "build:test-modules": "rm -rf .test-dist && tsc -p tsconfig.test.json && cp .test-dist/lib/alerts-core.js .test-dist/lib/alerts-core && cp .test-dist/lib/zip-geo.js .test-dist/lib/zip-geo && cp .test-dist/lib/security/rate-limit.js .test-dist/lib/security/rate-limit",
     "test": "npm run test:unit",
     "test:unit": "npm run build:test-modules && node --test tests/unit/*.test.mjs",
     "test:static": "node --test tests/static/*.test.mjs",
@@ -39,5 +39,8 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.0",
     "typescript": "6.0.3"
+  },
+  "overrides": {
+    "nanoid": "3.3.18"
   }
 }
