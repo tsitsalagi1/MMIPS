@@ -63,14 +63,22 @@ function globalGatewayIsolation(request: NextRequest) {
 }
 
 function canadaPublicRouteAllowed(pathname: string) {
-  if (pathname === "/" || pathname === "/profiles" || pathname === "/resources" || pathname === "/how-it-works" || pathname === "/submit" || pathname === "/submit/received" || pathname === "/privacy") return true;
-  if (pathname.startsWith("/profiles/")) return true;
+  if (pathname === "/" || pathname === "/profiles" || pathname === "/resources" || pathname === "/how-it-works" || pathname === "/submit" || pathname === "/submit/received" || pathname === "/privacy" || pathname === "/alerts") return true;
+  if (pathname.startsWith("/profiles/") || pathname.startsWith("/alerts/") || pathname.startsWith("/admin/")) return true;
   if (pathname === "/admin") return true;
   return isCountryShellAsset(pathname);
 }
 
 function canadaPublicApiAllowed(pathname: string) {
-  return pathname === "/api/profiles/map" || pathname === "/api/profiles/search" || pathname === "/api/submissions" || pathname.startsWith("/api/admin/canada/");
+  return pathname === "/api/profiles/map" ||
+    pathname === "/api/profiles/search" ||
+    pathname === "/api/submissions" ||
+    pathname === "/api/admin/alerts/urgent" ||
+    pathname === "/api/federation/alerts/relay" ||
+    pathname === "/api/alerts/subscribe" ||
+    pathname === "/api/alerts/confirm" ||
+    pathname === "/api/alerts/unsubscribe" ||
+    pathname.startsWith("/api/admin/canada/");
 }
 
 function canadaCountryIsolation(request: NextRequest) {
