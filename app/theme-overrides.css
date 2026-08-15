@@ -203,6 +203,23 @@ input[type="radio"] {
   line-height: 1.55;
 }
 
+.alerts-page .field-group > :is(input, select, textarea) + .field-help,
+.alerts-page .alerts-turnstile > div + .field-help {
+  margin-top: .15rem;
+}
+
+.global-evidence-grid .evidence-figure {
+  margin: 0;
+  color: var(--gold);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.global-data-gap {
+  margin-top: 20px;
+}
+
 .alerts-page .alerts-preference {
   border: 1px solid rgba(216, 173, 93, .34);
   border-radius: 16px;

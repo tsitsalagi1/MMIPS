@@ -21,6 +21,7 @@ const canadaArchitecture = fs.readFileSync("docs/CANADA_FOUNDATION.md", "utf8");
 const canadaSchema = fs.readFileSync("supabase/canada/schema.sql", "utf8");
 const canadaHardening = fs.readFileSync("supabase/canada/001_prelaunch_hardening.sql", "utf8");
 const canadaPublicProjection = fs.readFileSync("supabase/canada/002_public_site_projection.sql", "utf8");
+const globalEvidence = fs.readFileSync("lib/global-evidence.ts", "utf8");
 
 test("United States remains the safe default while Global and Canada require explicit site modes", () => {
   assert.match(siteMode, /MMIPS_SITE_MODE === "global"/);
@@ -38,9 +39,24 @@ test("country gateway activates Canada only through an explicit release flag plu
   assert.match(siteMode, /MMIPS_CA_PORTAL_ACTIVE === "true"/);
   assert.match(siteMode, /NEXT_PUBLIC_CA_SITE_URL/);
   assert.match(portals, /code: "CA"[\s\S]*status: canadaActive \? "active" : "preparing"/);
+  assert.match(portals, /code: "MX"[\s\S]*developmentPriority: "next"/);
   assert.match(portals, /code: "AU"[\s\S]*status: "preparing"/);
   assert.match(portals, /code: "NZ"[\s\S]*status: "preparing"/);
   assert.match(gateway, /Find the MMIPS site for your country/);
+  assert.match(gateway, /Mexico next, then South America country by country/);
+});
+
+test("global gateway publishes scoped official evidence without inventing a global total", () => {
+  assert.match(globalEvidence, /About 4,200/);
+  assert.match(globalEvidence, /1,181/);
+  assert.match(globalEvidence, /More than 128,000/);
+  assert.match(globalEvidence, /No reliable global total/);
+  assert.match(globalEvidence, /These country figures cannot be added together/);
+  assert.match(globalEvidence, /not an Indigenous-only count/);
+  assert.match(globalEvidence, /Bureau of Indian Affairs/);
+  assert.match(globalEvidence, /Inter-American Commission on Human Rights/);
+  assert.match(globalEvidence, /UN CEDAW General Recommendation No\. 39/);
+  assert.match(gateway, /different definitions and time periods/);
 });
 
 test("global gateway remains isolated from every country application and API route", () => {

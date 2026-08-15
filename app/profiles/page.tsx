@@ -10,7 +10,7 @@ export default function ProfilesPage() {
   return (
     <main className="container section">
       <h1>Search public profiles</h1>
-      <p className="lead">Search reviewed MMIPS public profiles by name, city, Tribe, agency, status, state, or distance from a ZIP code.</p>
+      <p className="lead">Search reviewed MMIPS public profiles by name, city, Tribe, agency, status, state or U.S. territory, or distance from a ZIP code.</p>
       <SafetyNotice />
       <ProfilesSearch />
     </main>
