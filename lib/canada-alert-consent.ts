@@ -1,0 +1,5 @@
+export const CANADA_ALERT_CONSENT_SOURCE = "mmips_canada_urgent_alerts_web_2026-08";
+
+export const CANADA_ALERT_CONSENT_EN = "I ask MMIPS Canada to email me moderator-approved urgent community alerts that match my broad postal area and chosen distance, or every urgent alert if I select that option. MMIPS Canada will keep my email address and alert preferences private, use them only to provide and manage these alerts, require email confirmation, and include an unsubscribe link in every alert.";
+
+export const CANADA_ALERT_CONSENT_FR = "Je demande à MMIPS Canada de m’envoyer par courriel les alertes communautaires urgentes approuvées par un modérateur qui correspondent à mon vaste secteur postal et à la distance choisie, ou toutes les alertes urgentes si je sélectionne cette option. MMIPS Canada gardera mon adresse courriel et mes préférences d’alerte confidentielles, les utilisera uniquement pour fournir et gérer ces alertes, exigera une confirmation par courriel et inclura un lien de désabonnement dans chaque alerte.";

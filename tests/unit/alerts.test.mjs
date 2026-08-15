@@ -12,6 +12,31 @@ test('invalid urgent geography fails closed instead of enabling broad alerts', (
   assert.deepEqual(normalizePreferences({ homeZip: '74464', radiusMiles: 50, homeLatitude: Number.NaN, homeLongitude: -94.969 }), { categories: ['urgent_community_alerts'] });
   assert.deepEqual(normalizePreferences({ homeZip: '74464', radiusMiles: 50, allUrgent: true, homeLatitude: 35.915, homeLongitude: -94.969, geographySource: 'synthetic-zcta' }), { categories: ['urgent_community_alerts'], homeZip: '74464', radiusMiles: 50, allUrgent: true, homeLatitude: 35.915, homeLongitude: -94.969, geographySource: 'synthetic-zcta' });
 });
+test('Canadian postal-area preferences remain broad and private while preserving metric choices', () => {
+  assert.deepEqual(normalizePreferences({
+    homeArea: 'k1a',
+    provinceTerritory: 'ON',
+    radiusMiles: 31,
+    radiusKilometres: 50,
+    allUrgent: false,
+    homeLatitude: 45.42,
+    homeLongitude: -75.69,
+    geographySource: 'Statistics Canada 2021 Census FSA',
+    consentLanguage: 'fr'
+  }), {
+    categories: ['urgent_community_alerts'],
+    homeZip: 'K1A',
+    homeArea: 'K1A',
+    provinceTerritory: 'ON',
+    radiusMiles: 31,
+    radiusKilometres: 50,
+    allUrgent: false,
+    homeLatitude: 45.42,
+    homeLongitude: -75.69,
+    geographySource: 'Statistics Canada 2021 Census FSA',
+    consentLanguage: 'fr'
+  });
+});
 test('confirmation token is random, hashed and expires', () => { const value=createConfirmationToken(new Date('2026-08-06T00:00:00Z')); assert.match(value.hash,/^sha256:[a-f0-9]{64}$/); assert.equal(value.hash.includes(value.token),false); assert.equal(value.expiresAt,'2026-08-08T00:00:00.000Z'); });
 test('signed unsubscribe token verifies with current or previous key', () => { const id=createUnsubscribeTokenId(), token=signUnsubscribeToken(id,key); assert.equal(verifyUnsubscribeToken(token,[key]),id); assert.equal(verifyUnsubscribeToken(token,[otherKey,key]),id); });
 test('unsubscribe signature rejects wrong key, modified identifier and signature', () => { const id=createUnsubscribeTokenId(), token=signUnsubscribeToken(id,key); assert.equal(verifyUnsubscribeToken(token,[otherKey]),null); const parts=token.split('.'); assert.equal(verifyUnsubscribeToken(`v1.${createUnsubscribeTokenId()}.${parts[2]}`,[key]),null); const changed=`${parts[2][0] === 'A' ? 'B' : 'A'}${parts[2].slice(1)}`; assert.equal(verifyUnsubscribeToken(`v1.${id}.${changed}`,[key]),null); });

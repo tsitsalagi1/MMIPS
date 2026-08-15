@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   if (mode === "ca") {
-    const canadaPaths = ["", "/profiles", "/resources", "/how-it-works", "/submit", "/privacy"];
+    const canadaPaths = ["", "/profiles", "/alerts", "/resources", "/how-it-works", "/submit", "/privacy"];
     return canadaPaths.map((path) => ({
       url: `${base}${path}`,
       changeFrequency: path === "/profiles" ? "daily" : "weekly",

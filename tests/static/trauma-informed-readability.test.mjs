@@ -16,7 +16,7 @@ test('alerts use plain required-field guidance without visible asterisk markers'
   assert.match(alerts, /id="alert-email"/);
   assert.match(alerts, /id="alert-zip"/);
   assert.match(alerts, /required autoComplete="email"/);
-  assert.match(alerts, /required aria-describedby="alert-zip-help"/);
+  assert.match(alerts, /required\s+aria-describedby="alert-zip-help"/);
   assert.match(alerts, /We use this to match nearby alerts, not to find your home address/);
 });
 

@@ -1,5 +1,5 @@
 import { distanceMiles } from "./zip-geo";
-import type { AlertSubscriberRecord } from "./alerts-core";
+import { isSupportedAlertRadiusMiles, type AlertSubscriberRecord } from "./alerts-core";
 
 export type UrgentAlertAudienceTarget = {
   latitude: number;
@@ -18,7 +18,7 @@ export function subscriberMatchesUrgentTarget(
   const latitude = Number(subscriber.home_latitude ?? subscriber.preferences.homeLatitude);
   const longitude = Number(subscriber.home_longitude ?? subscriber.preferences.homeLongitude);
   const radius = Number(subscriber.radius_miles ?? subscriber.preferences.radiusMiles);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || ![10, 25, 50, 100, 250].includes(radius)) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !isSupportedAlertRadiusMiles(radius)) {
     return false;
   }
   return distanceMiles(

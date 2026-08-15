@@ -167,7 +167,8 @@ export async function sendUrgentCommunityAlert(target: UrgentAlertTarget, actorI
       unsubscribeTokenId: subscriber.unsubscribe_token_id,
       signingKey,
       deliveryKey: delivery.id,
-      siteUrl: siteUrl()
+      siteUrl: siteUrl(),
+      locale: subscriber.preferences.consentLanguage === "fr" ? "fr" : "en"
     });
     await sendClaimedAlert(
       store,

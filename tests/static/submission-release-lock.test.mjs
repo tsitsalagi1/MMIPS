@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const page = fs.readFileSync('app/submit/page.tsx', 'utf8');
 const route = fs.readFileSync('app/api/submissions/route.ts', 'utf8');
+const controls = fs.readFileSync('lib/release-controls.ts', 'utf8');
 
 test('deployed submit page defaults to a fail-closed release mode', () => {
   assert.match(page, /submissionIntakeModeFromEnv/);
@@ -38,4 +39,10 @@ test('synthetic mode requires an explicit rehearsal marker before downstream pro
   assert.ok(marker > parse, 'synthetic marker can only be checked after form parsing');
   assert.ok(turnstile > marker, 'synthetic marker must be checked before Turnstile/downstream processing');
   assert.match(route, /synthetic_submission_marker_required/);
+});
+
+test('Canada production intake is open while retaining an explicit emergency pause', () => {
+  assert.match(controls, /export function canadaSubmissionIntakeMode/);
+  assert.match(controls, /input\.realFlag === "false" \? "locked" : "real"/);
+  assert.match(controls, /input\.vercelEnv === "preview"[\s\S]*input\.syntheticFlag === "true"/);
 });
