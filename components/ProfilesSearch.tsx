@@ -171,8 +171,8 @@ export default function ProfilesSearch() {
                 <option value="resolved">Resolved</option>
               </select>
             </label>
-            <label>State or province
-              <input value={state} onChange={(event) => setState(event.target.value)} placeholder="Oklahoma, Arizona, Alberta..." />
+            <label>State or U.S. territory
+              <input value={state} onChange={(event) => setState(event.target.value)} placeholder="Oklahoma, Puerto Rico, Guam..." />
             </label>
           </div>
           <fieldset className="field-group">

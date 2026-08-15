@@ -31,6 +31,26 @@ test("Census lookup fails closed on absent or malformed geography", async () => 
   assert.equal(await lookupZcta("74464", async () => new Response("down", { status: 503 })), null);
 });
 
+test("representative ZIP areas from every inhabited U.S. territory are accepted", async () => {
+  const territorySamples = [
+    { zip: "00901", latitude: 18.466109, longitude: -66.1088563, territory: "Puerto Rico" },
+    { zip: "00802", latitude: 18.3427383, longitude: -64.9258422, territory: "U.S. Virgin Islands" },
+    { zip: "96799", latitude: -14.1820597, longitude: -170.3833425, territory: "American Samoa" },
+    { zip: "96910", latitude: 13.4548695, longitude: 144.7512511, territory: "Guam" },
+    { zip: "96950", latitude: 15.1888537, longitude: 145.7534808, territory: "Northern Mariana Islands" }
+  ];
+
+  for (const sample of territorySamples) {
+    const fetcher = async () => new Response(JSON.stringify({
+      features: [{ attributes: { ZCTA5: sample.zip, CENTLAT: String(sample.latitude), CENTLON: String(sample.longitude) } }]
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+    const result = await lookupZcta(sample.zip, fetcher);
+    assert.equal(result?.zip, sample.zip, sample.territory);
+    assert.equal(result?.latitude, sample.latitude, sample.territory);
+    assert.equal(result?.longitude, sample.longitude, sample.territory);
+  }
+});
+
 test("distance helper uses miles and is symmetric", () => {
   const tahlequah = { latitude: 35.9154, longitude: -94.96996 };
   const muskogee = { latitude: 35.7479, longitude: -95.3697 };

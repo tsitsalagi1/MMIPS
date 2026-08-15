@@ -12,17 +12,32 @@ const css = fs.readFileSync('app/readability-overrides.css', 'utf8');
 
 test('alerts use plain required-field guidance without visible asterisk markers', () => {
   assert.doesNotMatch(alerts, /aria-hidden="true">\*<\/span>/);
-  assert.match(alerts, /Email and ZIP code are required/);
+  assert.match(alerts, /Both are required/);
   assert.match(alerts, /id="alert-email"/);
   assert.match(alerts, /id="alert-zip"/);
   assert.match(alerts, /required autoComplete="email"/);
   assert.match(alerts, /required\s+aria-describedby="alert-zip-help"/);
-  assert.match(alerts, /We use this to match nearby alerts, not to find your home address/);
+  assert.match(alerts, /not to find your home address/);
+  assert.match(alerts, /Choose a distance that feels useful to you/);
+
+  for (const [control, help] of [
+    ['<select id="alert-language"', '<p id="alert-language-help"'],
+    ['<input id="alert-email"', '<p id="alert-email-help"'],
+    ['id="alert-zip"', '<p id="alert-zip-help"'],
+    ['<select id="alert-radius"', '<p id="alert-radius-help"']
+  ]) {
+    assert.ok(alerts.indexOf(control) < alerts.indexOf(help), `${help} must follow its field control`);
+  }
 });
 
 test('technical ZIP language is removed from family-facing search help', () => {
   assert.doesNotMatch(profilesSearch, /ZIP Code Tabulation Area|request body|private incident or home coordinate/);
   assert.match(profilesSearch, /approved awareness area nearby/);
+});
+
+test('United States family-facing search includes U.S. territories', () => {
+  assert.match(profilesSearch, /State or U\.S\. territory/);
+  assert.match(profilesSearch, /Puerto Rico, Guam/);
 });
 
 test('public profile cards and detail pages expose scan-friendly reading hooks', () => {

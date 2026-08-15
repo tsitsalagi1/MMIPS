@@ -95,7 +95,7 @@ h3 {
   max-width: 68ch;
 }
 
-/* Give family-facing forms a clear label → help → control rhythm. */
+/* Give family-facing forms a clear label → control → help rhythm. */
 .field-group {
   display: grid;
   gap: .55rem;
@@ -107,7 +107,7 @@ h3 {
 }
 
 .field-group .field-help {
-  margin: 0 0 .25rem;
+  margin: .05rem 0 0;
   max-width: 66ch;
 }
 

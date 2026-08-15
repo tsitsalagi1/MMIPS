@@ -83,10 +83,10 @@ export default function AlertsPage() {
 
       <section className="alerts-hero card stack">
         <p className="eyebrow">Urgent community alerts</p>
-        <h1>{isCanada ? "Get urgent MMIPS Canada alerts near you." : "Get urgent MMIPS alerts near you."}</h1>
+        <h1>{isCanada ? "Get urgent MMIPS Canada alerts near you" : "Get urgent MMIPS alerts near you"}</h1>
         <p className="lead">{isCanada
-          ? "MMIPS Canada sends email alerts when an approved public profile needs urgent community attention. Enter your Canadian postal code and choose how far from that broad postal area you want to receive alerts."
-          : "MMIPS sends email alerts when an approved public profile needs urgent community attention. Enter your ZIP code and choose how far from that area you want to receive alerts."}</p>
+          ? "Sign up for email alerts about approved public profiles near your broad postal area. MMIPS reviews every alert before it is sent."
+          : "Sign up for email alerts about approved public profiles near your ZIP area. MMIPS reviews every alert before it is sent."}</p>
       </section>
 
       <section className="card stack" aria-labelledby="alerts-consent-heading">
@@ -104,29 +104,29 @@ export default function AlertsPage() {
       <form className="card stack alerts-subscribe-card" onSubmit={submit} noValidate aria-describedby="alerts-help alerts-privacy alerts-status">
         <h2>Sign up for urgent community alerts</h2>
         <p id="alerts-help">{isCanada
-          ? "Enter your email and Canadian postal code, then choose how far away you want alerts. Both fields are required. Alert distance starts at 50 kilometres, but you can change it."
-          : "Enter your email and ZIP code, then choose how far away you want alerts. Email and ZIP code are required. Alert distance starts at 50 miles, but you can change it."}</p>
+          ? "You only need an email address and Canadian postal code. Both are required. Choose a distance that feels useful to you. You can unsubscribe at any time."
+          : "You only need an email address and ZIP code. Both are required. Choose a distance that feels useful to you. You can unsubscribe at any time."}</p>
 
         {isCanada ? (
           <div className="field-group">
             <label htmlFor="alert-language">Confirmation and alert language</label>
-            <select id="alert-language" value={consentLanguage} onChange={(event) => { setConsentLanguage(event.target.value === "fr" ? "fr" : "en"); setConsentConfirmed(false); }}>
+            <select id="alert-language" aria-describedby="alert-language-help" value={consentLanguage} onChange={(event) => { setConsentLanguage(event.target.value === "fr" ? "fr" : "en"); setConsentConfirmed(false); }}>
               <option value="en">English</option>
               <option value="fr">Français</option>
             </select>
+            <p id="alert-language-help" className="field-help">Choose the language for confirmation messages and alerts. Changing it clears the consent checkbox below.</p>
           </div>
         ) : null}
 
         <div className="field-group">
           <label htmlFor="alert-email">Email address</label>
-          <p id="alert-email-help" className="field-help">We will send the confirmation link here. Do not enter tips, case details, addresses, or phone numbers.</p>
           <input id="alert-email" name="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" aria-describedby="alert-email-help" />
+          <p id="alert-email-help" className="field-help">Enter one email address. We will send a confirmation link before alerts begin. Do not enter tips or case details here.</p>
         </div>
 
         <div className="check-grid">
           <div className="field-group">
             <label htmlFor="alert-zip">{isCanada ? "Canadian postal code" : "ZIP code"}</label>
-            <p id="alert-zip-help" className="field-help">{isCanada ? "Example: K1A 0B1. We immediately reduce it to the broad K1A postal area for matching." : "Five digits only. We use this to match nearby alerts, not to find your home address."}</p>
             <input
               id="alert-zip"
               name={isCanada ? "postalCode" : "zip"}
@@ -142,11 +142,13 @@ export default function AlertsPage() {
               required
               aria-describedby="alert-zip-help"
             />
+            <p id="alert-zip-help" className="field-help">{isCanada
+              ? "Example: K1A 0B1. We keep only K1A, the broad postal area, for matching."
+              : "Enter five digits. We use the ZIP area to match nearby alerts, not to find your home address. Census ZIP-area matching includes the five inhabited U.S. territories, but some P.O. box or special-purpose ZIP codes cannot be mapped."}</p>
           </div>
 
           <div className="field-group">
             <label htmlFor="alert-radius">Alert distance</label>
-            <p id="alert-radius-help" className="field-help">Choose how close an approved urgent alert must be to your {isCanada ? "broad postal area" : "ZIP area"} before we email you.</p>
             <select id="alert-radius" name="radiusMiles" value={radiusMiles} onChange={(event) => setRadiusMiles(event.target.value)} aria-describedby="alert-radius-help">
               {isCanada ? (
                 <>
@@ -166,18 +168,19 @@ export default function AlertsPage() {
                 </>
               )}
             </select>
+            <p id="alert-radius-help" className="field-help">We will email you when an approved urgent alert is within this distance of your {isCanada ? "broad postal area" : "ZIP area"}.</p>
           </div>
         </div>
 
         <fieldset className="field-group alerts-preference">
-          <legend>Want every urgent MMIPS alert?</legend>
-          <label className="checkbox"><input type="checkbox" checked={allUrgent} onChange={(event) => setAllUrgent(event.target.checked)} /> Yes. Send me every approved urgent MMIPS alert, even when it is outside my selected distance.</label>
-          <p className="field-help">Leave this unchecked if you want only alerts that match your {isCanada ? "postal area" : "ZIP code"} and distance.</p>
+          <legend>Alerts outside your distance (optional)</legend>
+          <label className="checkbox"><input type="checkbox" checked={allUrgent} onChange={(event) => setAllUrgent(event.target.checked)} /> Send me every approved urgent MMIPS alert.</label>
+          <p className="field-help">Leave this unchecked to receive only alerts near your {isCanada ? "postal area" : "ZIP area"}.</p>
         </fieldset>
 
         <p id="alerts-privacy" className="notice"><strong>Privacy:</strong> {isCanada
-          ? "MMIPS Canada keeps subscriber information private. Postal-area matching happens on the MMIPS Canada server using a broad Statistics Canada census area. We do not send your postal code or email address to a geocoder, and public pages do not show whether an email is subscribed."
-          : "MMIPS keeps your subscriber information private. To get a general ZIP-area location, our server sends only your ZIP code to the U.S. Census Bureau. It does not send your email address. Public pages do not show whether an email is subscribed."}</p>
+          ? "Your subscriber information stays private. We keep only the first three characters of your postal code and match that broad area on the MMIPS Canada server. We do not send your postal code or email address to a geocoder."
+          : "Your subscriber information stays private. Our server sends only your ZIP code—not your email address—to the U.S. Census Bureau to find the broad ZIP area. Public pages never show whether an email is subscribed."}</p>
 
         {isCanada ? (
           <fieldset className="field-group alerts-preference">
@@ -189,7 +192,7 @@ export default function AlertsPage() {
           </fieldset>
         ) : null}
 
-        {siteKey ? <div className="field-group alerts-turnstile"><p id="turnstile-help" className="field-help">Complete the anti-spam check. If it expires or fails, try it again before you submit.</p><div ref={widgetRef} aria-describedby="turnstile-help" /></div> : <p className="notice">The anti-spam check is unavailable, so alert sign-up is temporarily unavailable.</p>}
+        {siteKey ? <div className="field-group alerts-turnstile"><div ref={widgetRef} aria-describedby="turnstile-help" /><p id="turnstile-help" className="field-help">Complete this check before you send the form. If it expires or fails, try it again.</p></div> : <p className="notice">The anti-spam check is unavailable, so alert sign-up is temporarily unavailable.</p>}
 
         {status === "error" && <div className="error-summary" role="alert"><strong>We could not finish the request.</strong><p>{message}</p></div>}
         <div id="alerts-status" ref={statusRef} tabIndex={-1} role="status" aria-live="polite" className="status-message">{status === "loading" ? "Sending the request…" : message}</div>

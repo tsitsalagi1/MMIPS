@@ -9,6 +9,7 @@ export type CountryPortal = {
   status: CountryPortalStatus;
   url?: string;
   description: string;
+  developmentPriority?: "next" | "later";
 };
 
 export function countryPortals(): CountryPortal[] {
@@ -18,7 +19,7 @@ export function countryPortals(): CountryPortal[] {
     {
       code: "US",
       name: "United States",
-      indigenousContext: "Tribal Nations, Alaska Native communities, and Indigenous families",
+      indigenousContext: "Tribal Nations, Alaska Native and Native Hawaiian people, and Indigenous communities in U.S. territories",
       status: "active",
       url: usSiteUrl(),
       description: "Search reviewed public profiles, sign up for alerts, find family resources, and see United States reporting information."
@@ -34,10 +35,19 @@ export function countryPortals(): CountryPortal[] {
         : "The Canadian MMIPS site is being built for First Nations, Inuit, and Métis communities."
     },
     {
+      code: "MX",
+      name: "Mexico",
+      indigenousContext: "Indigenous peoples, families, communities, and nations across Mexico",
+      status: "preparing",
+      developmentPriority: "next",
+      description: "Mexico is the next country planned for careful development with Spanish and Indigenous-language access, Mexico-specific reporting paths, privacy review, and separate country data."
+    },
+    {
       code: "AU",
       name: "Australia",
       indigenousContext: "Aboriginal and Torres Strait Islander peoples and communities",
       status: "preparing",
+      developmentPriority: "later",
       description: "The Australian MMIPS site is being built for Aboriginal and Torres Strait Islander peoples and communities."
     },
     {
@@ -45,6 +55,7 @@ export function countryPortals(): CountryPortal[] {
       name: "Aotearoa / New Zealand",
       indigenousContext: "Māori whānau, hapū, iwi, and communities",
       status: "preparing",
+      developmentPriority: "later",
       description: "The Aotearoa / New Zealand MMIPS site is being built for Māori whānau, hapū, iwi, and communities."
     }
   ];
