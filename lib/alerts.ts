@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendTransactionalEmail, siteUrl, type EmailResult } from "@/lib/email";
 import { type AlertStore } from "./alerts-core";
 import * as workflow from "./alerts-workflow";
+import { mmipsSiteMode } from "./site-mode";
 export * from "./alerts-core";
 export { buildPublicAlertEmail, prepareApprovedPublicAlertDelivery, sendClaimedAlert, validatedSiteUrl } from "./alerts-workflow";
 
@@ -47,7 +48,16 @@ export function createSupabaseAlertStore(): AlertStore | null {
         confirmation_send_count: input.sendCount,
         confirmed_at: null,
         unsubscribed_at: null,
-        updated_at: input.requestedAt
+        opt_out_at: null,
+        updated_at: input.requestedAt,
+        ...(mmipsSiteMode() === "ca" ? {
+          // The full postal code is validated only in memory; retain the broad
+          // FSA in home_zip and leave the legacy full-code column empty.
+          postal_code: null,
+          province_territory: input.preferences.provinceTerritory ?? null,
+          radius_km: input.preferences.radiusKilometres ?? null,
+          consent_language: input.preferences.consentLanguage ?? "en"
+        } : {})
       };
       const { data, error } = await client.from("alert_subscribers").upsert(values, { onConflict: "email_normalized" }).select(subscriberFields).single(); if (error) throw new Error("alerts_db_upsert_failed"); return data;
     },
@@ -63,12 +73,19 @@ export function createSupabaseAlertStore(): AlertStore | null {
   };
 }
 
-export async function requestAlertSubscription(store: AlertStore, emailInput: unknown, prefsInput?: unknown, dependencies: { now?: Date; mailer?: AlertMailer } = {}) {
+export async function requestAlertSubscription(
+  store: AlertStore,
+  emailInput: unknown,
+  prefsInput?: unknown,
+  dependencies: { now?: Date; mailer?: AlertMailer; consentSource?: string; consentText?: string } = {}
+) {
   return workflow.requestAlertSubscription(store, emailInput, prefsInput, {
     now: dependencies.now ? () => dependencies.now! : undefined,
     mailer: dependencies.mailer ?? productionMailer,
     siteUrl: siteUrl(),
-    signingKeys: unsubscribeSigningKeys()
+    signingKeys: unsubscribeSigningKeys(),
+    consentSource: dependencies.consentSource,
+    consentText: dependencies.consentText
   });
 }
 export async function confirmAlertSubscription(store: AlertStore, token: unknown, now = new Date(), mailer: AlertMailer = productionMailer) {

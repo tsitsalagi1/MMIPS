@@ -16,11 +16,15 @@ export type AlertEventKind = "new_public_profile" | "material_public_status_upda
 export type AlertPreferences = {
   categories: AlertPreference[];
   homeZip?: string;
-  radiusMiles?: 10 | 25 | 50 | 100 | 250;
+  homeArea?: string;
+  provinceTerritory?: string;
+  radiusMiles?: number;
+  radiusKilometres?: number;
   allUrgent?: boolean;
   homeLatitude?: number;
   homeLongitude?: number;
   geographySource?: string;
+  consentLanguage?: "en" | "fr";
 };
 
 export type AlertSubscriberRecord = {
@@ -56,25 +60,46 @@ export function normalizeEmail(input: unknown) {
 export function normalizePreferences(input: unknown): AlertPreferences {
   if (input && typeof input === "object") {
     const raw = input as Record<string, unknown>;
-    const zip = typeof raw.homeZip === "string" && /^[0-9]{5}$/.test(raw.homeZip) ? raw.homeZip : undefined;
+    const rawArea = typeof raw.homeArea === "string" ? raw.homeArea : raw.homeZip;
+    const homeArea = typeof rawArea === "string" && (/^[0-9]{5}$/.test(rawArea) || /^[ABCEGHJ-NPRSTVXY][0-9][ABCEGHJ-NPRSTVWXYZ]$/i.test(rawArea))
+      ? rawArea.toUpperCase()
+      : undefined;
+    const isCanadianArea = Boolean(homeArea && /^[A-Z][0-9][A-Z]$/.test(homeArea));
     const radius = Number(raw.radiusMiles);
-    const radiusMiles = [10, 25, 50, 100, 250].includes(radius) ? radius as 10 | 25 | 50 | 100 | 250 : undefined;
+    const radiusMiles = isSupportedAlertRadiusMiles(radius) ? radius : undefined;
     const latitude = Number(raw.homeLatitude);
     const longitude = Number(raw.homeLongitude);
-    if (zip && radiusMiles && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    if (homeArea && radiusMiles && Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      const provinceTerritory = typeof raw.provinceTerritory === "string" && /^[A-Z]{2}$/.test(raw.provinceTerritory)
+        ? raw.provinceTerritory
+        : undefined;
+      const radiusKilometres = Number(raw.radiusKilometres);
+      const consentLanguage = raw.consentLanguage === "fr" ? "fr" : raw.consentLanguage === "en" ? "en" : undefined;
       return {
         categories: ["urgent_community_alerts"],
-        homeZip: zip,
+        homeZip: homeArea,
+        ...(isCanadianArea ? { homeArea } : {}),
+        ...(provinceTerritory ? { provinceTerritory } : {}),
         radiusMiles,
+        ...(Number.isFinite(radiusKilometres) && radiusKilometres > 0 ? { radiusKilometres } : {}),
         allUrgent: raw.allUrgent === true,
         homeLatitude: latitude,
         homeLongitude: longitude,
-        geographySource: typeof raw.geographySource === "string" ? raw.geographySource.slice(0, 160) : undefined
+        geographySource: typeof raw.geographySource === "string" ? raw.geographySource.slice(0, 160) : undefined,
+        ...(consentLanguage ? { consentLanguage } : {})
       };
     }
   }
   // Invalid or incomplete geography must never broaden an urgent-alert subscription.
   return { categories: ["urgent_community_alerts"] };
+}
+
+const CANADA_RADIUS_MILES = [25, 50, 100, 250, 500]
+  .map((kilometres) => Math.round(kilometres / 1.609344));
+
+export function isSupportedAlertRadiusMiles(input: unknown): input is number {
+  const value = Number(input);
+  return [10, 25, 50, 100, 250, ...CANADA_RADIUS_MILES].includes(value);
 }
 
 export function createOpaqueToken() { return crypto.randomBytes(ALERT_TOKEN_BYTES).toString("base64url"); }

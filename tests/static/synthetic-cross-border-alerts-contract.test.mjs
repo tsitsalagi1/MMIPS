@@ -37,9 +37,12 @@ test("Canada has a constrained urgency field and the U.S. rehearsal cases get an
   assert.match(usMigration, /p\.full_name like 'MMIPS TEST PERSON%NOT A REAL PERSON%'/);
 });
 
-test("Canada public signup stays locked until Canadian postal and consent handling is ready", () => {
+test("Canada public signup uses Canadian postal areas and explicit consent", () => {
   assert.match(signupRoute, /mmipsSiteMode\(\) === "ca"/);
-  assert.match(signupRoute, /canada_alert_signup_locked/);
-  assert.match(signupPage, /Canadian postal-area lookup, bilingual consent language, and privacy review/);
-  assert.match(signupPage, /will not ask Canadian visitors to enter a U\.S\. ZIP code/);
+  assert.match(signupRoute, /lookupCanadianPostalArea/);
+  assert.match(signupRoute, /body\.consentConfirmed !== true/);
+  assert.doesNotMatch(signupRoute, /canada_alert_signup_locked/);
+  assert.match(signupPage, /Canadian postal code/);
+  assert.match(signupPage, /Express consent/);
+  assert.match(signupPage, /Français/);
 });

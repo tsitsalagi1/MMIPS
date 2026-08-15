@@ -36,7 +36,11 @@ export type WorkflowDependencies = {
   confirmationFactory?: ConfirmationFactory;
   unsubscribeIdFactory?: () => string;
   signingKeys?: readonly string[];
+  consentSource?: string;
+  consentText?: string;
 };
+
+type AlertLocale = "en" | "fr";
 
 function escapeHtml(value: string) {
   return value
@@ -72,7 +76,59 @@ export function validatedSiteUrl(value: string) {
   return url.origin;
 }
 
-function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscribeUrl?: string) {
+function confirmationEmail(
+  confirmationUrl: string,
+  alertsUrl: string,
+  unsubscribeUrl?: string,
+  locale: AlertLocale = "en",
+  areaLabel = "ZIP code"
+) {
+  if (locale === "fr") {
+    const text = [
+      "Merci de choisir d’aider votre communauté et de soutenir les familles autochtones.",
+      "",
+      "Le partage responsable de renseignements vérifiés et approuvés par un modérateur peut aider une personne autochtone disparue ou assassinée, sans propager de rumeurs ni exposer de renseignements privés.",
+      "",
+      "CONFIRMEZ VOTRE ABONNEMENT",
+      confirmationUrl,
+      ...(unsubscribeUrl ? ["", "ANNULER CETTE DEMANDE", unsubscribeUrl] : []),
+      "",
+      "CE QUE VOUS RECEVREZ",
+      `• Des alertes communautaires urgentes MMIPS correspondant à votre ${areaLabel} et à la distance choisies.`,
+      "• Si vous avez choisi toutes les alertes urgentes, chaque alerte urgente approuvée par un modérateur.",
+      "• Les messages nécessaires pour confirmer ou gérer votre abonnement.",
+      "",
+      "Chaque alerte comprend le profil public MMIPS approuvé, le contact officiel pour transmettre des renseignements et un lien de désabonnement.",
+      "",
+      "PROTECTION DE LA VIE PRIVÉE",
+      `Votre ${areaLabel} et votre distance restent privées et servent uniquement à déterminer les alertes approuvées qui correspondent à la zone choisie.`,
+      "",
+      unsubscribeUrl
+        ? "Si vous n’avez pas demandé ces alertes, utilisez le lien d’annulation ci-dessus ou ne confirmez pas. Aucune explication n’est requise."
+        : "Si vous n’avez pas demandé ces alertes, ne confirmez pas. Chaque alerte future comprendra un lien de désabonnement en un clic."
+    ].join("\n");
+    const html = [
+      "<p><strong>Merci de choisir d’aider votre communauté et de soutenir les familles autochtones.</strong></p>",
+      "<p>Le partage responsable de renseignements vérifiés et approuvés par un modérateur peut aider sans propager de rumeurs ni exposer de renseignements privés.</p>",
+      "<h2>Confirmez votre abonnement</h2>",
+      `<p>${htmlLink(confirmationUrl, "Confirmer les alertes communautaires urgentes MMIPS")}</p>`,
+      ...(unsubscribeUrl ? [
+        "<h2>Annuler cette demande</h2>",
+        `<p>${htmlLink(unsubscribeUrl, "Annuler cette demande d’alertes")}</p>`
+      ] : []),
+      "<h2>Ce que vous recevrez</h2>",
+      listHtml([
+        `Des alertes communautaires urgentes MMIPS correspondant à votre ${areaLabel} et à la distance choisies.`,
+        "Si vous avez choisi toutes les alertes urgentes, chaque alerte urgente approuvée par un modérateur.",
+        "Les messages nécessaires pour confirmer ou gérer votre abonnement."
+      ]),
+      "<h2>Protection de la vie privée</h2>",
+      `<p>Votre ${escapeHtml(areaLabel)} et votre distance restent privées et servent uniquement à déterminer les alertes approuvées qui correspondent à la zone choisie.</p>`,
+      `<p>${htmlLink(alertsUrl, "Gérer ou recommander les alertes MMIPS")}</p>`
+    ].join("\n");
+    return { text, html };
+  }
+
   const text = [
     "Thank you for choosing to help your community and support Indigenous families.",
     "",
@@ -87,7 +143,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     ] : []),
     "",
     "WHAT YOU WILL RECEIVE",
-    "• Urgent MMIPS community alerts that match the ZIP code and distance you selected.",
+    `• Urgent MMIPS community alerts that match the ${areaLabel} and distance you selected.`,
     "• If you chose the all-urgent option, every moderator-approved urgent MMIPS community alert.",
     "• Subscription messages needed to confirm or manage your alerts.",
     "",
@@ -101,7 +157,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     alertsUrl,
     "",
     "PRIVACY AND OPTING OUT",
-    "Your ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.",
+    `Your ${areaLabel}/distance preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.`,
     "",
     unsubscribeUrl
       ? "If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required."
@@ -119,7 +175,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     ] : []),
     "<h2>What you will receive</h2>",
     listHtml([
-      "Urgent MMIPS community alerts that match the ZIP code and distance you selected.",
+      `Urgent MMIPS community alerts that match the ${areaLabel} and distance you selected.`,
       "If you chose the all-urgent option, every moderator-approved urgent MMIPS community alert.",
       "Subscription messages needed to confirm or manage your alerts."
     ]),
@@ -132,7 +188,7 @@ function confirmationEmail(confirmationUrl: string, alertsUrl: string, unsubscri
     ]),
     `<p>Encourage trusted people in your community to subscribe: ${htmlLink(alertsUrl, alertsUrl)}</p>`,
     "<h2>Privacy and opting out</h2>",
-    "<p>Your ZIP/radius preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.</p>",
+    `<p>Your ${escapeHtml(areaLabel)}/distance preferences remain private and are used only to decide whether an approved urgent public alert matches the area you chose. MMIPS does not use this subscription to report or investigate a case.</p>`,
     unsubscribeUrl
       ? "<p>If you did not request these alerts, use the unsubscribe/cancel link above or simply do not confirm. No explanation is required.</p>"
       : "<p>If you did not request these alerts, do not confirm this subscription. If you confirm and later change your mind, every urgent alert includes a one-click unsubscribe option. No explanation is required.</p>"
@@ -156,15 +212,16 @@ export async function requestAlertSubscription(
   if (!eligibility.send) return { ok: true as const, code: "accepted" as const };
 
   const confirmation = (dependencies.confirmationFactory ?? createConfirmationToken)(now);
+  const preferences = normalizePreferences(prefsInput);
   const subscriber = await store.savePending({
     email,
-    consentSource: ALERT_CONSENT_SOURCE,
-    consentText: ALERT_CONSENT_TEXT,
+    consentSource: dependencies.consentSource ?? ALERT_CONSENT_SOURCE,
+    consentText: dependencies.consentText ?? ALERT_CONSENT_TEXT,
     confirmationTokenHash: confirmation.hash,
     confirmationExpiresAt: confirmation.expiresAt,
     unsubscribeTokenId:
       existing?.unsubscribe_token_id ?? (dependencies.unsubscribeIdFactory ?? createUnsubscribeTokenId)(),
-    preferences: normalizePreferences(prefsInput),
+    preferences,
     requestedAt: now.toISOString(),
     windowStartedAt: eligibility.windowStartedAt!,
     sendCount: eligibility.sendCount!
@@ -180,10 +237,20 @@ export async function requestAlertSubscription(
   const unsubscribeApiUrl = unsubscribeToken
     ? `${origin}/api/alerts/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`
     : undefined;
-  const content = confirmationEmail(confirmationUrl, `${origin}/alerts`, unsubscribePageUrl);
+  const locale = preferences.consentLanguage ?? "en";
+  const canadian = Boolean(preferences.homeArea && /^[A-Z][0-9][A-Z]$/.test(preferences.homeArea));
+  const content = confirmationEmail(
+    confirmationUrl,
+    `${origin}/alerts`,
+    unsubscribePageUrl,
+    locale,
+    canadian ? (locale === "fr" ? "secteur postal" : "postal area") : "ZIP code"
+  );
   const result = await dependencies.mailer.send({
     to: email,
-    subject: "Confirm MMIPS urgent community alerts — thank you for helping",
+    subject: locale === "fr"
+      ? "Confirmez les alertes communautaires urgentes MMIPS"
+      : "Confirm MMIPS urgent community alerts — thank you for helping",
     text: content.text,
     html: content.html,
     ...(unsubscribeApiUrl ? {
@@ -208,10 +275,21 @@ export async function confirmAlertSubscription(
       dependencies.now?.() ?? new Date()
     );
     if (subscriber) {
-      const text = [
+      const saved = await store.findSubscriberByEmail(subscriber.email_normalized);
+      const locale = saved?.preferences.consentLanguage === "fr" ? "fr" : "en";
+      const canadian = Boolean(saved?.preferences.homeArea && /^[A-Z][0-9][A-Z]$/.test(saved.preferences.homeArea));
+      const text = locale === "fr" ? [
+        "Merci d’aider votre communauté. Votre abonnement aux alertes communautaires urgentes MMIPS est confirmé.",
+        "",
+        "MMIPS utilisera votre secteur postal et votre distance privés uniquement pour établir une correspondance avec les alertes publiques urgentes approuvées par un modérateur.",
+        "",
+        "Chaque alerte comprendra le profil MMIPS approuvé, le contact officiel pour transmettre des renseignements et un lien de désabonnement. En cas de danger immédiat, composez le 911. Ne transmettez pas de renseignements sur un dossier à MMIPS.",
+        "",
+        "Vous pouvez vous désabonner en un clic à partir de toute alerte future."
+      ].join("\n") : [
         "Thank you for helping your community. Your MMIPS urgent community alerts subscription is confirmed.",
         "",
-        "MMIPS will use your private ZIP/radius preference only to match moderator-approved urgent public alerts. Each alert will include the approved MMIPS profile, the official tip/reporting contact, and an unsubscribe link.",
+        `MMIPS will use your private ${canadian ? "postal-area/distance" : "ZIP/radius"} preference only to match moderator-approved urgent public alerts. Each alert will include the approved MMIPS profile, the official tip/reporting contact, and an unsubscribe link.`,
         "",
         "When an alert arrives, you can help by reading and responsibly sharing the approved profile. Send any tips only to the official contact listed in that alert. If someone is in immediate danger, call 911. Do not send tips to MMIPS or reply to an alert with case information.",
         "",
@@ -219,7 +297,9 @@ export async function confirmAlertSubscription(
       ].join("\n");
       await dependencies.mailer.send({
         to: subscriber.email_normalized,
-        subject: "MMIPS urgent alerts confirmed — thank you for helping",
+        subject: locale === "fr"
+          ? "Votre abonnement aux alertes urgentes MMIPS est confirmé"
+          : "MMIPS urgent alerts confirmed — thank you for helping",
         text,
         html: paragraphHtml(text)
       });
@@ -276,6 +356,7 @@ export function buildPublicAlertEmail(input: {
   signingKey: string;
   deliveryKey: string;
   siteUrl: string;
+  locale?: AlertLocale;
 }) {
   const origin = validatedSiteUrl(input.siteUrl);
   const token = signUnsubscribeToken(input.unsubscribeTokenId, input.signingKey);
@@ -288,6 +369,64 @@ export function buildPublicAlertEmail(input: {
   const leadAgency =
     input.leadAgency?.trim().replace(/[\r\n]+/g, " ").slice(0, 160) || "Official case contact";
   const alertsUrl = `${origin}/alerts`;
+
+  if (input.locale === "fr") {
+    const text = [
+      "ALERTE COMMUNAUTAIRE URGENTE MMIPS",
+      safeTitle,
+      "",
+      `Zone de sensibilisation publique approuvée : ${safeArea}`,
+      "",
+      `Voir le profil public MMIPS approuvé : ${publicUrl}`,
+      "",
+      "SI VOUS AVEZ DES RENSEIGNEMENTS",
+      `${leadAgency} : ${tipContact}`,
+      "En cas de danger immédiat, composez le 911.",
+      "Ne transmettez pas de renseignements à MMIPS et ne répondez pas à ce courriel avec des renseignements sur le dossier.",
+      "",
+      "COMMENT AIDER",
+      "• Lisez attentivement le profil approuvé et partagez le profil ou l’affiche officiel MMIPS lorsqu’il est approprié de le faire.",
+      "• Ne publiez pas de rumeurs, d’accusations non vérifiées ou de lieux privés ou sensibles.",
+      "• Ne menez pas votre propre enquête et ne confrontez personne.",
+      `• Invitez les personnes qui souhaitent aider de façon responsable à s’abonner : ${alertsUrl}`,
+      "",
+      "POURQUOI VOUS RECEVEZ CE MESSAGE",
+      "Vous avez confirmé les alertes communautaires urgentes MMIPS et cette alerte approuvée par un modérateur correspond à vos préférences enregistrées.",
+      "",
+      "Se désabonner des futures alertes MMIPS :",
+      unsubscribeUrl
+    ].join("\n");
+    const html = [
+      "<p><strong>ALERTE COMMUNAUTAIRE URGENTE MMIPS</strong></p>",
+      `<h1>${escapeHtml(safeTitle)}</h1>`,
+      `<p><strong>Zone de sensibilisation publique approuvée :</strong> ${escapeHtml(safeArea)}</p>`,
+      `<p>${htmlLink(publicUrl, "Voir le profil public MMIPS approuvé")}</p>`,
+      "<h2>Si vous avez des renseignements</h2>",
+      `<p><strong>${escapeHtml(leadAgency)} :</strong> ${escapeHtml(tipContact)}</p>`,
+      "<p>En cas de danger immédiat, composez le 911.</p>",
+      "<p><strong>Ne transmettez pas de renseignements à MMIPS et ne répondez pas à ce courriel avec des renseignements sur le dossier.</strong></p>",
+      "<h2>Comment aider</h2>",
+      listHtml([
+        "Lisez attentivement le profil approuvé et partagez le profil ou l’affiche officiel MMIPS lorsqu’il est approprié de le faire.",
+        "Ne publiez pas de rumeurs, d’accusations non vérifiées ou de lieux privés ou sensibles.",
+        "Ne menez pas votre propre enquête et ne confrontez personne."
+      ]),
+      "<h2>Pourquoi vous recevez ce message</h2>",
+      "<p>Cette alerte approuvée par un modérateur correspond à vos préférences enregistrées.</p>",
+      `<p>${htmlLink(unsubscribeUrl, "Se désabonner des futures alertes MMIPS")}</p>`
+    ].join("\n");
+    return {
+      subject: `ALERTE communautaire urgente MMIPS — ${safeTitle}`.slice(0, 190),
+      text,
+      html,
+      unsubscribeUrl,
+      headers: {
+        "List-Unsubscribe": `<${unsubscribeUrl}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"
+      } as const,
+      idempotencyKey: `alert-${hashAlertToken(input.deliveryKey).slice(7, 39)}`
+    };
+  }
 
   const text = [
     "URGENT MMIPS COMMUNITY ALERT",

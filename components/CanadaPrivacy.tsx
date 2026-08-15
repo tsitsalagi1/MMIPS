@@ -4,7 +4,7 @@ export function CanadaPrivacy() {
       <p className="eyebrow">MMIPS Canada</p>
       <h1>Privacy in Canada</h1>
       <p className="lead">This page explains what MMIPS Canada may show publicly, what stays private, and how to ask for a correction or removal.</p>
-      <p className="muted">Last updated August 12, 2026. Privacy requirements can vary by organization, activity, province or territory, and the facts of a situation.</p>
+      <p className="muted">Last updated August 15, 2026. Privacy requirements can vary by organization, activity, province or territory, and the facts of a situation.</p>
 
       <h2>What can appear publicly</h2>
       <p>Only information cleared for public awareness should appear on a profile or map. That may include a person&apos;s public name, an approved photo, status, a broad public area, approved First Nations, Inuit or Métis affiliation information, and an official contact for tips.</p>
@@ -34,10 +34,17 @@ export function CanadaPrivacy() {
       <p>MMIPS Canada may show clearly labelled synthetic test profiles while the Canadian site is being tested. Synthetic profiles are fictional and are not real people, real cases, or case statistics.</p>
 
       <h2>Service providers</h2>
-      <p>MMIPS Canada currently uses Vercel for web hosting, a Canada-region Supabase project for database services, and MapTiler/MapLibre for the public map. These providers may process ordinary technical request information under their own terms.</p>
+      <p>MMIPS Canada currently uses Vercel for web hosting, a Canada-region Supabase project for private database and file-storage services, Resend for transactional email, Cloudflare Turnstile for anti-abuse checks, and MapTiler/MapLibre for the public map. These providers may process information needed to provide those services under their own terms.</p>
+
+      <h2>Urgent email alerts</h2>
+      <p>Alert subscribers provide an email address, a Canadian postal code, a distance choice, and an English or French language choice. MMIPS immediately reduces the postal code to its broad three-character Forward Sortation Area for matching. The subscriber list and matching area stay private. A confirmation email is required before alerts begin, and every alert includes an unsubscribe link.</p>
+      <p>Postal-area matching is performed by MMIPS Canada using representative points adapted from Statistics Canada&apos;s 2021 Census Forward Sortation Area Boundary File. MMIPS does not send a Canadian postal code or subscriber email address to a geocoding service.</p>
 
       <h2>Canadian case submissions</h2>
-      <p>New Canadian case submissions are not open yet. The public search, map, and family-resource pages can operate while the Canadian intake process is finished and tested.</p>
+      <p>Canadian submissions enter a private review queue. A submission is not a police report, does not become public automatically, and cannot create a public profile, photo, affiliation, or map point without a separate moderator decision. Submitters receive a reference number and may request correction, suppression, withdrawal, deletion, or de-identification review when appropriate.</p>
+
+      <h2>Geography source notice</h2>
+      <p>Adapted from Statistics Canada, 2021 Census Forward Sortation Area Boundary File. This does not constitute an endorsement by Statistics Canada of this product.</p>
 
       <h2>Contact</h2>
       <p>Privacy/legal: <a href="mailto:legal@mmips.com">legal@mmips.com</a><br />Corrections/removals: <a href="mailto:corrections@mmips.com">corrections@mmips.com</a><br />General contact: <a href="mailto:contact@mmips.com">contact@mmips.com</a></p>

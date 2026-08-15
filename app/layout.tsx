@@ -82,6 +82,7 @@ function CanadaHeader() {
         <div className="nav-links">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/profiles">Search Profiles</Link>
+          <Link href="/alerts">Alerts</Link>
           <Link href="/resources">Family Resources</Link>
           <Link href="/submit">Submit Information</Link>
           <a href={globalSiteUrl()}>Canada · Change country</a>
@@ -139,6 +140,7 @@ function CanadaFooter() {
         <nav className="footer-links" aria-label="MMIPS Canada footer navigation">
           <Link href="/how-it-works">How it works</Link>
           <Link href="/profiles">Search Profiles</Link>
+          <Link href="/alerts">Alerts</Link>
           <Link href="/resources">Family Resources</Link>
           <Link href="/submit">Submit Information</Link>
           <Link href="/privacy">Privacy</Link>
