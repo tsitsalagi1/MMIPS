@@ -106,19 +106,31 @@ export function sanitizePublicMapRows(rows: unknown[] | null | undefined): Publi
 type PublicMapClient = Pick<SupabaseClient, "from">;
 
 async function loadAllProjectionRows(client: PublicMapClient, select: string) {
-  const rows: any[] = [];
-  for (let from = 0; ; from += MAP_POINT_PAGE_SIZE) {
-    const { data, error } = await client
+  const first = await client
+    .from(MAP_PROJECTION)
+    .select(select, { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .order("case_id", { ascending: true })
+    .range(0, MAP_POINT_PAGE_SIZE - 1);
+  if (first.error) return { rows: [] as any[], error: first.error };
+
+  const rows = first.data || [];
+  const total = first.count ?? rows.length;
+  const remainingPages = Math.max(0, Math.ceil(total / MAP_POINT_PAGE_SIZE) - 1);
+  if (!remainingPages) return { rows, error: null };
+
+  const pages = await Promise.all(Array.from({ length: remainingPages }, async (_, pageIndex) => {
+    const from = (pageIndex + 1) * MAP_POINT_PAGE_SIZE;
+    return client
       .from(MAP_PROJECTION)
       .select(select)
       .order("updated_at", { ascending: false })
+      .order("case_id", { ascending: true })
       .range(from, from + MAP_POINT_PAGE_SIZE - 1);
-
-    if (error) return { rows: [] as any[], error };
-    const page = data || [];
-    rows.push(...page);
-    if (page.length < MAP_POINT_PAGE_SIZE) break;
-  }
+  }));
+  const failed = pages.find((page) => page.error);
+  if (failed?.error) return { rows: [] as any[], error: failed.error };
+  pages.forEach((page) => rows.push(...(page.data || [])));
   return { rows, error: null };
 }
 
@@ -197,6 +209,23 @@ function includesText(value: unknown, query: string) {
   return typeof value === "string" && value.toLowerCase().includes(query);
 }
 
+const PUBLIC_REGION_ALIASES: Record<string, readonly string[]> = {
+  "u.s. virgin islands": ["u.s. virgin islands", "united states virgin islands"],
+  "us virgin islands": ["u.s. virgin islands", "united states virgin islands"],
+  usvi: ["u.s. virgin islands", "united states virgin islands"],
+  cnmi: ["commonwealth of the northern mariana islands", "northern mariana islands"]
+};
+
+export function matchesPublicRegion(row: Record<string, unknown>, input: string) {
+  const query = input.trim().toLowerCase();
+  if (!query) return true;
+  const stateCode = typeof row.last_seen_state === "string" ? row.last_seen_state.trim().toLowerCase() : "";
+  if (query.length === 2 && stateCode === query) return true;
+  const aliases = PUBLIC_REGION_ALIASES[query] || [query];
+  return [row.last_seen_area_public, row.last_seen_city, row.last_seen_state, row.public_label]
+    .some((value) => aliases.some((alias) => includesText(value, alias)));
+}
+
 export async function searchPublicProfileIds(filters: PublicProfileSearchFilters): Promise<PublicProfileIdSearchResult> {
   const supabase = createPublicSupabaseClient();
   if (!supabase) return { ids: [], availability: "unconfigured" };
@@ -212,7 +241,7 @@ export async function searchPublicProfileIds(filters: PublicProfileSearchFilters
   const status = filters.status;
   const ids = result.rows.flatMap((row: Record<string, any>) => {
     if (status !== "all" && row.public_status !== status) return [];
-    if (state && ![row.last_seen_area_public, row.last_seen_city, row.last_seen_state, row.public_label].some((value) => includesText(value, state))) return [];
+    if (state && !matchesPublicRegion(row, state)) return [];
     if (q && ![
       row.public_name,
       row.tribal_affiliation,

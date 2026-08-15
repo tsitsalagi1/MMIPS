@@ -107,21 +107,24 @@ export async function getCanadaPublicMapPoints() {
   const client = createPublicClient();
   if (!client) return { points: [] as PublicMapPoint[], availability: "unconfigured" as const };
 
-  const rows: Record<string, any>[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await client
-      .from(CANADA_MAP_VIEW)
-      .select("case_id,slug,full_name,status,last_seen_locality,last_seen_province_territory,public_area_label,public_latitude,public_longitude,lead_police_service,last_public_update,synthetic,location_precision,updated_at")
-      .order("updated_at", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) {
-      console.error("Canada public map request failed", { code: error.code });
-      return { points: [] as PublicMapPoint[], availability: "error" as const };
-    }
-    const page = (data || []) as Record<string, any>[];
-    rows.push(...page);
-    if (page.length < PAGE_SIZE) break;
+  const select = "case_id,slug,full_name,status,last_seen_locality,last_seen_province_territory,public_area_label,public_latitude,public_longitude,lead_police_service,last_public_update,synthetic,location_precision,updated_at";
+  const first = await client.from(CANADA_MAP_VIEW).select(select, { count: "exact" }).order("updated_at", { ascending: false }).order("case_id", { ascending: true }).range(0, PAGE_SIZE - 1);
+  if (first.error) {
+    console.error("Canada public map request failed", { code: first.error.code });
+    return { points: [] as PublicMapPoint[], availability: "error" as const };
   }
+  const rows = (first.data || []) as Record<string, any>[];
+  const remainingPages = Math.max(0, Math.ceil((first.count ?? rows.length) / PAGE_SIZE) - 1);
+  const pages = await Promise.all(Array.from({ length: remainingPages }, async (_, pageIndex) => {
+    const from = (pageIndex + 1) * PAGE_SIZE;
+    return client.from(CANADA_MAP_VIEW).select(select).order("updated_at", { ascending: false }).order("case_id", { ascending: true }).range(from, from + PAGE_SIZE - 1);
+  }));
+  const failed = pages.find((page) => page.error);
+  if (failed?.error) {
+    console.error("Canada public map request failed", { code: failed.error.code });
+    return { points: [] as PublicMapPoint[], availability: "error" as const };
+  }
+  pages.forEach((page) => rows.push(...((page.data || []) as Record<string, any>[])));
 
   return {
     points: rows.flatMap((row) => {
@@ -151,21 +154,24 @@ export async function searchCanadaPublicProfileIds(filters: { q: string; status:
   const client = createPublicClient();
   if (!client) return { ids: [], availability: "unconfigured" };
 
-  const rows: Record<string, any>[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await client
-      .from(CANADA_PROFILE_VIEW)
-      .select("case_id,full_name,status,last_seen_locality,last_seen_province_territory,last_seen_area_public,lead_police_service,indigenous_affiliations,published_at")
-      .order("published_at", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) {
-      console.error("Canada public profile search failed", { code: error.code });
-      return { ids: [], availability: "error" };
-    }
-    const page = (data || []) as Record<string, any>[];
-    rows.push(...page);
-    if (page.length < PAGE_SIZE) break;
+  const select = "case_id,full_name,status,last_seen_locality,last_seen_province_territory,last_seen_area_public,lead_police_service,indigenous_affiliations,published_at";
+  const first = await client.from(CANADA_PROFILE_VIEW).select(select, { count: "exact" }).order("published_at", { ascending: false }).order("case_id", { ascending: true }).range(0, PAGE_SIZE - 1);
+  if (first.error) {
+    console.error("Canada public profile search failed", { code: first.error.code });
+    return { ids: [], availability: "error" };
   }
+  const rows = (first.data || []) as Record<string, any>[];
+  const remainingPages = Math.max(0, Math.ceil((first.count ?? rows.length) / PAGE_SIZE) - 1);
+  const pages = await Promise.all(Array.from({ length: remainingPages }, async (_, pageIndex) => {
+    const from = (pageIndex + 1) * PAGE_SIZE;
+    return client.from(CANADA_PROFILE_VIEW).select(select).order("published_at", { ascending: false }).order("case_id", { ascending: true }).range(from, from + PAGE_SIZE - 1);
+  }));
+  const failed = pages.find((page) => page.error);
+  if (failed?.error) {
+    console.error("Canada public profile search failed", { code: failed.error.code });
+    return { ids: [], availability: "error" };
+  }
+  pages.forEach((page) => rows.push(...((page.data || []) as Record<string, any>[])));
 
   const q = filters.q.trim().toLocaleLowerCase("en-CA");
   const province = filters.province.trim().toUpperCase();

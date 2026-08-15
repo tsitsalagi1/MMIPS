@@ -21,13 +21,15 @@ function PasswordRecoveryLink() {
 }
 
 export default function AdminPage() {
-  if (mmipsSiteMode() === "ca") {
+  const mode = mmipsSiteMode();
+  if (mode === "ca") {
     return (
       <>
         <CanadaAdminDashboard />
         <PasswordRecoveryLink />
         <AdminMfaPanel />
         <AdminUrgentAlerts />
+        <AdminSyntheticScale source="ca" />
       </>
     );
   }
@@ -40,7 +42,7 @@ export default function AdminPage() {
       <AdminOfficialSourceDrafts />
       <AdminMapPoints />
       <AdminUrgentAlerts />
-      <AdminSyntheticScale />
+      {mode === "us" ? <AdminSyntheticScale source="us" /> : null}
     </>
   );
 }

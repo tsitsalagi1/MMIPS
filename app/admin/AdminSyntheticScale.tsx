@@ -4,6 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 type Counts = { total: number; staged: number; published: number };
+type Source = "us" | "ca";
+type Benchmark = {
+  label: string;
+  targetProfiles: number;
+  missingProfiles: number;
+  murderedUnsolvedProfiles: number;
+  alaskaProfiles: number;
+  territoryProfiles: number;
+  territoryLabels: readonly string[];
+  benchmarkLabel: string;
+  currentReference: string;
+  geographyReference: string;
+  limitations: string;
+};
 
 type ActionResponse = {
   ok?: boolean;
@@ -13,6 +27,7 @@ type ActionResponse = {
   nextOffset?: number;
   done?: boolean;
   counts?: Counts;
+  benchmark?: Benchmark;
 };
 
 const phrases = {
@@ -21,13 +36,14 @@ const phrases = {
   remove: "REMOVE NATIONAL SYNTHETIC TEST"
 } as const;
 
-export default function AdminSyntheticScale() {
+export default function AdminSyntheticScale({ source }: { source: Source }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [counts, setCounts] = useState<Counts>({ total: 0, staged: 0, published: 0 });
   const [confirmation, setConfirmation] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [benchmark, setBenchmark] = useState<Benchmark | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -51,6 +67,7 @@ export default function AdminSyntheticScale() {
     const data = await response.json().catch(() => ({})) as ActionResponse;
     if (!response.ok || data.ok === false) throw new Error(data.message || "Synthetic scale-test action failed.");
     if (data.counts) setCounts(data.counts);
+    if (data.benchmark) setBenchmark(data.benchmark);
     return data;
   }
 
@@ -63,20 +80,20 @@ export default function AdminSyntheticScale() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionToken]);
 
-  async function stage(source: "us" | "ca") {
+  async function stage() {
     if (confirmation !== phrases.stage) {
       setMessage(`Type ${phrases.stage} exactly before staging records.`);
       return;
     }
     setBusy(true);
-    setMessage(`Staging ${source === "us" ? "U.S. federal reservation" : "Canadian First Nation reserve"} synthetic geography…`);
+    setMessage(`Staging the ${source === "us" ? "U.S., including Alaska and the five populated territories" : "Canada"} synthetic capacity benchmark…`);
     try {
       let offset = 0;
       let inserted = 0;
       for (let page = 0; page < 50; page += 1) {
         const data = await request({ action: "stage", source, offset, confirmation });
         inserted += Number(data.inserted || 0);
-        setMessage(`Staged ${inserted} new fictional records from the ${source === "us" ? "U.S. Census" : "Indigenous Services Canada"} source. Nothing is public yet.`);
+        setMessage(`Staged ${inserted} new fictional records from official broad ${source === "us" ? "U.S. Census Indigenous and territory" : "Indigenous Services Canada"} geographies. Nothing is public yet.`);
         if (data.done) break;
         offset = Number(data.nextOffset || offset + 150);
         if (page === 49) throw new Error("Staging stopped at the safety page limit. Review counts before continuing.");
@@ -119,12 +136,22 @@ export default function AdminSyntheticScale() {
       <div>
         <p className="eyebrow">Launch rehearsal only</p>
         <h2 id="synthetic-scale-heading">National synthetic scale test</h2>
-        <p>Use official U.S. Census reservation geography and Indigenous Services Canada reserve geography to create unmistakably fictional MMIPS profiles for performance, map, filter, accessibility, and pagination testing. Real people are never imported.</p>
+        <p>Use official aggregate benchmarks and broad government Indigenous geography to create unmistakably fictional MMIPS profiles for performance, map, filter, accessibility, and pagination testing. Real people and real case locations are never imported.</p>
       </div>
+
+      {benchmark ? (
+        <div className="notice">
+          <strong>{benchmark.label}: {benchmark.targetProfiles.toLocaleString()}-profile capacity target</strong>
+          <p>{benchmark.missingProfiles.toLocaleString()} synthetic missing profiles and {benchmark.murderedUnsolvedProfiles.toLocaleString()} synthetic murdered/unsolved profiles. {source === "us" ? `${benchmark.alaskaProfiles.toLocaleString()} profiles explicitly exercise Alaska Native village coverage; ${benchmark.territoryProfiles.toLocaleString()} evenly exercise ${benchmark.territoryLabels.join(", ")}. ` : ""}{benchmark.benchmarkLabel}.</p>
+          <p>{benchmark.currentReference}</p>
+          <p>{benchmark.geographyReference}</p>
+          <p><strong>Interpretation limit:</strong> {benchmark.limitations}</p>
+        </div>
+      ) : null}
 
       <div className="notice warning">
         <strong>Safe sequence:</strong>
-        <p><strong>Stage</strong> first. Staged records stay pending and unpublished. Publish only after the national-scale code is live in Production. Remove deletes only records whose slug begins <code>mmips-test-scale-</code>.</p>
+        <p><strong>Stage</strong> first. Staged records stay pending and unpublished. Publish only after the country-scale code is live in Production. Remove deletes only this site&apos;s <code>mmips-test-scale-{source}-</code> records.</p>
       </div>
 
       <div className="feature-grid">
@@ -139,10 +166,7 @@ export default function AdminSyntheticScale() {
 
       <div className="stack">
         <p><strong>To stage:</strong> type <code>{phrases.stage}</code></p>
-        <div className="button-row">
-          <button type="button" disabled={busy || !sessionToken} onClick={() => stage("us")}>Stage U.S. federal reservation test set</button>
-          <button type="button" disabled={busy || !sessionToken} onClick={() => stage("ca")}>Stage Canadian reserve test set</button>
-        </div>
+        <button type="button" disabled={busy || !sessionToken} onClick={stage}>Stage {source === "us" ? "U.S., Alaska, and territories" : "Canada"} capacity test set</button>
         <p><strong>To publish:</strong> type <code>{phrases.publish}</code></p>
         <button type="button" disabled={busy || !sessionToken} onClick={() => processAll("publish")}>Publish staged national synthetic test</button>
         <p><strong>To remove:</strong> type <code>{phrases.remove}</code></p>
