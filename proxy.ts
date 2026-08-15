@@ -40,7 +40,7 @@ function isCountryShellAsset(pathname: string) {
   return pathname.startsWith("/_next/") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
-    /\.(?:png|jpe?g|svg|webp|gif|ico)$/i.test(pathname);
+    /\.(?:png|jpe?g|svg|webp|gif|ico|pdf)$/i.test(pathname);
 }
 
 function globalGatewayIsolation(request: NextRequest) {
@@ -63,7 +63,7 @@ function globalGatewayIsolation(request: NextRequest) {
 }
 
 function canadaPublicRouteAllowed(pathname: string) {
-  if (pathname === "/" || pathname === "/profiles" || pathname === "/resources" || pathname === "/how-it-works" || pathname === "/submit" || pathname === "/submit/received" || pathname === "/privacy" || pathname === "/alerts") return true;
+  if (pathname === "/" || pathname === "/profiles" || pathname === "/resources" || pathname.startsWith("/resources/") || pathname === "/how-it-works" || pathname === "/submit" || pathname === "/submit/received" || pathname === "/privacy" || pathname === "/alerts") return true;
   if (pathname.startsWith("/profiles/") || pathname.startsWith("/alerts/") || pathname.startsWith("/admin/")) return true;
   if (pathname === "/admin") return true;
   return isCountryShellAsset(pathname);

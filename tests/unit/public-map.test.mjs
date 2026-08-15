@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { filterPublicMapPoints, getPublicMapPoints, isPublicMapPrecision, loadPublicMapPoints, sanitizePublicMapRows } from "../../.test-dist/lib/public-map.js";
+import { filterPublicMapPoints, getPublicMapPoints, isPublicMapPrecision, loadPublicMapPoints, matchesPublicRegion, sanitizePublicMapRows } from "../../.test-dist/lib/public-map.js";
 import { syntheticApprovedMapRow } from "../fixtures/public-map.mjs";
 
 function projectionRowFromFixture() {
@@ -64,7 +64,7 @@ test("anonymous loader reads the RLS-safe public map projection without case hyd
   assert.match(selected, /public_latitude/);
   assert.match(selected, /public_longitude/);
   assert.doesNotMatch(selected, /moderator_approved|hidden_at|approved_by|safety_reviewed_at|public_notes|profile_photos/);
-  assert.deepEqual(calls.map(([name]) => name), ["from", "select", "order", "range"]);
+  assert.deepEqual(calls.map(([name]) => name), ["from", "select", "order", "order", "range"]);
 });
 
 test("an empty public map projection is available rather than an error", async () => {
@@ -77,7 +77,33 @@ test("an empty public map projection is available rather than an error", async (
   };
   const result = await loadPublicMapPoints({ from: () => chain });
   assert.deepEqual(result, { points: [], availability: "available" });
-  assert.deepEqual(calls.map(([name]) => name), ["select", "order", "range"]);
+  assert.deepEqual(calls.map(([name]) => name), ["select", "order", "order", "range"]);
+});
+
+test("national-scale map pages use one counted request followed by parallel deterministic ranges", async () => {
+  const rows = Array.from({ length: 2500 }, (_, index) => ({
+    ...projectionRowFromFixture(),
+    case_id: `synthetic-case-${String(index).padStart(4, "0")}`,
+    slug: `synthetic-case-${String(index).padStart(4, "0")}`
+  }));
+  const ranges = [];
+  const client = {
+    from: () => {
+      const chain = {
+        select: () => chain,
+        order: () => chain,
+        range: async (from, to) => {
+          ranges.push([from, to]);
+          return { data: rows.slice(from, to + 1), error: null, count: from === 0 ? rows.length : null };
+        }
+      };
+      return chain;
+    }
+  };
+  const result = await loadPublicMapPoints(client);
+  assert.equal(result.availability, "available");
+  assert.equal(result.points.length, 2500);
+  assert.deepEqual(ranges.sort((a, b) => a[0] - b[0]), [[0, 999], [1000, 1999], [2000, 2999]]);
 });
 
 test("missing Supabase configuration returns no synthetic profile", async () => {
@@ -108,4 +134,25 @@ test("filters use one collection for list parity", () => {
   const first = projectionRowFromFixture();
   const points = sanitizePublicMapRows([first, { ...first, public_label: "Synthetic second area", case_id: "synthetic-case-002", slug: "synthetic-second", public_status: "located" }]);
   assert.deepEqual(filterPublicMapPoints(points, { profileType: "missing", status: "located", region: "all" }).map((point) => point.caseId), ["synthetic-case-002"]);
+});
+
+test("U.S. territory search accepts official names, common abbreviations, and exact territory codes", () => {
+  const virginIslands = {
+    last_seen_area_public: "United States Virgin Islands — SYNTHETIC BROAD TERRITORY COVERAGE TEST",
+    last_seen_state: "VI",
+    public_label: "United States Virgin Islands"
+  };
+  assert.equal(matchesPublicRegion(virginIslands, "U.S. Virgin Islands"), true);
+  assert.equal(matchesPublicRegion(virginIslands, "US Virgin Islands"), true);
+  assert.equal(matchesPublicRegion(virginIslands, "USVI"), true);
+  assert.equal(matchesPublicRegion(virginIslands, "VI"), true);
+  assert.equal(matchesPublicRegion(virginIslands, "Puerto Rico"), false);
+
+  const northernMarianaIslands = {
+    last_seen_area_public: "Commonwealth of the Northern Mariana Islands — SYNTHETIC BROAD TERRITORY COVERAGE TEST",
+    last_seen_state: "MP",
+    public_label: "Commonwealth of the Northern Mariana Islands"
+  };
+  assert.equal(matchesPublicRegion(northernMarianaIslands, "CNMI"), true);
+  assert.equal(matchesPublicRegion(northernMarianaIslands, "MP"), true);
 });

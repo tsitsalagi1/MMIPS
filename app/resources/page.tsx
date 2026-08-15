@@ -1,6 +1,7 @@
 import { CanadaResources } from "../../components/CanadaResources";
 import { SafetyNotice } from "../../components/SafetyNotice";
 import { mmipsSiteMode } from "../../lib/site-mode";
+import Link from "next/link";
 
 const officialLinks = [
   {
@@ -87,7 +88,16 @@ export default function ResourcesPage() {
         ))}
       </section>
 
-      <section className="card plain-language-section"><h2>What to ask the agency</h2><p>Keep a simple written record of who you spoke with, when you spoke, and what they told you. These details can also help MMIPS keep a public profile accurate.</p><div className="resource-chip-list">{askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}</div></section>
+      <section className="card plain-language-section">
+        <h2>Keep a simple family record</h2>
+        <p>Use the MMIPS family record to keep names, numbers, calls, and approved public information together. You can type into it on this device, print a blank copy to fill out by hand, or download the fillable PDF.</p>
+        <p><strong>The record stays with you.</strong> The web page does not send or save what you type. Keep a completed copy private and share it only with people or services you trust.</p>
+        <div className="button-row">
+          <Link className="button" href="/resources/family-record">Open printable family record</Link>
+          <a className="button secondary" href="/forms/mmips-us-family-record.pdf" download>Download fillable PDF</a>
+        </div>
+        <div className="resource-chip-list">{askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}</div>
+      </section>
 
       <section className="card plain-language-section"><h2>Before you share online</h2><div className="feature-grid compact-grid"><div><h3>Helpful to share</h3><p>Approved recent photos, the official contact, a broad last-known area, agency or NamUs numbers, the MMIPS profile link, and the current approved flyer.</p></div><div><h3>Keep private</h3><p>Rumors, public suspect accusations, private addresses, shelter or domestic-violence locations, graphic images, and exact sensitive locations.</p></div><div><h3>Where tips go</h3><p>Send tips to the official agency or tip line shown on the public profile. Use 911 for immediate danger. Do not send investigative tips to MMIPS.</p></div></div></section>
 

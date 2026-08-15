@@ -873,6 +873,172 @@ button:disabled {
   line-height: 1.9;
 }
 
+/* Local-only family record: screen entry plus a clean letter-size print layout. */
+.family-record-page {
+  padding: 28px 0 60px;
+}
+.family-record-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.family-record-sheet {
+  width: min(8.5in, calc(100% - 32px));
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid #d7cabd;
+  border-radius: 22px;
+  background: #fffaf4;
+  color: #171411;
+  box-shadow: 0 20px 60px rgba(0,0,0,.34);
+}
+.family-record-sheet p,
+.family-record-sheet label,
+.family-record-sheet .field-help {
+  color: #251f1a !important;
+}
+.family-record-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 3px solid #b9372b;
+}
+.family-record-header img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+.family-record-header h1 {
+  margin-bottom: 8px;
+  color: #171411;
+  font-size: clamp(34px, 6vw, 56px);
+}
+.family-record-header p:last-child { margin-bottom: 0; }
+.family-record-eyebrow {
+  margin: 0 0 4px;
+  color: #8c281f !important;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.family-record-privacy {
+  margin: 20px 0;
+  padding: 16px 18px;
+  border-left: 6px solid #9a6b13;
+  border-radius: 14px;
+  background: #fff2d8;
+}
+.family-record-privacy h2,
+.family-record-section h2 {
+  color: #171411;
+  font-size: 24px;
+}
+.family-record-privacy p:last-child { margin-bottom: 0; }
+.family-record-form,
+.family-record-section {
+  display: grid;
+  gap: 16px;
+}
+.family-record-section {
+  padding: 20px 0;
+  border-top: 1px solid #d7cabd;
+}
+.family-record-section:first-child { border-top: 0; }
+.family-record-section h2,
+.family-record-guidance { margin-bottom: 0; }
+.family-record-grid {
+  display: grid;
+  gap: 16px;
+}
+.family-record-grid.two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.family-record-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+.family-record-field label {
+  font-weight: 800;
+  line-height: 1.35;
+}
+.family-record-field input,
+.family-record-field textarea {
+  border: 1px solid #9e8f80;
+  border-radius: 9px;
+  background: #fff;
+  color: #171411;
+}
+.family-record-field textarea { min-height: 88px; }
+.family-record-field .field-help {
+  margin: 0;
+  color: #5e5146 !important;
+  font-size: 13px;
+}
+.private-record-field {
+  padding: 12px;
+  border-left: 5px solid #b9372b;
+  border-radius: 12px;
+  background: #fff0ed;
+}
+.family-record-log {
+  display: grid;
+  gap: 14px;
+}
+.family-record-log-row {
+  display: grid;
+  grid-template-columns: minmax(150px, .65fr) minmax(190px, .85fr) minmax(260px, 1.5fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d7cabd;
+  border-radius: 14px;
+}
+.family-record-log-row textarea { min-height: 64px; }
+.family-record-footer {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 2px solid #b9372b;
+  font-size: 13px;
+}
+.family-record-footer p { margin-bottom: 6px; }
+
+@media (max-width: 760px) {
+  .family-record-grid.two-column,
+  .family-record-log-row { grid-template-columns: 1fr; }
+  .family-record-header { align-items: flex-start; }
+  .family-record-header img { width: 56px; height: 56px; }
+}
+
+@media print {
+  @page { size: letter; margin: .42in; }
+  .family-record-page { padding: 0 !important; }
+  .family-record-sheet {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .family-record-sheet input,
+  .family-record-sheet textarea {
+    color: #000 !important;
+    background: #fff !important;
+    border-color: #555 !important;
+  }
+  .family-record-header h1 { font-size: 38px !important; }
+  .family-record-privacy,
+  .private-record-field { background: #fff !important; }
+  .family-record-section,
+  .family-record-log-row,
+  .family-record-field { break-inside: avoid; }
+  .family-record-page-break { break-before: page; }
+  .family-record-footer { break-inside: avoid; }
+}
+
 /* Admin lookup layout fix: keep queue filters separate from profile editor lookup. */
 .admin-search-controls {
   display: grid;
