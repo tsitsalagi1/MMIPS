@@ -51,7 +51,7 @@ export function CanadaResources() {
 
       <section className="card plain-language-section">
         <h2>Keep a simple family record</h2>
-        <p>Use the MMIPS family record to keep names, numbers, calls, and approved public information together. You can type into it on this device, print a blank copy to fill out by hand, or download the fillable PDF.</p>
+        <p>Use the MMIPS investigator-preparation record to document physical description, clothing, the last-known timeline, contacts, agencies called, records to gather, and approved public information. It includes large writing areas, checklists, and a detailed call log. You can type into it on this device, print a blank copy to fill out by hand, or download the fillable PDF.</p>
         <p><strong>The record stays with you.</strong> The web page does not send or save what you type. Keep a completed copy private and share it only with people or services you trust.</p>
         <div className="button-row">
           <Link className="button" href="/resources/family-record">Open printable family record</Link>

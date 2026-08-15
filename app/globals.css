@@ -956,6 +956,9 @@ button:disabled {
 .family-record-grid.two-column {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.family-record-grid.three-column {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .family-record-field {
   display: grid;
   align-content: start;
@@ -984,6 +987,86 @@ button:disabled {
   border-radius: 12px;
   background: #fff0ed;
 }
+.family-record-checklist {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid #d7cabd;
+  border-radius: 14px;
+  background: #fff;
+}
+.private-record-checklist {
+  border-left: 5px solid #b9372b;
+  background: #fff0ed;
+}
+.family-record-check-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  font-weight: 650 !important;
+  line-height: 1.4;
+}
+.family-record-check-item input,
+.agency-checklist-item input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #b9372b;
+}
+.family-record-table {
+  display: grid;
+  gap: 14px;
+}
+.family-record-table-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #d7cabd;
+  border-radius: 14px;
+  background: #fff;
+}
+.timeline-row {
+  grid-template-columns: minmax(135px, .65fr) minmax(230px, 1.2fr) minmax(230px, 1.2fr);
+}
+.agency-log-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.agency-log-row .family-record-field:last-child {
+  grid-column: 1 / -1;
+}
+.agency-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.agency-checklist-item {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 8px 18px;
+  padding: 14px;
+  border: 1px solid #d7cabd;
+  border-radius: 14px;
+  background: #fff;
+}
+.agency-checklist-item p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.agency-checklist-item label {
+  display: inline-grid;
+  grid-template-columns: 20px auto;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+}
+.compact-privacy {
+  margin: 0;
+}
+.compact-privacy h3 {
+  margin-bottom: 8px;
+  color: #171411;
+}
 .family-record-log {
   display: grid;
   gap: 14px;
@@ -1007,7 +1090,12 @@ button:disabled {
 
 @media (max-width: 760px) {
   .family-record-grid.two-column,
-  .family-record-log-row { grid-template-columns: 1fr; }
+  .family-record-grid.three-column,
+  .family-record-log-row,
+  .family-record-table-row,
+  .agency-checklist-grid,
+  .agency-log-row { grid-template-columns: 1fr; }
+  .agency-log-row .family-record-field:last-child { grid-column: auto; }
   .family-record-header { align-items: flex-start; }
   .family-record-header img { width: 56px; height: 56px; }
 }
@@ -1034,6 +1122,8 @@ button:disabled {
   .private-record-field { background: #fff !important; }
   .family-record-section,
   .family-record-log-row,
+  .family-record-table-row,
+  .agency-checklist-item,
   .family-record-field { break-inside: avoid; }
   .family-record-page-break { break-before: page; }
   .family-record-footer { break-inside: avoid; }
