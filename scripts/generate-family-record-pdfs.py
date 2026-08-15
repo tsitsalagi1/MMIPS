@@ -289,7 +289,7 @@ def footer(ctx: FormContext) -> None:
     c.line(LEFT, 30, RIGHT, 30)
     c.setFillColor(MUTED)
     c.setFont("Helvetica", 6.7)
-    c.drawString(LEFT, 18, "Private family copy. MMIPS is not law enforcement. Do not send this completed workbook or investigative tips to MMIPS.")
+    c.drawString(LEFT, 18, "Private family copy. Nothing entered is sent to or saved by MMIPS. Do not send this completed workbook to MMIPS.")
     c.drawRightString(RIGHT, 18, ctx.copy.site)
 
 
@@ -344,7 +344,7 @@ def finish_page(ctx: FormContext) -> None:
 
 def page_one(ctx: FormContext) -> None:
     y = header(ctx, 1, "Start and primary contact")
-    y = callout(ctx, "Start with safety - this workbook can wait", "Nothing written here is sent to MMIPS. Keep the completed workbook private and do not post it online. Call 911 for immediate danger. Report the person missing as soon as you are concerned; you do not need to finish this first, and you may leave anything blank.", y, 69)
+    y = callout(ctx, "Start with safety - this workbook can wait", "This PDF works on your device. MMIPS cannot see, receive, or save anything you type or write here. Keep the completed workbook private and do not send it to MMIPS or post it online. Call 911 for immediate danger. Report the person missing as soon as you are concerned; you do not need to finish this first.", y, 76)
     y = section_title(ctx, "1. First steps", y)
     y = checklist(ctx, "first_step", IMMEDIATE_STEPS, y)
     y = section_title(ctx, "Person and primary case contact", y)

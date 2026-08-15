@@ -6,6 +6,7 @@ import { MAX_UPLOAD_COUNT, generatedPrivatePhotoPath, validateImageFile } from "
 import { submissionIntakeModeFromEnv } from "@/lib/release-controls";
 import { handleCanadaSubmission } from "@/lib/canada-intake";
 import { mmipsSiteMode } from "@/lib/site-mode";
+import { appendIdentifyingDetailsToSummary } from "@/lib/submission-identifying-details";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
       agency_case_number: optionalText(form, "agency_case_number"),
       namus_number: optionalText(form, "namus_number"),
       tip_contact: optionalText(form, "tip_contact"),
-      summary: required(form.get("summary"), "Summary"),
+      summary: appendIdentifyingDetailsToSummary(form, required(form.get("summary"), "Summary")),
       submitter_name: required(form.get("submitter_name"), "Submitter name"),
       submitter_email: required(form.get("submitter_email"), "Submitter email"),
       submitter_phone: optionalText(form, "submitter_phone"),

@@ -4,6 +4,7 @@ import { canadaSubmissionIntakeModeFromEnv } from "@/lib/release-controls";
 import { clientIpFromRequest, expectedTurnstileHostname, verifyTurnstileToken } from "@/lib/security/turnstile";
 import { MAX_UPLOAD_COUNT, validateImageFile } from "@/lib/security/uploads";
 import { sendTransactionalEmail } from "@/lib/email";
+import { appendIdentifyingDetailsToSummary } from "@/lib/submission-identifying-details";
 
 const PROVINCES = new Set(["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"]);
 const STATUSES = new Set(["missing","homicide_unsolved","unidentified","resolved","unknown"]);
@@ -68,7 +69,7 @@ export async function handleCanadaSubmission(request: Request) {
       lead_police_service: optional(form, "lead_police_service", 300),
       police_file_number: optional(form, "police_file_number", 200),
       official_tip_contact: optional(form, "official_tip_contact", 500),
-      public_summary_proposed: required(form, "public_summary_proposed", "Public facts for review", 8000),
+      public_summary_proposed: appendIdentifyingDetailsToSummary(form, required(form, "public_summary_proposed", "Public facts for review", 8000)),
       submitter_name: required(form, "submitter_name", "Your name", 200),
       submitter_email: required(form, "submitter_email", "Your email", 320),
       submitter_phone: optional(form, "submitter_phone", 100),
