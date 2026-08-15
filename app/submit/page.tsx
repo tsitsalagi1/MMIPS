@@ -4,6 +4,7 @@ import { TurnstileWidget } from "../../components/TurnstileWidget";
 import { PhotoPermissionUpload } from "../../components/PhotoPermissionUpload";
 import { ProfileTypeFields } from "../../components/ProfileTypeFields";
 import { SubmissionReviewGate } from "../../components/SubmissionReviewGate";
+import { SubmissionIdentifyingDetails } from "../../components/SubmissionIdentifyingDetails";
 import { submissionIntakeModeFromEnv } from "../../lib/release-controls";
 import { mmipsSiteMode } from "../../lib/site-mode";
 
@@ -55,6 +56,7 @@ export default async function SubmitPage({
               <label>NamUs number or link, if known<input name="namus_number" /></label>
               <label>Official tip phone or link, if public<input name="tip_contact" placeholder="Use the official agency contact, not MMIPS" /></label>
             </div>
+            <SubmissionIdentifyingDetails />
             <label>Public facts MMIPS should review<textarea name="summary" required placeholder="Use facts only. Do not include rumors, public accusations, private addresses, or sensitive locations."></textarea></label>
 
             <h2>Photos</h2>

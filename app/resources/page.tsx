@@ -1,7 +1,6 @@
 import { CanadaResources } from "../../components/CanadaResources";
 import { SafetyNotice } from "../../components/SafetyNotice";
 import { mmipsSiteMode } from "../../lib/site-mode";
-import Link from "next/link";
 
 const officialLinks = [
   {
@@ -89,12 +88,11 @@ export default function ResourcesPage() {
       </section>
 
       <section className="card plain-language-section">
-        <h2>Keep a simple family record</h2>
-        <p>Use the MMIPS investigator-preparation record to document physical description, clothing, the last-known timeline, contacts, agencies called, records to gather, and approved public information. It includes large writing areas, checklists, and a detailed call log. You can type into it on this device, print a blank copy to fill out by hand, or download the fillable PDF.</p>
-        <p><strong>The record stays with you.</strong> The web page does not send or save what you type. Keep a completed copy private and share it only with people or services you trust.</p>
+        <h2>Download a private family record</h2>
+        <p>Download the MMIPS investigator-preparation PDF to document physical description, clothing, the last-known timeline, contacts, agencies called, records to gather, and approved public information. It includes large writing areas, checklists, and a detailed call log.</p>
+        <p><strong>MMIPS does not receive or save anything you type or write in the PDF.</strong> The record stays on your device or with your printed papers unless you choose to share it. Do not send the completed record to MMIPS; share relevant details directly with the investigating agency.</p>
         <div className="button-row">
-          <Link className="button" href="/resources/family-record">Open printable family record</Link>
-          <a className="button secondary" href="/forms/mmips-us-family-record.pdf" download>Download fillable PDF</a>
+          <a className="button" href="/forms/mmips-us-family-record.pdf" download>Download private fillable PDF</a>
         </div>
         <div className="resource-chip-list">{askFor.map((item) => <span className="resource-chip" key={item}>{item}</span>)}</div>
       </section>

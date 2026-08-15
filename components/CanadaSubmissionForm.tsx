@@ -1,6 +1,8 @@
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { CANADA_PROVINCES_AND_TERRITORIES } from "@/lib/canada-config";
 import type { SubmissionIntakeMode } from "@/lib/release-controls";
+import { SubmissionIdentifyingDetails } from "@/components/SubmissionIdentifyingDetails";
+import { SubmissionReviewGate } from "@/components/SubmissionReviewGate";
 
 export function CanadaSubmissionForm({ mode }: { mode: SubmissionIntakeMode }) {
   return (
@@ -19,6 +21,7 @@ export function CanadaSubmissionForm({ mode }: { mode: SubmissionIntakeMode }) {
         <label>Canadian postal code, optional<input name="last_seen_postal_code" autoComplete="postal-code" placeholder="K1A 0B1" maxLength={7} /></label>
         <label>Safe public area wording, optional<input name="last_seen_area_public_proposed" placeholder="Example: Saskatoon area, SK" maxLength={500} /></label>
       </div>
+      <SubmissionIdentifyingDetails />
       <label>Public facts for MMIPS to review<textarea name="public_summary_proposed" required maxLength={8000} placeholder="Facts only. Do not include public suspect accusations, private addresses, graphic details, or information that could put someone at risk." /></label>
 
       <h2>Police / official information</h2>
@@ -65,7 +68,7 @@ export function CanadaSubmissionForm({ mode }: { mode: SubmissionIntakeMode }) {
       <label className="checkbox"><input type="checkbox" name="map_requested" defaultChecked /> If the case is approved, I am asking MMIPS to consider an approximate public-awareness map area. The moderator may keep the map off.</label>
 
       <TurnstileWidget action="canada_submission_intake" />
-      <button type="submit">Send information for private review</button>
+      <SubmissionReviewGate />
     </form>
   );
 }
